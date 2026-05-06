@@ -1,0 +1,39 @@
+추가 변경사항
+
+1. 던전별 NPC
+- 탐색요정 Searchy
+- 오류창 여왕 Exception
+- 휴지통 소녀 Binny
+- 업데이트 아저씨 PatchMan
+- 설정 집사 Panel
+- 임시파일 청소부 Temp
+- 패킷 선장 Ping
+- 레지스트리 사서 Regi
+- 드라이버 정비공 Driver-K
+- 커널 수호자 Kernel
+- 블루스크린 관측자 STOP
+- 거울 속 사용자 Shadow
+
+2. 휴지통 아이템 상점
+- HP 포션, MP 포션, 패치 조각, 무기 수리 키트 구매 가능
+- 파일 선택 화면에서 휴지통 상점 아이콘 또는 B/Delete 키로 진입
+
+3. 바탕화면 기능 추가
+- Windows 검색: 힌트 +1, 행운 +1
+- Windows Update: Gold를 사용해 패치 조각 획득
+- 제어판 강화: 무기 강화 실행
+- 메모장 로그: 진행 상태 확인
+
+4. 파일 아이콘 개선
+- 던전 아이콘 크기 축소
+- 확장자 배지 표시
+- 바로가기 화살표 표시
+- 실제 바탕화면 파일 느낌 강화
+
+5. 추가 던전
+- Popup_ErrorZone.dll
+- Windows_Update_Lab.patch
+- Temp_CacheCleaner.tmp
+- Network_PortTunnel.net
+- Registry_HiveArchive.reg
+- Driver_VaultDevice.drv
