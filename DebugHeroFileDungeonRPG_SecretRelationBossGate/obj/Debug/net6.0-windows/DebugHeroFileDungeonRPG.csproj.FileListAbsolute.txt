@@ -1,0 +1,17 @@
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\bin\Debug\net6.0-windows\DebugHeroFileDungeonRPG.exe
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\bin\Debug\net6.0-windows\DebugHeroFileDungeonRPG.deps.json
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\bin\Debug\net6.0-windows\DebugHeroFileDungeonRPG.runtimeconfig.json
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\bin\Debug\net6.0-windows\DebugHeroFileDungeonRPG.dll
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\bin\Debug\net6.0-windows\DebugHeroFileDungeonRPG.pdb
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\obj\Debug\net6.0-windows\DebugHeroFileDungeonRPG.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\obj\Debug\net6.0-windows\DebugHeroFileDungeonRPG.AssemblyInfoInputs.cache
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\obj\Debug\net6.0-windows\DebugHeroFileDungeonRPG.AssemblyInfo.cs
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\obj\Debug\net6.0-windows\DebugHeroFileDungeonRPG.csproj.CoreCompileInputs.cache
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\obj\Debug\net6.0-windows\DebugHeroFileDungeonRPG.sourcelink.json
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\obj\Debug\net6.0-windows\DebugHeroFileDungeonRPG.dll
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\obj\Debug\net6.0-windows\refint\DebugHeroFileDungeonRPG.dll
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\obj\Debug\net6.0-windows\DebugHeroFileDungeonRPG.pdb
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\obj\Debug\net6.0-windows\DebugHeroFileDungeonRPG.genruntimeconfig.cache
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\obj\Debug\net6.0-windows\ref\DebugHeroFileDungeonRPG.dll
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\obj\Debug\net6.0-windows\DebugHeroFileDungeonRPG.MainForm.resources
+C:\Users\gusrn\OneDrive\바탕 화면\DebugHeroFileDungeonRPG_SecretRelationBossGate\obj\Debug\net6.0-windows\DebugHeroFileDungeonRPG.csproj.GenerateResource.cache
