@@ -19,7 +19,7 @@ namespace DebugHeroFileDungeonRPG
         private static Image playerAgentIdleFrame = null;
         private static readonly Image[] playerAgentWalkFrames = new Image[8];
         private static readonly Dictionary<string, Image> playerSpriteSheets = new Dictionary<string, Image>();
-        private static Image playerActionSheet;
+        private static readonly Dictionary<string, Image> playerActionSheetCache = new Dictionary<string, Image>();
         private static Image playerStillSwordImage;
 
 
@@ -929,23 +929,35 @@ namespace DebugHeroFileDungeonRPG
             g.Restore(state);
         }
 
-        private static Image GetPlayerActionSheet()
+        private static Image GetPlayerActionSheet(int weaponLevel)
         {
-            if (playerActionSheet != null)
-                return playerActionSheet;
+            string fileName = "player_action.png";
+
+            if (weaponLevel >= 3)
+                fileName = "player_action_level3.png";
+            else if (weaponLevel >= 2)
+                fileName = "player_action_level2.png";
+
+            Image cached;
+            if (playerActionSheetCache.TryGetValue(fileName, out cached))
+                return cached;
 
             string path = Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory,
                 "Assets",
                 "Characters",
                 "Player",
-                "player_action.png"
+                fileName
             );
 
             if (File.Exists(path))
-                playerActionSheet = Image.FromFile(path);
+            {
+                cached = Image.FromFile(path);
+                playerActionSheetCache[fileName] = cached;
+                return cached;
+            }
 
-            return playerActionSheet;
+            return null;
         }
 
         private static Rectangle GetPlayerActionSourceRect(Image sheet, int skillIndex, int frame)
@@ -1030,7 +1042,7 @@ namespace DebugHeroFileDungeonRPG
         }
         private static void DrawPlayerActionFrame(Graphics g, PlayerState p, float drawX, float baseY, int facing)
         {
-            Image sheet = GetPlayerActionSheet();
+            Image sheet = GetPlayerActionSheet(p.WeaponLevel);
 
             if (sheet == null)
                 return;
@@ -1119,7 +1131,7 @@ namespace DebugHeroFileDungeonRPG
         }
         private static void DrawPlayerSkillAction(Graphics g, PlayerState p, float drawX, float baseY, int facing)
         {
-            Image sheet = GetPlayerActionSheet();
+            Image sheet = GetPlayerActionSheet(p.WeaponLevel);
 
             if (sheet == null)
             {
