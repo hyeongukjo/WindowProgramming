@@ -48,10 +48,16 @@ namespace DebugHeroFileDungeonRPG
             }
             if (screen == ScreenMode.Shop)
             {
-                if (e.KeyCode == Keys.D1 || e.KeyCode == Keys.NumPad1) BuyShopItem("hp");
-                if (e.KeyCode == Keys.D2 || e.KeyCode == Keys.NumPad2) BuyShopItem("mp");
-                if (e.KeyCode == Keys.D3 || e.KeyCode == Keys.NumPad3) BuyShopItem("bundle");
-                if (e.KeyCode == Keys.Escape || e.KeyCode == Keys.B) screen = ScreenMode.Desktop;
+                if (e.KeyCode == Keys.D1 || e.KeyCode == Keys.NumPad1) selectedShopItem = "hp";
+                if (e.KeyCode == Keys.D2 || e.KeyCode == Keys.NumPad2) selectedShopItem = "mp";
+                if (e.KeyCode == Keys.D3 || e.KeyCode == Keys.NumPad3) selectedShopItem = "bundle";
+
+                if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Space)
+                    BuyShopItem(selectedShopItem);
+
+                if (e.KeyCode == Keys.Escape || e.KeyCode == Keys.B)
+                    screen = ScreenMode.Desktop;
+
                 return;
             }
             if (screen == ScreenMode.Stage)
@@ -209,6 +215,10 @@ namespace DebugHeroFileDungeonRPG
             else if (action == "profileOk") ConfirmProfile();
             else if (action == "openShop") screen = ScreenMode.Shop;
             else if (action == "shopBack") screen = ScreenMode.Desktop;
+            else if (action == "selecthp") selectedShopItem = "hp";
+            else if (action == "selectmp") selectedShopItem = "mp";
+            else if (action == "selectbundle") selectedShopItem = "bundle";
+            else if (action == "confirmShopPurchase") BuyShopItem(selectedShopItem);
             else if (action.StartsWith("buy")) BuyShopItem(action.Substring(3).ToLowerInvariant());
             else if (action.StartsWith("stage"))
             {

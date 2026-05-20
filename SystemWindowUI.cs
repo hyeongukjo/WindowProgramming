@@ -327,6 +327,17 @@ namespace DebugHeroFileDungeonRPG
             if (buttons != null)
                 buttons.Add(new UiButton(okRect, "profileOk"));
         }
+        public void DrawBluePanelFrame(
+            Graphics g,
+            Rectangle rect,
+            string title,
+             List<UiButton> buttons,
+            string closeButtonId)
+        {
+            DrawBlueCancelFrameNineSlice(g, rect);
+            DrawTitleText(g, rect, title);
+            RegisterCloseButton(rect, buttons, closeButtonId);
+        }
 
         private void DrawImageWindow(
             Graphics g,
@@ -348,6 +359,99 @@ namespace DebugHeroFileDungeonRPG
             DrawNpc(g, rect, mood);
             DrawTypewriterBody(g, rect, body, tick);
             DrawDialogButtons(g, rect, dialogButtons, buttons);
+        }
+
+        public void DrawBlueCancelFrameNineSlice(Graphics g, Rectangle destRect)
+        {
+            Image img = blueWindowCloseImage;
+            Rectangle sourceRect = blueWindowCloseSource;
+
+            if (img == null)
+            {
+                DrawFrameImage(g, destRect, SystemWindowStyle.Blue, true);
+                return;
+            }
+
+            if (sourceRect.IsEmpty)
+                sourceRect = new Rectangle(0, 0, img.Width, img.Height);
+
+            DrawNineSliceImage(
+                g,
+                img,
+                sourceRect,
+                destRect,
+                34,  // left
+                25,  // top
+                80,  // right: X 버튼 영역 포함
+                34   // bottom
+            );
+        }
+
+        private void DrawNineSliceImage(
+    Graphics g,
+    Image img,
+    Rectangle source,
+    Rectangle dest,
+    int left,
+    int top,
+    int right,
+    int bottom)
+        {
+            int centerW = source.Width - left - right;
+            int centerH = source.Height - top - bottom;
+
+            int destCenterW = dest.Width - left - right;
+            int destCenterH = dest.Height - top - bottom;
+
+            if (centerW <= 0 || centerH <= 0 || destCenterW <= 0 || destCenterH <= 0)
+            {
+                g.DrawImage(img, dest, source, GraphicsUnit.Pixel);
+                return;
+            }
+
+            Rectangle[] src =
+            {
+        new Rectangle(source.X, source.Y, left, top),
+        new Rectangle(source.X + left, source.Y, centerW, top),
+        new Rectangle(source.Right - right, source.Y, right, top),
+
+        new Rectangle(source.X, source.Y + top, left, centerH),
+        new Rectangle(source.X + left, source.Y + top, centerW, centerH),
+        new Rectangle(source.Right - right, source.Y + top, right, centerH),
+
+        new Rectangle(source.X, source.Bottom - bottom, left, bottom),
+        new Rectangle(source.X + left, source.Bottom - bottom, centerW, bottom),
+        new Rectangle(source.Right - right, source.Bottom - bottom, right, bottom)
+    };
+
+            Rectangle[] dst =
+            {
+        new Rectangle(dest.X, dest.Y, left, top),
+        new Rectangle(dest.X + left, dest.Y, destCenterW, top),
+        new Rectangle(dest.Right - right, dest.Y, right, top),
+
+        new Rectangle(dest.X, dest.Y + top, left, destCenterH),
+        new Rectangle(dest.X + left, dest.Y + top, destCenterW, destCenterH),
+        new Rectangle(dest.Right - right, dest.Y + top, right, destCenterH),
+
+        new Rectangle(dest.X, dest.Bottom - bottom, left, bottom),
+        new Rectangle(dest.X + left, dest.Bottom - bottom, destCenterW, bottom),
+        new Rectangle(dest.Right - right, dest.Bottom - bottom, right, bottom)
+    };
+
+            System.Drawing.Drawing2D.InterpolationMode oldInterpolation = g.InterpolationMode;
+            System.Drawing.Drawing2D.PixelOffsetMode oldPixelOffset = g.PixelOffsetMode;
+
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+
+            for (int i = 0; i < 9; i++)
+            {
+                g.DrawImage(img, dst[i], src[i], GraphicsUnit.Pixel);
+            }
+
+            g.InterpolationMode = oldInterpolation;
+            g.PixelOffsetMode = oldPixelOffset;
         }
 
         private void DrawFrameImage(Graphics g, Rectangle rect, SystemWindowStyle style, bool hasClose)
@@ -385,7 +489,7 @@ namespace DebugHeroFileDungeonRPG
             using (Pen p = new Pen(borderColor, 3))
                 g.DrawRectangle(p, rect);
         }
-
+        
         private void DrawTitleText(Graphics g, Rectangle rect, string title)
         {
             Rectangle titleRect = new Rectangle(
@@ -537,7 +641,27 @@ namespace DebugHeroFileDungeonRPG
                     buttons.Add(new UiButton(buttonRect, dialogButton.ActionId));
             }
         }
+        public void DrawDialogImageButton(
+            Graphics g,
+            Rectangle buttonRect,
+            SystemWindowButtonKind kind,
+            string actionId,
+            List<UiButton> buttons)
+        {
+            string text = "확인";
 
+            if (kind == SystemWindowButtonKind.Cancel)
+                text = "취소";
+            else if (kind == SystemWindowButtonKind.Later)
+                text = "나중에";
+
+            SystemDialogButton dialogButton = new SystemDialogButton(text, actionId, kind);
+
+            DrawImageButton(g, buttonRect, dialogButton);
+
+            if (buttons != null && !string.IsNullOrEmpty(actionId))
+                buttons.Add(new UiButton(buttonRect, actionId));
+        }
         private void DrawImageButton(Graphics g, Rectangle buttonRect, SystemDialogButton dialogButton)
         {
             Image image = GetButtonImage(dialogButton.Kind);

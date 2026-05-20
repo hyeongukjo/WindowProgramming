@@ -84,6 +84,9 @@
     <None Update="Assets\UI\icons.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Assets\UI\MP.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Assets\UI\SystemAlarmBlue.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
