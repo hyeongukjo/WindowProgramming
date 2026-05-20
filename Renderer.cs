@@ -1771,20 +1771,25 @@ namespace DebugHeroFileDungeonRPG
             if (stageImage != null)
             {
                 DrawImageCover(g, stageImage, client);
+
                 using (LinearGradientBrush shade = new LinearGradientBrush(client, Color.FromArgb(18, 0, 0, 0), Color.FromArgb(42, 0, 0, 0), 90f))
                     g.FillRectangle(shade, client);
+
                 using (SolidBrush topGlow = new SolidBrush(Color.FromArgb(30, st.Accent)))
                     g.FillEllipse(topGlow, client.Width / 2 - 360, 20, 720, 180);
+
+                if (st.Index == 1 && !bossRoom)
+                {
+                    DesktopIconUI.Shared.DrawFixedDesktopIcons(g, client);
+                }
+
                 //DrawXPTaskbar(g, client, bossRoom ? st.Name + " - 보스방" : st.Name);
                 return;
             }
             if (st.Index == 1)
             {
                 DrawXPWallpaper(g, client);
-                DrawDesktopIcon(g, "내 문서", 24, 36, Color.FromArgb(248, 215, 64));
-                DrawDesktopIcon(g, "내 컴퓨터", 24, 126, Color.FromArgb(110, 190, 245));
-                DrawDesktopIcon(g, "휴지통", 24, 216, Color.FromArgb(210, 230, 220));
-                DrawDesktopIcon(g, "새 폴더", client.Width - 140, 70, Color.FromArgb(248, 215, 64));
+                DesktopIconUI.Shared.DrawFixedDesktopIcons(g, client);
                 return;
             }
             using (LinearGradientBrush b = new LinearGradientBrush(client, Darken(st.BackColor, 22), Lighten(st.BackColor, 34), 90f)) g.FillRectangle(b, client);
