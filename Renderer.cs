@@ -9,6 +9,7 @@ namespace DebugHeroFileDungeonRPG
     public static class Renderer
     {
         private static readonly Dictionary<NpcMood, Image> npcCache = new Dictionary<NpcMood, Image>();
+        private static Image npcEmotionSheetCache = null;
         private static Image xpBlissBackgroundCache = null;
         private static Bitmap xpBlissScaledCache = null;
         private static Size xpBlissScaledSize = Size.Empty;
@@ -199,10 +200,36 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
+        private const int NpcEmotionCanvasWidth = 240;
+        private const int NpcEmotionCanvasHeight = 270;
+        private const int NpcEmotionCropMargin = 6;
+        private const int NpcEmotionBottomExtra = 28;
+        private const int NpcEmotionAlphaThreshold = 1;
+
+        private const int NpcDrawYOffset = 0;
+
         private static Image LoadNpc(NpcMood mood)
         {
-            if (npcCache.ContainsKey(mood)) return npcCache[mood];
+            if (npcCache.ContainsKey(mood))
+                return npcCache[mood];
+
+            Image sheet = LoadNpcEmotionSheet();
+
+            if (sheet != null)
+            {
+                Rectangle cell = GetNpcEmotionCell(sheet, mood);
+                Bitmap normalized = CropNpcEmotionNormalized(sheet, cell, mood);
+
+                if (normalized != null)
+                {
+                    npcCache[mood] = normalized;
+                    return normalized;
+                }
+            }
+
+            // 실패했을 때 기존 개별 NPC 이미지 fallback
             string name = "basic";
+
             if (mood == NpcMood.Welcome) name = "welcome";
             else if (mood == NpcMood.Thinking) name = "thinking";
             else if (mood == NpcMood.Happy) name = "happy";
@@ -214,31 +241,389 @@ namespace DebugHeroFileDungeonRPG
             else if (mood == NpcMood.Damaged) name = "damaged";
             else if (mood == NpcMood.Log) name = "log";
             else if (mood == NpcMood.Warning) name = "warning";
-            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "NPC404_" + name + ".png");
+
+            string oldPath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "Assets",
+                "NPC404_" + name + ".png"
+            );
+
             Image img = null;
-            try { if (File.Exists(path)) img = Image.FromFile(path); } catch { img = null; }
+
+            try
+            {
+                if (File.Exists(oldPath))
+                    img = Image.FromFile(oldPath);
+            }
+            catch
+            {
+                img = null;
+            }
+
             npcCache[mood] = img;
             return img;
+        }
+
+        private static Image LoadNpcEmotionSheet()
+        {
+            if (npcEmotionSheetCache != null)
+                return npcEmotionSheetCache;
+
+            string fileName = "npc_emotions.png";
+
+            string[] paths =
+            {
+                Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    "Assets",
+                    "Characters",
+                    "NPC",
+                    fileName
+                ),
+
+                Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    "..",
+                    "..",
+                    "..",
+                    "Assets",
+                    "Characters",
+                    "NPC",
+                    fileName
+                ),
+
+                Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "Assets",
+                    "Characters",
+                    "NPC",
+                    fileName
+                )
+            };
+
+            foreach (string rawPath in paths)
+            {
+                string path = Path.GetFullPath(rawPath);
+
+                try
+                {
+                    if (File.Exists(path))
+                    {
+                        npcEmotionSheetCache = Image.FromFile(path);
+                        return npcEmotionSheetCache;
+                    }
+                }
+                catch
+                {
+                    npcEmotionSheetCache = null;
+                }
+            }
+
+            return null;
+        }
+
+        private static Rectangle GetNpcEmotionCell(Image sheet, NpcMood mood)
+        {
+            int col = 0;
+            int row = 0;
+
+            if (mood == NpcMood.Basic)
+            {
+                col = 0;
+                row = 0;
+            }
+            else if (mood == NpcMood.Welcome)
+            {
+                col = 1;
+                row = 0;
+            }
+            else if (mood == NpcMood.Happy)
+            {
+                col = 0;
+                row = 1;
+            }
+            else if (mood == NpcMood.Question)
+            {
+                col = 0;
+                row = 2;
+            }
+            else if (mood == NpcMood.Error)
+            {
+                col = 1;
+                row = 2;
+            }
+            else if (mood == NpcMood.Bsod)
+            {
+                col = 3;
+                row = 2;
+            }
+            else if (mood == NpcMood.Progress)
+            {
+                col = 0;
+                row = 3;
+            }
+            else if (mood == NpcMood.Loading)
+            {
+                col = 3;
+                row = 0;
+            }
+            else if (mood == NpcMood.Damaged)
+            {
+                col = 2;
+                row = 2;
+            }
+            else if (mood == NpcMood.Log)
+            {
+                col = 3;
+                row = 3;
+            }
+            else if (mood == NpcMood.Warning)
+            {
+                col = 2;
+                row = 3;
+            }
+            else if (mood == NpcMood.Thinking)
+            {
+                col = 1;
+                row = 3;
+            }
+
+            int x1 = (int)Math.Round(sheet.Width * (col / 4.0));
+            int y1 = (int)Math.Round(sheet.Height * (row / 4.0));
+            int x2 = (int)Math.Round(sheet.Width * ((col + 1) / 4.0));
+            int y2 = (int)Math.Round(sheet.Height * ((row + 1) / 4.0));
+
+            return new Rectangle(
+                x1,
+                y1,
+                Math.Max(1, x2 - x1),
+                Math.Max(1, y2 - y1)
+            );
+        }
+        private static int GetNpcEmotionTopIgnore(NpcMood mood)
+        {
+            // 2행/3행 표정은 윗칸 캐릭터 발 픽셀이 칸 경계에 걸려 들어올 수 있음
+            if (mood == NpcMood.Happy ||
+                mood == NpcMood.Question ||
+                mood == NpcMood.Error ||
+                mood == NpcMood.Bsod ||
+                mood == NpcMood.Damaged)
+            {
+                return 34;
+            }
+
+            // 4행은 위쪽에 오브젝트가 있음
+            if (mood == NpcMood.Progress ||
+                mood == NpcMood.Thinking ||
+                mood == NpcMood.Warning ||
+                mood == NpcMood.Log)
+            {
+                return 14;
+            }
+
+            return 0;
+        }
+        private static Rectangle AdjustNpcEmotionCell(Rectangle cell, NpcMood mood)
+        {
+            Rectangle adjusted = cell;
+
+            if (mood == NpcMood.Happy ||
+                mood == NpcMood.Question ||
+                mood == NpcMood.Error ||
+                mood == NpcMood.Damaged ||
+                mood == NpcMood.Bsod)
+            {
+                adjusted.Y += 30;
+                adjusted.Height -= 30;
+            }
+
+            if (mood == NpcMood.Welcome)
+            {
+                adjusted.Height += 36;
+            }
+
+            if (mood == NpcMood.Basic || mood == NpcMood.Loading)
+            {
+                adjusted.Height += 14;
+            }
+
+            if (mood == NpcMood.Progress ||
+                mood == NpcMood.Thinking ||
+                mood == NpcMood.Warning ||
+                mood == NpcMood.Log)
+            {
+                adjusted.Y += 8;
+                adjusted.Height -= 8;
+            }
+
+            if (adjusted.Y < 0)
+                adjusted.Y = 0;
+
+            if (adjusted.Bottom > cell.Bottom + 36)
+                adjusted.Height = cell.Bottom + 36 - adjusted.Y;
+
+            return adjusted;
+        }
+
+        private static Bitmap ExtractNpcEmotionFixed(Image sheet, Rectangle cell, NpcMood mood)
+        {
+            Rectangle src = AdjustNpcEmotionCell(cell, mood);
+
+            if (src.X < 0) src.X = 0;
+            if (src.Y < 0) src.Y = 0;
+            if (src.Right > sheet.Width) src.Width = sheet.Width - src.X;
+            if (src.Bottom > sheet.Height) src.Height = sheet.Height - src.Y;
+
+            Bitmap result = new Bitmap(NpcEmotionCanvasWidth, NpcEmotionCanvasHeight);
+
+            using (Graphics g = Graphics.FromImage(result))
+            {
+                g.Clear(Color.Transparent);
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+                float scale = Math.Min(
+                    NpcEmotionCanvasWidth / (float)src.Width,
+                    NpcEmotionCanvasHeight / (float)src.Height
+                );
+
+                int drawW = Math.Max(1, (int)(src.Width * scale));
+                int drawH = Math.Max(1, (int)(src.Height * scale));
+
+                int drawX = (NpcEmotionCanvasWidth - drawW) / 2;
+                int drawY = NpcEmotionCanvasHeight - drawH;
+
+                g.DrawImage(
+                    sheet,
+                    new Rectangle(drawX, drawY, drawW, drawH),
+                    src,
+                    GraphicsUnit.Pixel
+                );
+            }
+
+            return result;
+        }
+        private static Bitmap CropNpcEmotionNormalized(Image sheet, Rectangle cell, NpcMood mood)
+        {
+            using (Bitmap src = new Bitmap(sheet))
+            {
+                int topIgnore = GetNpcEmotionTopIgnore(mood);
+                int scanTop = Math.Min(cell.Bottom - 1, cell.Top + topIgnore);
+
+                int left = cell.Right;
+                int top = cell.Bottom;
+                int right = cell.Left;
+                int bottom = cell.Top;
+
+                for (int y = scanTop; y < cell.Bottom && y < src.Height; y++)
+                {
+                    for (int x = cell.Left; x < cell.Right && x < src.Width; x++)
+                    {
+                        Color c = src.GetPixel(x, y);
+
+                        if (c.A > NpcEmotionAlphaThreshold)
+                        {
+                            if (x < left) left = x;
+                            if (x > right) right = x;
+                            if (y < top) top = y;
+                            if (y > bottom) bottom = y;
+                        }
+                    }
+                }
+
+                if (right <= left || bottom <= top)
+                    return null;
+
+                left = Math.Max(cell.Left, left - NpcEmotionCropMargin);
+
+                top = Math.Max(scanTop, top - NpcEmotionCropMargin);
+
+                right = Math.Min(cell.Right - 1, right + NpcEmotionCropMargin);
+                bottom = Math.Min(cell.Bottom - 1, bottom + NpcEmotionCropMargin + NpcEmotionBottomExtra);
+
+                Rectangle crop = new Rectangle(
+                    left,
+                    top,
+                    right - left + 1,
+                    bottom - top + 1
+                );
+
+                Bitmap result = new Bitmap(NpcEmotionCanvasWidth, NpcEmotionCanvasHeight);
+
+                using (Graphics g = Graphics.FromImage(result))
+                {
+                    g.Clear(Color.Transparent);
+                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+                    int drawW = crop.Width;
+                    int drawH = crop.Height;
+
+                    float scale = Math.Min(
+                        NpcEmotionCanvasWidth / (float)drawW,
+                        NpcEmotionCanvasHeight / (float)drawH
+                    );
+
+                    if (scale < 1f)
+                    {
+                        drawW = Math.Max(1, (int)(drawW * scale));
+                        drawH = Math.Max(1, (int)(drawH * scale));
+                    }
+
+                    int drawX = (NpcEmotionCanvasWidth - drawW) / 2;
+                    int drawY = NpcEmotionCanvasHeight - drawH;
+
+                    g.DrawImage(
+                        sheet,
+                        new Rectangle(drawX, drawY, drawW, drawH),
+                        crop,
+                        GraphicsUnit.Pixel
+                    );
+                }
+
+                return result;
+            }
         }
 
         public static void DrawNpcImage(Graphics g, Rectangle r, NpcMood mood)
         {
             Image img = LoadNpc(mood);
+
             if (img != null)
             {
-                InterpolationMode old = g.InterpolationMode;
+                InterpolationMode oldInterpolation = g.InterpolationMode;
+                PixelOffsetMode oldPixelOffset = g.PixelOffsetMode;
+
                 g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                float scale = Math.Min(r.Width / (float)img.Width, r.Height / (float)img.Height);
-                int w = (int)(img.Width * scale);
-                int h = (int)(img.Height * scale);
-                Rectangle dst = new Rectangle(r.X + (r.Width - w) / 2, r.Y + (r.Height - h) / 2, w, h);
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+                float scale = Math.Min(
+                    r.Width / (float)img.Width,
+                    r.Height / (float)img.Height
+                );
+
+                int w = Math.Max(1, (int)(img.Width * scale));
+                int h = Math.Max(1, (int)(img.Height * scale));
+
+                Rectangle dst = new Rectangle(
+                    r.X + (r.Width - w) / 2,
+                    r.Y + (r.Height - h) / 2 + NpcDrawYOffset,
+                    w,
+                    h
+                );
+
                 g.DrawImage(img, dst);
-                g.InterpolationMode = old;
+
+                g.InterpolationMode = oldInterpolation;
+                g.PixelOffsetMode = oldPixelOffset;
             }
             else
             {
-                using (SolidBrush b = new SolidBrush(Color.FromArgb(42, 70, 120))) g.FillRectangle(b, r);
-                using (Font f = F(9f, FontStyle.Bold)) g.DrawString("Recovery\nAssistant", f, Brushes.White, r, Center());
+                using (SolidBrush b = new SolidBrush(Color.FromArgb(42, 70, 120)))
+                    g.FillRectangle(b, r);
+
+                using (Font f = F(9f, FontStyle.Bold))
+                    g.DrawString("Recovery\nAssistant", f, Brushes.White, r, Center());
             }
         }
 

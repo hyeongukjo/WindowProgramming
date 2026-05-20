@@ -56,31 +56,35 @@ namespace DebugHeroFileDungeonRPG
                 "먼저 간단한 복구 테스트를 시작해볼까요?\n위험한 건 아니에요.\n가벼운 정리 작업이라고 생각하시면 됩니다!",
                 "복구 작업을 시작하기 전에\n프로필 이름을 설정해주세요.\n이 이름은 복구 기록과 진행 상황을 저장하는 데 사용됩니다."
             };
-            string title = introIndex < 2 ? "NPC_404_BOOT_ERROR.exe - 확인 필요" : "Recovery_Profile_Setup.exe - 확인 필요";
+            string title = introIndex < 2 ? "Windows Recovery Assistant" : "Recovery Profile Setup";
             using (SolidBrush dim = new SolidBrush(Color.FromArgb(70, 0, 0, 0))) g.FillRectangle(dim, ClientRectangle);
-            Rectangle introNotice = new Rectangle(ClientSize.Width / 2 - 310, ClientSize.Height / 2 - 155, 620, 310);
-            Renderer.DrawNotification(g, introNotice, title, text[Math.Min(introIndex, text.Length - 1)], NpcMood.Welcome, true);
-            buttons.Add(new UiButton(NotificationOkRect(introNotice), "introNext"));
+            Rectangle introNotice = SystemWindowUI.Shared.GetStandardNoticeRect(ClientSize);
+            SystemWindowUI.Shared.DrawAssistantNotice(
+                g,
+                introNotice,
+                title,
+                text[Math.Min(introIndex, text.Length - 1)],
+                NpcMood.Welcome,
+                Environment.TickCount / 30,
+                buttons,
+                "introNext",
+                "introNext"
+            );
         }
 
         private void DrawProfileSetup(Graphics g)
         {
             Renderer.DrawXPWallpaper(g, ClientRectangle);
             Renderer.DrawXPTaskbar(g, ClientRectangle, "Recovery Profile Setup");
-            Rectangle win = new Rectangle(ClientSize.Width / 2 - 370, ClientSize.Height / 2 - 190, 740, 360);
-            Renderer.DrawXPWindow(g, win, "Recovery Profile Setup", false);
-            Renderer.DrawNpcImage(g, new Rectangle(win.X + 25, win.Y + 58, 175, 245), NpcMood.Happy);
-            using (Font f = Renderer.F(13f, FontStyle.Bold)) g.DrawString("복구 프로필 이름을 입력하세요.", f, Brushes.Navy, new Rectangle(win.X + 220, win.Y + 70, 460, 32), Renderer.LeftMiddle());
-            using (Font f = Renderer.F(9.5f, FontStyle.Regular))
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(40, 50, 70)))
-                g.DrawString("문서 지시사항: 이 이름은 캐릭터 이름이 아니라 복구 기록과 진행 상황을 저장하는 프로필 이름입니다. Recovery Program 자체의 시스템 이름은 유지됩니다.", f, b, new Rectangle(win.X + 220, win.Y + 108, 460, 82), Renderer.Left());
-            Rectangle input = new Rectangle(win.X + 220, win.Y + 205, 380, 36);
-            using (SolidBrush b = new SolidBrush(Color.White)) g.FillRectangle(b, input);
-            using (Pen p = new Pen(Color.FromArgb(40, 80, 160), 2f)) g.DrawRectangle(p, input);
-            using (Font f = Renderer.F(13f, FontStyle.Bold)) g.DrawString(profileInput + "_", f, Brushes.Black, new Rectangle(input.X + 8, input.Y, input.Width - 16, input.Height), Renderer.LeftMiddle());
-            Rectangle ok = new Rectangle(win.Right - 150, win.Bottom - 58, 110, 32);
-            Renderer.DrawButton(g, ok, "확인", true);
-            buttons.Add(new UiButton(ok, "profileOk"));
+            Rectangle win = SystemWindowUI.Shared.GetStandardNoticeRect(ClientSize);
+            SystemWindowUI.Shared.DrawProfileSetupWindow(
+                g,
+                win,
+                profileInput,
+                NpcMood.Happy,
+                Environment.TickCount / 30,
+                buttons
+            );
         }
 
         private void DrawDesktop(Graphics g)
@@ -109,7 +113,7 @@ namespace DebugHeroFileDungeonRPG
                 using (SolidBrush dim = new SolidBrush(Color.FromArgb(68, 0, 0, 0)))
                     g.FillRectangle(dim, ClientRectangle);
 
-                Rectangle notice = new Rectangle(w / 2 - 330, h / 2 - 145, 660, 290);
+                Rectangle notice = SystemWindowUI.Shared.GetStandardNoticeRect(ClientSize);
 
                 SystemWindowUI.Shared.DrawAssistantNotice(
                     g,
@@ -291,11 +295,20 @@ namespace DebugHeroFileDungeonRPG
         private void DrawStageNpcHint(Graphics g, StageInfo st)
         {
             using (SolidBrush dim = new SolidBrush(Color.FromArgb(72, 0, 0, 0))) g.FillRectangle(dim, ClientRectangle);
-            Rectangle r = new Rectangle(ClientSize.Width / 2 - 340, ClientSize.Height / 2 - 165, 680, 330);
+            Rectangle r = SystemWindowUI.Shared.GetStandardNoticeRect(ClientSize);
             string text = st.Dialogs[Math.Min(stageTime / 520, st.Dialogs.Length - 1)];
             string body = "STAGE " + st.Index.ToString("00") + "  " + st.Name + "\n\n" + text;
-            Renderer.DrawNotification(g, r, "NPC_404_STAGE_DIALOG_ERROR.exe - 확인 필요", body, st.NpcMood, true);
-            buttons.Add(new UiButton(NotificationOkRect(r), "npcHintClose"));
+            SystemWindowUI.Shared.DrawAssistantNotice(
+                g,
+                r,
+                "Windows Recovery Assistant",
+                body,
+                st.NpcMood,
+                Environment.TickCount / 30,
+                buttons,
+                "npcHintClose",
+                "npcHintClose"
+            );
         }
 
         private void DrawStageClear(Graphics g)
@@ -308,13 +321,19 @@ namespace DebugHeroFileDungeonRPG
             if (clearStage < stages.Count) body += "새 바로가기 생성: " + stages[clearStage].FileName + "\n";
             else body += "최종 입력 절차로 이동합니다.\n";
             body += "\n문서 고정 흐름:\n" + st.Flow;
-            Rectangle clearNotice = new Rectangle(ClientSize.Width / 2 - 420, ClientSize.Height / 2 - 230, 840, 430);
+            Rectangle clearNotice = SystemWindowUI.Shared.GetLargeNoticeRect(ClientSize);
             using (SolidBrush dim = new SolidBrush(Color.FromArgb(60, 0, 0, 0))) g.FillRectangle(dim, ClientRectangle);
-            Renderer.DrawNotification(g, clearNotice, "NPC_404_RECOVERY_RESULT.exe - 복구 결과", body, st.NpcMood, true);
-            buttons.Add(new UiButton(NotificationOkRect(clearNotice), "clearNext"));
-            Rectangle btn = new Rectangle(ClientSize.Width / 2 - 70, ClientSize.Height / 2 + 180, 140, 34);
-            Renderer.DrawButton(g, btn, clearStage < stages.Count ? "바탕화면으로" : "최종 입력", true);
-            buttons.Add(new UiButton(btn, "clearNext"));
+            SystemWindowUI.Shared.DrawAssistantNotice(
+                g,
+                clearNotice,
+                "Windows Recovery Assistant",
+                body,
+                st.NpcMood,
+                Environment.TickCount / 30,
+                buttons,
+                "clearNext",
+                null
+            );
         }
 
         private void DrawFinalInput(Graphics g)
