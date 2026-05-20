@@ -957,32 +957,61 @@ namespace DebugHeroFileDungeonRPG
                 return cached;
             }
 
+            string fallbackPath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "Assets",
+                "Characters",
+                "Player",
+                "player_action.png"
+            );
+
+            if (File.Exists(fallbackPath))
+            {
+                cached = Image.FromFile(fallbackPath);
+                playerActionSheetCache[fileName] = cached;
+                return cached;
+            }
+
             return null;
         }
 
         private static Rectangle GetPlayerActionSourceRect(Image sheet, int skillIndex, int frame)
         {
-            int[] framesPerRow = { 4, 5, 5 };
+            // 액션 시트 고정 구조:
+            // 3행 x 5열
+            // 1행: 4프레임 사용, 5번째 칸은 미사용
+            // 2행: 5프레임 사용
+            // 3행: 5프레임 사용
+            int totalRows = 3;
+            int totalColumns = 5;
 
             int row = 0;
+            int usableFrameCount = 4;
 
             if (skillIndex == 0)
+            {
                 row = 0;
+                usableFrameCount = 4;
+            }
             else if (skillIndex == 1)
+            {
                 row = 1;
+                usableFrameCount = 5;
+            }
             else
+            {
                 row = 2;
-
-            int frameCount = framesPerRow[row];
+                usableFrameCount = 5;
+            }
 
             if (frame < 0) frame = 0;
-            if (frame >= frameCount) frame = frameCount - 1;
+            if (frame >= usableFrameCount) frame = usableFrameCount - 1;
 
-            int x1 = (int)Math.Round(frame * sheet.Width / (double)frameCount);
-            int x2 = (int)Math.Round((frame + 1) * sheet.Width / (double)frameCount);
+            int x1 = (int)Math.Round(frame * sheet.Width / (double)totalColumns);
+            int x2 = (int)Math.Round((frame + 1) * sheet.Width / (double)totalColumns);
 
-            int y1 = (int)Math.Round(row * sheet.Height / 3.0);
-            int y2 = (int)Math.Round((row + 1) * sheet.Height / 3.0);
+            int y1 = (int)Math.Round(row * sheet.Height / (double)totalRows);
+            int y2 = (int)Math.Round((row + 1) * sheet.Height / (double)totalRows);
 
             return new Rectangle(x1, y1, x2 - x1, y2 - y1);
         }
@@ -1139,53 +1168,12 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
 
-            // player_action.png 구조:
-            // 1행: 4프레임 → Q
-            // 2행: 5프레임 → W
-            // 3행: 5프레임 → E
-            int row = 0;
-            int frameCountInRow = 4;
-
-            if (p.SkillIndex == 0)
-            {
-                row = 0;
-                frameCountInRow = 4;
-            }
-            else if (p.SkillIndex == 1)
-            {
-                row = 1;
-                frameCountInRow = 5;
-            }
-            else if (p.SkillIndex == 2)
-            {
-                row = 2;
-                frameCountInRow = 5;
-            }
-            else if (p.SkillIndex == 3)
-            {
-                row = 2;
-                frameCountInRow = 5;
-            }
-
-            int totalRows = 3;
-            int frameW = sheet.Width / frameCountInRow;
-            int frameH = sheet.Height / totalRows;
-
-            int frame = p.ActionFrame;
-            if (frame < 0) frame = 0;
-            if (frame >= frameCountInRow) frame = frameCountInRow - 1;
-
-            Rectangle src = new Rectangle(
-                frame * frameW,
-                row * frameH,
-                frameW,
-                frameH
-            );
+            Rectangle src = GetPlayerActionSourceRect(sheet, p.SkillIndex, p.ActionFrame);
 
             float scale = 0.35f;
 
-            int drawW = (int)(frameW * scale);
-            int drawH = (int)(frameH * scale);
+            int drawW = (int)(src.Width * scale);
+            int drawH = (int)(src.Height * scale);
 
             Rectangle dst = new Rectangle(
                 (int)(drawX - drawW / 2),
@@ -1196,11 +1184,11 @@ namespace DebugHeroFileDungeonRPG
 
             if (facing < 0)
             {
-                using (Bitmap frameBmp = new Bitmap(frameW, frameH))
+                using (Bitmap frameBmp = new Bitmap(src.Width, src.Height))
                 {
                     using (Graphics fg = Graphics.FromImage(frameBmp))
                     {
-                        fg.DrawImage(sheet, new Rectangle(0, 0, frameW, frameH), src, GraphicsUnit.Pixel);
+                        fg.DrawImage(sheet, new Rectangle(0, 0, src.Width, src.Height), src, GraphicsUnit.Pixel);
                     }
 
                     frameBmp.RotateFlip(RotateFlipType.RotateNoneFlipX);

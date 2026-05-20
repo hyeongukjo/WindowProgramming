@@ -89,16 +89,16 @@ namespace DebugHeroFileDungeonRPG
 
         private void LoadImages()
         {
-            string uiDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "UI");
+            string uiDir = FindAssetDirectory("Assets", "UI");
 
             blueWindowImage = LoadImage(Path.Combine(uiDir, "SystemAlarmBlue.png"));
             blueWindowCloseImage = LoadImage(Path.Combine(uiDir, "SystemAlarmBlueCancel.png"));
             redWindowImage = LoadImage(Path.Combine(uiDir, "SystemAlarmRed.png"));
             redWindowCloseImage = LoadImage(Path.Combine(uiDir, "SystemAlarmRedCancel.png"));
 
-            // 기존 파일명이 남아 있는 경우를 위한 보조 fallback
             if (blueWindowImage == null)
                 blueWindowImage = LoadImage(Path.Combine(uiDir, "SystemAlarmWindowBlue.png"));
+
             if (redWindowImage == null)
                 redWindowImage = LoadImage(Path.Combine(uiDir, "SystemAlarmWindowRed.png"));
 
@@ -107,13 +107,15 @@ namespace DebugHeroFileDungeonRPG
             redWindowSource = GetVisibleBounds(redWindowImage);
             redWindowCloseSource = GetVisibleBounds(redWindowCloseImage);
 
-            okButtonImage = LoadImage(Path.Combine(uiDir, "button_ok.png"));
-            cancelButtonImage = LoadImage(Path.Combine(uiDir, "button_cancel.png"));
-            laterButtonImage = LoadImage(Path.Combine(uiDir, "button_later.png"));
+            Image commonButtonImage = LoadImage(Path.Combine(uiDir, "button.png"));
 
-            okButtonSource = GetVisibleBounds(okButtonImage);
-            cancelButtonSource = GetVisibleBounds(cancelButtonImage);
-            laterButtonSource = GetVisibleBounds(laterButtonImage);
+            okButtonImage = commonButtonImage;
+            cancelButtonImage = commonButtonImage;
+            laterButtonImage = commonButtonImage;
+
+            okButtonSource = GetVisibleBounds(commonButtonImage);
+            cancelButtonSource = okButtonSource;
+            laterButtonSource = okButtonSource;
         }
 
         public Rectangle GetStandardNoticeRect(Size clientSize)
@@ -140,14 +142,47 @@ namespace DebugHeroFileDungeonRPG
         {
             try
             {
-                if (File.Exists(path))
-                    return Image.FromFile(path);
+                if (!File.Exists(path))
+                    return null;
+
+                using (Image temp = Image.FromFile(path))
+                {
+                    return new Bitmap(temp);
+                }
             }
             catch
             {
+                return null;
+            }
+        }
+        private string FindAssetDirectory(params string[] parts)
+        {
+            string current = AppDomain.CurrentDomain.BaseDirectory;
+
+            for (int i = 0; i < 8; i++)
+            {
+                string candidate = current;
+
+                for (int j = 0; j < parts.Length; j++)
+                    candidate = Path.Combine(candidate, parts[j]);
+
+                if (Directory.Exists(candidate))
+                    return candidate;
+
+                DirectoryInfo parent = Directory.GetParent(current);
+
+                if (parent == null)
+                    break;
+
+                current = parent.FullName;
             }
 
-            return null;
+            string fallback = AppDomain.CurrentDomain.BaseDirectory;
+
+            for (int j = 0; j < parts.Length; j++)
+                fallback = Path.Combine(fallback, parts[j]);
+
+            return fallback;
         }
 
         private Rectangle GetVisibleBounds(Image image)
@@ -662,6 +697,7 @@ namespace DebugHeroFileDungeonRPG
             if (buttons != null && !string.IsNullOrEmpty(actionId))
                 buttons.Add(new UiButton(buttonRect, actionId));
         }
+
         private void DrawImageButton(Graphics g, Rectangle buttonRect, SystemDialogButton dialogButton)
         {
             Image image = GetButtonImage(dialogButton.Kind);
@@ -669,14 +705,48 @@ namespace DebugHeroFileDungeonRPG
             if (image != null)
             {
                 Rectangle sourceRect = GetButtonSourceRect(dialogButton.Kind);
+
                 if (sourceRect.IsEmpty)
                     sourceRect = new Rectangle(0, 0, image.Width, image.Height);
 
                 g.DrawImage(image, buttonRect, sourceRect, GraphicsUnit.Pixel);
+                DrawButtonText(g, buttonRect, dialogButton.Text);
                 return;
             }
 
             Renderer.DrawButton(g, buttonRect, dialogButton.Text, true);
+        }
+
+        private void DrawButtonText(Graphics g, Rectangle buttonRect, string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            Rectangle textRect = new Rectangle(
+                buttonRect.X,
+                buttonRect.Y - 1,
+                buttonRect.Width,
+                buttonRect.Height
+            );
+
+            using (Font font = Renderer.F(9.5f, FontStyle.Bold))
+            using (SolidBrush shadowBrush = new SolidBrush(Color.FromArgb(120, 255, 255, 255)))
+            using (SolidBrush textBrush = new SolidBrush(Color.FromArgb(40, 40, 40)))
+            using (StringFormat format = new StringFormat())
+            {
+                format.Alignment = StringAlignment.Center;
+                format.LineAlignment = StringAlignment.Center;
+
+                Rectangle shadowRect = new Rectangle(
+                    textRect.X,
+                    textRect.Y + 1,
+                    textRect.Width,
+                    textRect.Height
+                );
+
+                g.DrawString(text, font, shadowBrush, shadowRect, format);
+                g.DrawString(text, font, textBrush, textRect, format);
+            }
         }
 
         private Image GetButtonImage(SystemWindowButtonKind kind)
@@ -700,6 +770,7 @@ namespace DebugHeroFileDungeonRPG
 
             return okButtonSource;
         }
+
 
         public Rectangle GetConfirmButtonRect(Rectangle rect)
         {
