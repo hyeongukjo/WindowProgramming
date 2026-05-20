@@ -26,7 +26,6 @@
   <ItemGroup>
     <Folder Include="Assets\Characters\Bosses\" />
     <Folder Include="Assets\Characters\Enemise\" />
-    <Folder Include="Assets\Characters\NPC\" />
     <Folder Include="Assets\Effects\" />
     <Folder Include="Resources\" />
   </ItemGroup>
@@ -41,6 +40,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Assets\Backgrounds\stage01_background.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Characters\NPC\npc_emotions.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Assets\Characters\Player\player_action.png">
