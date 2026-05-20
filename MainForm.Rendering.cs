@@ -49,7 +49,9 @@ namespace DebugHeroFileDungeonRPG
         private void DrawAssistantIntro(Graphics g)
         {
             Renderer.DrawXPWallpaper(g, ClientRectangle);
+            DesktopIconUI.Shared.DrawFixedDesktopIcons(g, ClientRectangle);
             Renderer.DrawXPTaskbar(g, ClientRectangle, "Windows XP Desktop");
+
             string[] text = new string[]
             {
                 "안녕하세요!\nWindows Recovery Assistant입니다.\n현재 바탕화면에 정리되지 않은 파일 개체가 많아 보여요.\n걱정하지 마세요. 제가 옆에서 도와드릴게요!",
@@ -75,6 +77,7 @@ namespace DebugHeroFileDungeonRPG
         private void DrawProfileSetup(Graphics g)
         {
             Renderer.DrawXPWallpaper(g, ClientRectangle);
+            DesktopIconUI.Shared.DrawFixedDesktopIcons(g, ClientRectangle);
             Renderer.DrawXPTaskbar(g, ClientRectangle, "Recovery Profile Setup");
             Rectangle win = SystemWindowUI.Shared.GetStandardNoticeRect(ClientSize);
             SystemWindowUI.Shared.DrawProfileSetupWindow(
@@ -94,6 +97,7 @@ namespace DebugHeroFileDungeonRPG
 
             // 1. 기본 XP 바탕화면 배경
             DesktopBackgroundUI.Shared.Draw(g, ClientRectangle);
+            DesktopIconUI.Shared.DrawFixedDesktopIcons(g, ClientRectangle);
 
             // 2. 바탕화면 스테이지 바로가기 아이콘
             DesktopIconUI.Shared.DrawStageIcons(g, stages, unlockedStage, selectedStage, player.ClearedStages, buttons);
