@@ -1,0 +1,91 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>DebugHeroFileDungeonRPG</AssemblyName>
+    <RootNamespace>DebugHeroFileDungeonRPG</RootNamespace>
+    <StartupObject>DebugHeroFileDungeonRPG.Program</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Remove="MainForm.Input.resx" />
+    <EmbeddedResource Remove="MainForm.Rendering.resx" />
+    <EmbeddedResource Remove="MainForm.resx" />
+    <EmbeddedResource Remove="MainForm.StageFlow.resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Assets\*.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="StagePlans\*.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Assets\Caracters\Bosses\" />
+    <Folder Include="Assets\Caracters\Enemise\" />
+    <Folder Include="Assets\Caracters\NPC\" />
+    <Folder Include="Assets\Effects\" />
+    <Folder Include="Resources\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="MainForm.Input.resx" />
+    <None Include="MainForm.Rendering.resx" />
+    <None Include="MainForm.resx" />
+    <None Include="MainForm.StageFlow.resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Assets\Backgrounds\Booting_screen.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Backgrounds\stage01_background.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Caracters\Player\player_action.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Caracters\Player\player_still_sword.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Caracters\Player\player_walk_back.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Caracters\Player\player_walk_front.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Caracters\Player\player_walk_sword_back.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Caracters\Player\player_walk_sword_front.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Caracters\Player\player_walk_sword_right.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\UI\icons.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\UI\taskbar.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\boss\bsod_dragon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\boss\driver_k.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\boss\high_kernel.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\bsod_dragon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Resources\driver_k.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>
+
+
