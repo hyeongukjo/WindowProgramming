@@ -27,6 +27,7 @@ namespace DebugHeroFileDungeonRPG
         private string finalInput = "";
         private int unlockedStage = 1;
         private int selectedStage = 1;
+        private string selectedShopItem = "hp";
         private int currentStage = 0;
         private int clearStage = 0;
         private float cameraX;

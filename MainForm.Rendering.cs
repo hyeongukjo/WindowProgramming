@@ -175,38 +175,14 @@ namespace DebugHeroFileDungeonRPG
 
         private void DrawShop(Graphics g)
         {
-            Renderer.DrawXPWallpaper(g, ClientRectangle);
-            Renderer.DrawXPTaskbar(g, ClientRectangle, "Recovery Tools");
-            Rectangle win = new Rectangle(ClientSize.Width / 2 - 430, ClientSize.Height / 2 - 250, 860, 500);
-            Renderer.DrawXPWindow(g, win, "Recovery Tools - Supply Panel", false);
-            Renderer.DrawNpcImage(g, new Rectangle(win.X + 28, win.Y + 68, 160, 230), NpcMood.Basic);
-            using (Font f = Renderer.F(11f, FontStyle.Bold))
-            using (SolidBrush b = new SolidBrush(Color.Navy))
-                g.DrawString("오류를 해결하고 얻은 코인으로 복구 작업에 사용할 도구를 선택하세요.", f, b, new Rectangle(win.X + 205, win.Y + 60, win.Width - 245, 26), Renderer.LeftMiddle());
-            using (Font f = Renderer.F(9f, FontStyle.Regular))
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(40, 48, 66)))
-            {
-                string info = "보유 코인: " + player.Coins + " coin\n보유 HP 포션: " + player.HpPotions + "  /  보유 MP 포션: " + player.MpPotions + "\n\n" +
-                              "1) HP 포션 1개 - 30 coin\n" +
-                              "2) MP 포션 1개 - 25 coin\n" +
-                              "3) 포션 묶음 HP+2 / MP+2 - 90 coin\n\n" +
-                              "던전에서는 D 키로 HP 포션, F 키로 MP 포션을 사용합니다.";
-                g.DrawString(info, f, b, new Rectangle(win.X + 210, win.Y + 98, win.Width - 250, 190), Renderer.Left());
-            }
-            Rectangle hp = new Rectangle(win.X + 220, win.Y + 310, 180, 38);
-            Rectangle mp = new Rectangle(win.X + 420, win.Y + 310, 180, 38);
-            Rectangle bundle = new Rectangle(win.X + 620, win.Y + 310, 180, 38);
-            Rectangle back = new Rectangle(win.Right - 150, win.Bottom - 58, 110, 32);
-            Renderer.DrawButton(g, hp, "1 Recovery Kit", true);
-            Renderer.DrawButton(g, mp, "2 Memory Kit", true);
-            Renderer.DrawButton(g, bundle, "3 Tool Set", true);
-            Renderer.DrawButton(g, back, "닫기", false);
-            buttons.Add(new UiButton(hp, "buyhp"));
-            buttons.Add(new UiButton(mp, "buymp"));
-            buttons.Add(new UiButton(bundle, "buybundle"));
-            buttons.Add(new UiButton(back, "shopBack"));
+            RecoveryToolsUI.Shared.DrawShop(
+                g,
+                ClientRectangle,
+                player,
+                selectedShopItem,
+                buttons
+            );
         }
-
 
         //게임 진행상 불필요 할수도... 삭제??
         private void DrawDesktopInfoPanel(Graphics g)
