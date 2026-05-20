@@ -1002,21 +1002,30 @@ namespace DebugHeroFileDungeonRPG
 
         private void UpdateDriverK(GameEntity boss, PlayerState player, List<Effect> effects, float mapWidth)
         {
+            // 💡 [버그 1 해결] 잃어버린 방향 전환 로직 복구!
+            if (player.X < boss.X) boss.Facing = -1;
+            else boss.Facing = 1;
+
             float hpPercent = (float)boss.Hp / boss.MaxHp * 100;
+
+            // 75%, 25% 패턴 진입
             if (((hpPercent <= 75 && !boss.Pattern75Used) || (hpPercent <= 25 && !boss.Pattern25Used)) && !IsShardPatternActive && !IsResourcePatternActive)
             {
                 StartShardPattern(mapWidth);
                 if (hpPercent <= 25) boss.Pattern25Used = true; else boss.Pattern75Used = true;
             }
+            // 50% 패턴 진입
             if (hpPercent <= 50 && !boss.Pattern50Used && !IsResourcePatternActive && !IsShardPatternActive)
             {
                 StartResourcePattern(); boss.Pattern50Used = true;
             }
 
+            // 패턴 중일 땐 패턴 전용 업데이트 실행
             if (IsResourcePatternActive) UpdateResourcePattern(player, effects);
             else if (IsShardPatternActive) UpdateShardPattern(player, effects, mapWidth);
             else
             {
+                // 대기 상태일 때 일반 공격 발사
                 basicAttackTimer++;
                 if (basicAttackTimer >= 120)
                 {
@@ -1026,12 +1035,14 @@ namespace DebugHeroFileDungeonRPG
                     effects.Add(new Effect("projectile", boss.X, boss.Y - 30, player.X, player.Y - 30, 40, Color.MediumPurple, "ERR"));
 
                     boss.AttackCooldown = 45;
-
                     basicAttackTimer = 0;
                 }
             }
+
+            // 💡 [버그 2,3 방어] 상태 강제 동기화 (패턴이 끝나면 무조건 false로 돌아감)
             boss.IsCastingPattern = (IsShardPatternActive || IsResourcePatternActive);
         }
+
 
         private void StartResourcePattern() { IsResourcePatternActive = true; ResourceTimer = 270; DebugButtons.Clear(); for (int i = 0; i < 3; i++) DebugButtons.Add(new Rectangle(rand.Next(400, 900), rand.Next(250, 500), 110, 40)); }
         private void UpdateResourcePattern(PlayerState player, List<Effect> effects) { ResourceTimer--; if (ResourceTimer <= 0) { if (DebugButtons.Count > 0) { player.Hp /= 2; effects.Add(new Effect("text", player.X, player.Y, player.X, player.Y, 60, Color.Red, "SYSTEM OVERLOAD: HP HALVED")); } IsResourcePatternActive = false; } }
@@ -1093,7 +1104,11 @@ namespace DebugHeroFileDungeonRPG
                 if (DebugButtons[i].Contains(mousePos))
                 {
                     DebugButtons.RemoveAt(i);
-                    if (DebugButtons.Count == 0) IsResourcePatternActive = false;
+                    if (DebugButtons.Count == 0)
+                    {
+                        IsResourcePatternActive = false;
+                        ResourceTimer = 0; // 💡 [핵심 수정] 버튼을 다 누르면 멈춰있던 타이머를 0으로 초기화!
+                    }
                     return true;
                 }
             }

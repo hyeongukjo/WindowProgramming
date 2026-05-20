@@ -353,7 +353,7 @@ namespace DebugHeroFileDungeonRPG
 
         private void DrawCustomBossGimmicks(Graphics g)
         {
-            if (bossManager == null) return;
+            if (bossRuntime == null) return;
 
             // 1. High-Kernel: 권한 거부(미사일) 경고문구
             if (bossManager.IsAccessDeniedActive)

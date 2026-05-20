@@ -7,7 +7,7 @@ namespace DebugHeroFileDungeonRPG
 {
     public sealed class BossRuntime
     {
-        private readonly BossPatternManager patternManager = new BossPatternManager();
+        public readonly BossPatternManager patternManager = new BossPatternManager();
         private int currentStage;
 
         public void Reset(int stageIndex)

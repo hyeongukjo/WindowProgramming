@@ -990,30 +990,46 @@ namespace DebugHeroFileDungeonRPG
         private static void DrawBoss(Graphics g, Rectangle r, GameEntity e)
         {
             using (SolidBrush aura = new SolidBrush(Color.FromArgb(55, e.Color))) g.FillEllipse(aura, r.X - 20, r.Y - 20, r.Width + 40, r.Height + 40);
-            // [추가] Driver-K 이미지 스프라이트 렌더링 로직
             if (e.Name.Contains("Driver-K"))
             {
                 if (Renderer.ImgBoss_DriverK != null)
                 {
-                    // 1. 스프라이트 잘라내기 설정 (가로 4칸 기준)
                     int cols = 4;
+                    int rows = 2;
                     int fW = Renderer.ImgBoss_DriverK.Width / cols;
-                    int fH = Renderer.ImgBoss_DriverK.Height;
+                    int fH = Renderer.ImgBoss_DriverK.Height / rows;
 
-                    // 2. 상태에 따른 프레임 선택
-                    // IsCastingPattern이 true면 4번째 사진(인덱스 3), 아니면 방향에 따라 0~1번
-                    int fX = e.IsCastingPattern ? 3 : (e.Facing == -1 ? 1 : 0);
+                    int fY = 0;
+                    int fX = 0;
 
-                    Rectangle srcRect = new Rectangle(fX * fW, 0, fW, fH);
-                    Rectangle destRect = new Rectangle(r.X + r.Width / 2 - 170, r.Bottom - 300, 340, 340);
+                    // 💡 특수 기믹 패턴(75%, 50%, 25%) 시전 중일 때 무조건 7번 사진!
+                    if (e.IsCastingPattern)
+                    {
+                        fY = 1; // 2번째 줄
+                        fX = 2; // 3번째 칸 (즉, 7번 사진)
+                    }
+                    else
+                    {
+                        // 💡 대기 상태: 플레이어 위치에 따라 1번 / 4번 사진 교체
+                        if (e.Facing == -1)
+                        {
+                            fY = 0;
+                            fX = 3; // 4번 사진 (왼쪽 대기)
+                        }
+                        else
+                        {
+                            fY = 0;
+                            fX = 0; // 1번 사진 (오른쪽 대기)
+                        }
+                    }
+
+                    Rectangle srcRect = new Rectangle(fX * fW, fY * fH, fW, fH);
+                    int centerX = r.X + r.Width / 2;
+
+                    // r(Rectangle) 변수를 사용하여 보스의 위치를 잡습니다.
+                    Rectangle destRect = new Rectangle(centerX - 170, r.Bottom - 300, 340, 340);
 
                     g.DrawImage(Renderer.ImgBoss_DriverK, destRect, srcRect, GraphicsUnit.Pixel);
-                }
-                else
-                {
-                    // 이미지 없을 시 대체 도형 (기존 로직 유지)
-                    using (SolidBrush b = new SolidBrush(Color.FromArgb(70, 76, 88))) g.FillRectangle(b, r.X + 40, r.Y + 50, r.Width - 80, r.Height - 55);
-                    // ... 기존 드라이버 K 도형 로직 ...
                 }
                 return;
             }

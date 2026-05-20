@@ -39,10 +39,12 @@ namespace DebugHeroFileDungeonRPG
         private bool stage1BossPhase = false;
         private bool lastClearWasBoss = false;
         private readonly BossRuntime bossRuntime = new BossRuntime();
-        private BossPatternManager bossManager = new BossPatternManager();
+        private BossPatternManager bossManager;
+
 
         public MainForm()
         {
+            bossManager = bossRuntime.patternManager;
             Text = "DebugHero File Dungeon - Player.exe AntiVirus Agent";
             ClientSize = new Size(1366, 768);
             MinimumSize = new Size(1100, 680);
