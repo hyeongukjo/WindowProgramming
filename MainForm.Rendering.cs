@@ -21,6 +21,7 @@ namespace DebugHeroFileDungeonRPG
             g.PixelOffsetMode = PixelOffsetMode.HighSpeed;
 
             buttons.Clear();
+
             if (screen == ScreenMode.Boot) DrawBoot(g);
             else if (screen == ScreenMode.AssistantIntro) DrawAssistantIntro(g);
             else if (screen == ScreenMode.ProfileSetup) DrawProfileSetup(g);
@@ -42,17 +43,7 @@ namespace DebugHeroFileDungeonRPG
 
         private void DrawBoot(Graphics g)
         {
-            g.Clear(Color.Black);
-            int w = ClientSize.Width;
-            int h = ClientSize.Height;
-            using (Font f = Renderer.F(42f, FontStyle.Bold))
-            using (SolidBrush b = new SolidBrush(Color.White))
-                g.DrawString("Windows XP", f, b, new Rectangle(0, h / 2 - 100, w, 70), Renderer.Center());
-            Rectangle bar = new Rectangle(w / 2 - 160, h / 2 + 30, 320, 22);
-            using (Pen p = new Pen(Color.White)) g.DrawRectangle(p, bar);
-            int fill = (bootTicks * 7) % (bar.Width - 20);
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(60, 150, 255))) g.FillRectangle(b, bar.X + 4 + fill, bar.Y + 4, 60, bar.Height - 8);
-            using (Font f = Renderer.F(10f, FontStyle.Regular)) g.DrawString("복구 프로그램을 불러오는 중...", f, Brushes.LightGray, new Rectangle(0, h / 2 + 66, w, 22), Renderer.Center());
+            BackgroundRenderer.DrawBootScreen(g, ClientSize.Width, ClientSize.Height, bootTicks);
         }
 
         private void DrawAssistantIntro(Graphics g)
@@ -94,59 +85,100 @@ namespace DebugHeroFileDungeonRPG
 
         private void DrawDesktop(Graphics g)
         {
-            Renderer.DrawXPWallpaper(g, ClientRectangle);
-            Renderer.DrawXPTaskbar(g, ClientRectangle, "Windows XP Desktop - File Dungeon Shortcuts");
-            using (Font f = Renderer.F(11f, FontStyle.Bold))
-            using (SolidBrush b = new SolidBrush(Color.White))
-            using (SolidBrush bg = new SolidBrush(Color.FromArgb(130, 0, 0, 0)))
-            {
-                Rectangle header = new Rectangle(120, 20, 610, 42);
-                g.FillRectangle(bg, header);
-                g.DrawString("문서 고정 진행: 열리지 않은 파일 던전은 보이지 않고, 클리어 후 새 바로가기가 생성됩니다.", f, b, header, Renderer.Center());
-            }
-            int cols = 5;
-            int startX = 120;
-            int startY = 90;
-            for (int i = 1; i <= unlockedStage && i <= stages.Count; i++)
-            {
-                int col = (i - 1) % cols;
-                int row = (i - 1) / cols;
-                Rectangle r = new Rectangle(startX + col * 170, startY + row * 145, 128, 112);
-                StageInfo st = stages[i - 1];
-                bool sel = selectedStage == i;
-                bool newly = i == unlockedStage && i > player.ClearedStages;
-                Renderer.DrawFileShortcut(g, r, st, sel, newly);
-                buttons.Add(new UiButton(r, "stage" + i.ToString()));
-            }
+            int w = ClientSize.Width;
+            int h = ClientSize.Height;
+
+            // 1. 기본 XP 바탕화면 배경
+            DesktopBackgroundUI.Shared.Draw(g, ClientRectangle);
+
+            // 2. 바탕화면 스테이지 바로가기 아이콘
+            DesktopIconUI.Shared.DrawStageIcons(g, stages, unlockedStage, selectedStage, player.ClearedStages, buttons);
+
+            // 우측의 파일 속성 / 복구 상태 정보창 패널 그리기 시스템 연동
             DrawDesktopInfoPanel(g);
-            DrawRecycleBinShopShortcut(g);
+
+            // 좌측 하단 영역의 휴지통 아이템 상점 아이콘 그리기 시스템 연동
+            RecoveryToolsUI.Shared.DrawDesktopShortcut(g, ClientRectangle, player.Coins, buttons);
+
+            // 3. 하단 작업 표시줄
+            TaskbarUI.Shared.Draw(g, ClientRectangle);
+
+            // 4. 최초 진입 안내창
             if (firstDesktopNotice)
             {
-                using (SolidBrush dim = new SolidBrush(Color.FromArgb(68, 0, 0, 0))) g.FillRectangle(dim, ClientRectangle);
-                Rectangle notice = new Rectangle(ClientSize.Width / 2 - 330, ClientSize.Height / 2 - 145, 660, 290);
-                Renderer.DrawNotification(g, notice, "NPC_404_DESKTOP_NOTICE.exe - 확인 필요", "Recovery Program이 생성되었습니다.\n바탕화면에 보이는 파일 바로가기를 실행해 복구 절차를 진행하세요.\n아직 보이지 않는 파일은 이전 스테이지를 완료해야 생성됩니다.", NpcMood.Basic, true);
-                buttons.Add(new UiButton(NotificationOkRect(notice), "desktopNoticeOk"));
+                using (SolidBrush dim = new SolidBrush(Color.FromArgb(68, 0, 0, 0)))
+                    g.FillRectangle(dim, ClientRectangle);
+
+                Rectangle notice = new Rectangle(w / 2 - 330, h / 2 - 145, 660, 290);
+
+                SystemWindowUI.Shared.DrawAssistantNotice(
+                    g,
+                    notice,
+                    "Windows Recovery Assistant",
+                    "Recovery Program이 생성되었습니다.\n바탕화면에 보이는 파일 바로가기를 실행해 복구 절차를 진행하세요.\n아직 보이지 않는 파일은 이전 스테이지를 완료해야 생성됩니다.",
+                    NpcMood.Basic,
+                    Environment.TickCount / 30,
+                    buttons,
+                    "desktopNoticeOk",
+                    "desktopNoticeClose"
+                );
             }
+            TaskbarUI.Shared.Draw(g, ClientRectangle);
         }
+        /*
+        Renderer.DrawXPWallpaper(g, ClientRectangle);
+        Renderer.DrawXPTaskbar(g, ClientRectangle, "Windows XP Desktop - File Dungeon Shortcuts");
+        using (Font f = Renderer.F(11f, FontStyle.Bold))
+        using (SolidBrush b = new SolidBrush(Color.White))
+        using (SolidBrush bg = new SolidBrush(Color.FromArgb(130, 0, 0, 0)))
+        {
+            Rectangle header = new Rectangle(120, 20, 610, 42);
+            g.FillRectangle(bg, header);
+            g.DrawString("문서 고정 진행: 열리지 않은 파일 던전은 보이지 않고, 클리어 후 새 바로가기가 생성됩니다.", f, b, header, Renderer.Center());
+        }
+        int cols = 5;
+        int startX = 120;
+        int startY = 90;
+        for (int i = 1; i <= unlockedStage && i <= stages.Count; i++)
+        {
+            int col = (i - 1) % cols;
+            int row = (i - 1) / cols;
+            Rectangle r = new Rectangle(startX + col * 170, startY + row * 145, 128, 112);
+            StageInfo st = stages[i - 1];
+            bool sel = selectedStage == i;
+            bool newly = i == unlockedStage && i > player.ClearedStages;
+            Renderer.DrawFileShortcut(g, r, st, sel, newly);
+            buttons.Add(new UiButton(r, "stage" + i.ToString()));
+        }
+        DrawDesktopInfoPanel(g);
+        DrawRecycleBinShopShortcut(g);
+        if (firstDesktopNotice)
+        {
+            using (SolidBrush dim = new SolidBrush(Color.FromArgb(68, 0, 0, 0))) g.FillRectangle(dim, ClientRectangle);
+            Rectangle notice = new Rectangle(ClientSize.Width / 2 - 330, ClientSize.Height / 2 - 145, 660, 290);
+            Renderer.DrawNotification(g, notice, "NPC_404_DESKTOP_NOTICE.exe - 확인 필요", "Recovery Program이 생성되었습니다.\n바탕화면에 보이는 파일 바로가기를 실행해 복구 절차를 진행하세요.\n아직 보이지 않는 파일은 이전 스테이지를 완료해야 생성됩니다.", NpcMood.Basic, true);
+            buttons.Add(new UiButton(NotificationOkRect(notice), "desktopNoticeOk"));
+        }*/
 
 
+        /*
         private void DrawRecycleBinShopShortcut(Graphics g)
         {
             Rectangle r = new Rectangle(120, ClientSize.Height - 170, 150, 116);
             Renderer.DrawShopShortcut(g, r, player.Coins);
             buttons.Add(new UiButton(r, "openShop"));
-        }
+        }*/
 
         private void DrawShop(Graphics g)
         {
             Renderer.DrawXPWallpaper(g, ClientRectangle);
-            Renderer.DrawXPTaskbar(g, ClientRectangle, "Recycle Bin Item Shop");
+            Renderer.DrawXPTaskbar(g, ClientRectangle, "Recovery Tools");
             Rectangle win = new Rectangle(ClientSize.Width / 2 - 430, ClientSize.Height / 2 - 250, 860, 500);
-            Renderer.DrawXPWindow(g, win, "Recycle Bin Item Shop - Binny.exe", false);
+            Renderer.DrawXPWindow(g, win, "Recovery Tools - Supply Panel", false);
             Renderer.DrawNpcImage(g, new Rectangle(win.X + 28, win.Y + 68, 160, 230), NpcMood.Basic);
             using (Font f = Renderer.F(11f, FontStyle.Bold))
             using (SolidBrush b = new SolidBrush(Color.Navy))
-                g.DrawString("몬스터에게서 얻은 코인으로 복구 아이템을 구입하세요.", f, b, new Rectangle(win.X + 205, win.Y + 60, win.Width - 245, 26), Renderer.LeftMiddle());
+                g.DrawString("오류를 해결하고 얻은 코인으로 복구 작업에 사용할 도구를 선택하세요.", f, b, new Rectangle(win.X + 205, win.Y + 60, win.Width - 245, 26), Renderer.LeftMiddle());
             using (Font f = Renderer.F(9f, FontStyle.Regular))
             using (SolidBrush b = new SolidBrush(Color.FromArgb(40, 48, 66)))
             {
@@ -161,9 +193,9 @@ namespace DebugHeroFileDungeonRPG
             Rectangle mp = new Rectangle(win.X + 420, win.Y + 310, 180, 38);
             Rectangle bundle = new Rectangle(win.X + 620, win.Y + 310, 180, 38);
             Rectangle back = new Rectangle(win.Right - 150, win.Bottom - 58, 110, 32);
-            Renderer.DrawButton(g, hp, "1 HP 포션", true);
-            Renderer.DrawButton(g, mp, "2 MP 포션", true);
-            Renderer.DrawButton(g, bundle, "3 묶음", true);
+            Renderer.DrawButton(g, hp, "1 Recovery Kit", true);
+            Renderer.DrawButton(g, mp, "2 Memory Kit", true);
+            Renderer.DrawButton(g, bundle, "3 Tool Set", true);
             Renderer.DrawButton(g, back, "닫기", false);
             buttons.Add(new UiButton(hp, "buyhp"));
             buttons.Add(new UiButton(mp, "buymp"));
@@ -171,6 +203,8 @@ namespace DebugHeroFileDungeonRPG
             buttons.Add(new UiButton(back, "shopBack"));
         }
 
+
+        //게임 진행상 불필요 할수도... 삭제??
         private void DrawDesktopInfoPanel(Graphics g)
         {
             Rectangle p = new Rectangle(ClientSize.Width - 400, 70, 370, 520);
@@ -217,10 +251,6 @@ namespace DebugHeroFileDungeonRPG
             foreach (GameEntity m in enemies) if (m.Hp > 0) Renderer.DrawEnemy(g, m, cameraX);
             for (int i = 0; i < weaponDrops.Count; i++) Renderer.DrawWeaponUpgradeFile(g, weaponDrops[i], cameraX);
             bossRuntime.DrawOverlay(g, currentStage, stageBossPhase, cameraX, ClientSize);
-            if (stageBossPhase)
-            {
-                DrawCustomBossGimmicks(g);
-            }
             bool playerMovingNow = Math.Abs(player.TargetX - player.X) > 3.5f || Math.Abs(player.TargetY - player.Y) > 3.5f ||
                                    Math.Abs(player.MoveVelocityX) > 0.25f || Math.Abs(player.MoveVelocityY) > 0.25f;
             Renderer.DrawRecoveryProgram(g, player, true, cameraX, playerMovingNow);
@@ -351,74 +381,5 @@ namespace DebugHeroFileDungeonRPG
             return new Rectangle(r.Right - 112, r.Bottom - 42, 88, 28);
         }
 
-        private void DrawCustomBossGimmicks(Graphics g)
-        {
-            if (bossManager == null) return;
-
-            // 1. High-Kernel: 권한 거부(미사일) 경고문구
-            if (bossManager.IsAccessDeniedActive)
-            {
-                using (Font f = Renderer.F(14f, FontStyle.Bold))
-                    g.DrawString("권한 거부 상태! 스킬 사용 시 미사일 투하!", f, Brushes.Red, new Point(ClientSize.Width / 2 - 170, 110));
-            }
-
-            // 2. 투사체(Projectiles) 및 하늘 미사일(SkyMissiles) 그리기 (cameraX로 화면 좌표 보정)
-            foreach (var sm in bossManager.SkyMissiles)
-            {
-                float sPosX = sm.X - cameraX;
-                using (Pen p = new Pen(Color.FromArgb(200, Color.Red), 2f)) g.DrawEllipse(p, sPosX - 50, sm.Y - 25, 100, 50);
-                float missileY = sm.Y - 500 + (1f - (sm.Timer / 60f)) * 500;
-                g.FillRectangle(Brushes.OrangeRed, sPosX - 5, missileY, 10, 25);
-            }
-
-            foreach (var p in bossManager.Projectiles)
-            {
-                float sPosX = p.X - cameraX;
-                if (p.IsEnrageMissile)
-                {
-                    g.FillRectangle(Brushes.Red, sPosX - 15, p.Y - 5, 30, 10);
-                    g.DrawRectangle(Pens.White, sPosX - 15, p.Y - 5, 30, 10);
-                }
-                else
-                {
-                    g.FillEllipse(Brushes.BlueViolet, sPosX - 12, p.Y - 12, 24, 24);
-                    g.FillEllipse(Brushes.White, sPosX - 5, p.Y - 5, 10, 10);
-                }
-            }
-
-            // 3. 리소스 부족 패턴 (DEBUG 버튼 미니게임)
-            if (bossManager.IsResourcePatternActive)
-            {
-                Rectangle overlay = new Rectangle(ClientSize.Width / 2 - 400, ClientSize.Height / 2 - 150, 800, 300);
-                using (SolidBrush bg = new SolidBrush(Color.FromArgb(180, 20, 20, 20))) g.FillRectangle(bg, overlay);
-                using (Font f = Renderer.F(16f, FontStyle.Bold))
-                {
-                    string resMsg = $"!!! 리소스 부족: 시스템 과부하 !!!\n4.5초 안에 DEBUG 버튼을 전부 눌러 DEBUG를 실행하세요!\n(남은 시간: {(bossManager.ResourceTimer / 60.0):0.0}s)";
-                    g.DrawString(resMsg, f, Brushes.Yellow, overlay, Renderer.Center());
-                }
-                foreach (var btn in bossManager.DebugButtons)
-                {
-                    using (SolidBrush bb = new SolidBrush(Color.DarkRed)) g.FillRectangle(bb, btn);
-                    using (Pen p = new Pen(Color.White, 2f)) g.DrawRectangle(p, btn);
-                    using (Font f = Renderer.F(10f, FontStyle.Bold)) g.DrawString("DEBUG.EXE", f, Brushes.White, btn, Renderer.Center());
-                }
-            }
-
-            // 4. Exception Queen: 타이핑 페이즈 바 및 텍스트
-            if (bossManager.IsTryCatchActive && bossManager.IsTypingPhaseActive)
-            {
-                float sPosX = player.X - cameraX;
-                Rectangle typeBox = new Rectangle((int)sPosX - 85, (int)player.Y - 160, 170, 45);
-                using (SolidBrush bg = new SolidBrush(Color.FromArgb(220, 0, 0, 0))) g.FillRectangle(bg, typeBox);
-                using (Font f = Renderer.F(18f, FontStyle.Bold)) g.DrawString(bossManager.CurrentTypingTarget, f, Brushes.Lime, typeBox, Renderer.Center());
-
-                Rectangle timerBar = new Rectangle(typeBox.X, typeBox.Bottom + 2, typeBox.Width, 6);
-                int barWidth = (int)((bossManager.TypingTimer / 300f) * timerBar.Width);
-                using (SolidBrush barBg = new SolidBrush(Color.Yellow)) g.FillRectangle(barBg, timerBar.X, timerBar.Y, Math.Max(0, barWidth), timerBar.Height);
-            }
-        }
-
     }
-
-
 }

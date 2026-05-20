@@ -39,7 +39,8 @@ namespace DebugHeroFileDungeonRPG
         private bool stage1BossPhase = false;
         private bool lastClearWasBoss = false;
         private readonly BossRuntime bossRuntime = new BossRuntime();
-        private BossPatternManager bossManager = new BossPatternManager();
+        private TaskbarUI taskbarUI;
+
 
         public MainForm()
         {
@@ -58,28 +59,14 @@ namespace DebugHeroFileDungeonRPG
             timer.Tick += Timer_Tick;
             timer.Start();
 
+            BackgroundRenderer.InitializeBackgrounds();
+            taskbarUI = new TaskbarUI();
+
             KeyDown += MainForm_KeyDown;
             KeyPress += MainForm_KeyPress;
             MouseDown += MainForm_MouseDown;
             MouseMove += MainForm_MouseMove;
             MouseUp += MainForm_MouseUp;
-
-            string bossPath = System.IO.Path.Combine(Application.StartupPath, "Resources", "boss");
-            if (!System.IO.Directory.Exists(bossPath)) System.IO.Directory.CreateDirectory(bossPath);
-
-            // [추가] Driver-K 로드
-            string dkPath = System.IO.Path.Combine(bossPath, "driver_k.png");
-            if (System.IO.File.Exists(dkPath)) Renderer.ImgBoss_DriverK = Image.FromFile(dkPath);
-
-            // [추가] BSOD 로드
-            string bsodPath = System.IO.Path.Combine(bossPath, "bsod_dragon.png");
-            if (System.IO.File.Exists(bsodPath)) Renderer.ImgBoss_BSOD = Image.FromFile(bsodPath);
-
-            string hkPath = System.IO.Path.Combine(bossPath, "high_kernel.png");
-            if (System.IO.File.Exists(hkPath))
-            {
-                Renderer.ImgBoss_HighKernel = Image.FromFile(hkPath);
-            }
         }
 
         private void Timer_Tick(object sender, EventArgs e)

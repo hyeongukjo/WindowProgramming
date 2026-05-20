@@ -20,34 +20,8 @@ namespace DebugHeroFileDungeonRPG
             StageInfo st = stages[currentStage - 1];
             int mapWidth = GetStageMapWidth(st);
             PlayerMovementSystem.Update(player, st, stageBossPhase, ClientSize.Width, ClientSize.Height, mapWidth, ref cameraX, tick);
-
+            PlayerMovementSystem.UpdateActionAnimation(player);
             EnemyUpdateResult enemyResult = EnemyLogicSystem.Update(enemies, player, st, currentStage, stageBossPhase, tick, mapWidth, ClientRectangle, bossRuntime, effects);
-            if (stageBossPhase)
-            {
-                GameEntity boss = enemies.Find(e => e.IsBoss);
-                if (boss != null)
-                {
-                    bossManager.Update(boss, player, effects, mapWidth);
-                   
-
-                    // 보스의 패턴 시전 여부를 엔티티 상태와 동기화
-                    boss.IsCastingPattern = (bossManager.IsEnrageActive ||
-                                             bossManager.IsSystemWipeActive ||
-                                             bossManager.IsAccessDeniedActive ||
-                                             bossManager.ResourceTimer > 0 ||
-                                             bossManager.IsShardPatternActive ||
-                                             bossManager.IsLotusActive ||
-                                             bossManager.IsLeakActive ||
-                                             bossManager.IsMagnusActive ||
-                                             bossManager.IsNullRefActive ||
-                                             bossManager.IsTryCatchActive ||
-                                             bossManager.IsStackOverflowActive ||
-                                             bossManager.IsBlackholeActive ||
-                                             bossManager.IsScannerActive ||
-                                             bossManager.IsDPSCheckActive ||
-                                             bossManager.IsIllusionActive);
-                }
-            }
             if (enemyResult.PlayerReturnedToStart)
             {
                 player.X = 180;
@@ -98,7 +72,6 @@ namespace DebugHeroFileDungeonRPG
             currentStage = stageIndex;
             StageInfo st = stages[stageIndex - 1];
             enemies.Clear();
-            bossManager.Reset();
             effects.Clear();
             weaponDrops.Clear();
             draggedWeaponDrop = null;

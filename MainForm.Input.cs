@@ -54,39 +54,32 @@ namespace DebugHeroFileDungeonRPG
                 if (e.KeyCode == Keys.Escape || e.KeyCode == Keys.B) screen = ScreenMode.Desktop;
                 return;
             }
-
             if (screen == ScreenMode.Stage)
             {
-                if (stageBossPhase && bossManager.IsTryCatchActive && bossManager.IsTypingPhaseActive)
-                {
-                    StageInfo st = stages[currentStage - 1];
-                    float mapWidth = GetStageMapWidth(st);
-                    bossManager.HandleTypingInput(e.KeyCode, player, effects, mapWidth);
-
-                    // 방향키 이동을 제외한 스킬 키 등의 입력을 무력화하기 위해 리턴 처리
-                    if (e.KeyCode != Keys.Left && e.KeyCode != Keys.Right && e.KeyCode != Keys.Up && e.KeyCode != Keys.Down)
-                    {
-                        return;
-                    }
-                }
-
-                // 👇 [여기에 추가] High-Kernel의 권한 거부 패턴 중 스킬(Q,W,E,R) 시도 시 인터셉트하여 미사일을 투하합니다.
-                if (stageBossPhase && (e.KeyCode == Keys.Q || e.KeyCode == Keys.W || e.KeyCode == Keys.E || e.KeyCode == Keys.R))
-                {
-                    if (bossManager.TrySkillInterrupt(player, effects))
-                    {
-                        effects.Add(new Effect("text", player.X, player.Y - 70, player.X, player.Y - 70, 40, Color.Red, "ACCESS DENIED"));
-                        return; // 스킬 발동을 취소하고 차단
-                    }
-                }
                 if (e.KeyCode == Keys.Left) MovePlayerBy(-160, 0);
                 else if (e.KeyCode == Keys.Right) MovePlayerBy(160, 0);
                 else if (e.KeyCode == Keys.Up) MovePlayerBy(0, -120);
                 else if (e.KeyCode == Keys.Down) MovePlayerBy(0, 120);
-                else if (e.KeyCode == Keys.Q) CastSkill(0);
-                else if (e.KeyCode == Keys.W) CastSkill(1);
-                else if (e.KeyCode == Keys.E) CastSkill(2);
-                else if (e.KeyCode == Keys.R) CastSkill(3);
+                else if (e.KeyCode == Keys.Q)
+                {
+                    PlayerMovementSystem.StartSkillAnimation(player, 0);
+                    CastSkill(0);
+                }
+                else if (e.KeyCode == Keys.W)
+                {
+                    PlayerMovementSystem.StartSkillAnimation(player, 1);
+                    CastSkill(1);
+                }
+                else if (e.KeyCode == Keys.E)
+                {
+                    PlayerMovementSystem.StartSkillAnimation(player, 2);
+                    CastSkill(2);
+                }
+                else if (e.KeyCode == Keys.R)
+                {
+                    PlayerMovementSystem.StartSkillAnimation(player, 3);
+                    CastSkill(3);
+                }
                 else if (e.KeyCode == Keys.D) UseHpPotion();
                 else if (e.KeyCode == Keys.F) UseMpPotion();
                 else if (e.KeyCode == Keys.Space) { effects.Add(new Effect("spark", player.X, player.Y - 44, player.X, player.Y - 44, 28, Color.FromArgb(120, 200, 255), "")); TryBeep(420, 40); }
@@ -142,14 +135,6 @@ namespace DebugHeroFileDungeonRPG
             }
             if (screen == ScreenMode.Stage)
             {
-                if (stageBossPhase && e.Button == MouseButtons.Left)
-                {
-                    if (bossManager.HandleClick(e.Location))
-                    {
-                        Invalidate();
-                        return; // 버튼을 클릭했다면 이동 등 다른 마우스 로직은 건너뜁니다.
-                    }
-                }
                 if (e.Button == MouseButtons.Left)
                 {
                     WeaponUpgradeFile drop = FindWeaponDropAt(e.Location);
@@ -219,7 +204,7 @@ namespace DebugHeroFileDungeonRPG
         private void HandleAction(string action)
         {
             if (action == "introNext") AdvanceIntro();
-            else if (action == "desktopNoticeOk") firstDesktopNotice = false;
+            else if (action == "desktopNoticeOk" || action == "desktopNoticeClose") { firstDesktopNotice = false; }
             else if (action == "npcHintClose") stageNpcHintClosed = true;
             else if (action == "profileOk") ConfirmProfile();
             else if (action == "openShop") screen = ScreenMode.Shop;

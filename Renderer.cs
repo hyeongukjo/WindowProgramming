@@ -17,10 +17,10 @@ namespace DebugHeroFileDungeonRPG
         private static Image playerAgentSheet = null;
         private static Image playerAgentIdleFrame = null;
         private static readonly Image[] playerAgentWalkFrames = new Image[8];
-       
-        public static Image ImgBoss_DriverK;
-        public static Image ImgBoss_BSOD;
-        public static Image ImgBoss_HighKernel;
+        private static readonly Dictionary<string, Image> playerSpriteSheets = new Dictionary<string, Image>();
+        private static Image playerActionSheet;
+        private static Image playerStillSwordImage;
+
 
         public static Font F(float size, FontStyle style)
         {
@@ -66,34 +66,7 @@ namespace DebugHeroFileDungeonRPG
 
         public static void DrawXPWallpaper(Graphics g, Rectangle r)
         {
-            if (r.Width <= 0 || r.Height <= 0) return;
-            Size requested = new Size(r.Width, r.Height);
-            if (xpBlissScaledCache == null || xpBlissScaledSize != requested)
-            {
-                if (xpBlissScaledCache != null) xpBlissScaledCache.Dispose();
-                xpBlissScaledCache = new Bitmap(r.Width, r.Height);
-                xpBlissScaledSize = requested;
-                using (Graphics cg = Graphics.FromImage(xpBlissScaledCache))
-                {
-                    cg.SmoothingMode = SmoothingMode.HighSpeed;
-                    cg.CompositingQuality = CompositingQuality.HighSpeed;
-                    cg.InterpolationMode = InterpolationMode.Low;
-                    cg.PixelOffsetMode = PixelOffsetMode.HighSpeed;
-                    Image bg = LoadXPBlissBackground();
-                    Rectangle local = new Rectangle(0, 0, r.Width, r.Height);
-                    if (bg != null)
-                    {
-                        DrawImageCover(cg, bg, local);
-                        using (LinearGradientBrush overlay = new LinearGradientBrush(local, Color.FromArgb(8, 255, 255, 255), Color.FromArgb(20, 0, 0, 0), 90f))
-                            cg.FillRectangle(overlay, local);
-                    }
-                    else
-                    {
-                        DrawFallbackXPWallpaper(cg, local);
-                    }
-                }
-            }
-            g.DrawImageUnscaled(xpBlissScaledCache, r.X, r.Y);
+            DesktopBackgroundUI.Shared.Draw(g, r);
         }
 
         private static void DrawFallbackXPWallpaper(Graphics g, Rectangle r)
@@ -112,7 +85,7 @@ namespace DebugHeroFileDungeonRPG
         private static Image LoadXPBlissBackground()
         {
             if (xpBlissBackgroundCache != null) return xpBlissBackgroundCache;
-            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "XPBlissMapBackground.png");
+            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "Backgrounds", "stage01_background.png");
             try
             {
                 if (File.Exists(path)) xpBlissBackgroundCache = Image.FromFile(path);
@@ -175,29 +148,7 @@ namespace DebugHeroFileDungeonRPG
 
         public static void DrawXPTaskbar(Graphics g, Rectangle client, string title)
         {
-            Rectangle bar = new Rectangle(0, client.Bottom - 40, client.Width, 40);
-            using (LinearGradientBrush b = new LinearGradientBrush(bar, Color.FromArgb(22, 106, 218), Color.FromArgb(0, 48, 160), 90f))
-                g.FillRectangle(b, bar);
-            Rectangle start = new Rectangle(8, bar.Y + 5, 102, 30);
-            using (LinearGradientBrush b = new LinearGradientBrush(start, Color.FromArgb(118, 222, 82), Color.FromArgb(32, 142, 46), 90f))
-                g.FillRectangle(b, start);
-            using (Pen p = new Pen(Color.White, 1.5f)) g.DrawRectangle(p, start.X, start.Y, start.Width - 1, start.Height - 1);
-            using (Font f = F(11f, FontStyle.Bold))
-            using (SolidBrush sb = new SolidBrush(Color.White))
-                g.DrawString("시작", f, sb, start, Center());
-            Rectangle app = new Rectangle(126, bar.Y + 6, Math.Min(470, client.Width - 520), 28);
-            using (LinearGradientBrush b = new LinearGradientBrush(app, Color.FromArgb(88, 164, 255), Color.FromArgb(32, 80, 190), 90f))
-                g.FillRectangle(b, app);
-            using (Pen p = new Pen(Color.FromArgb(175, 220, 255))) g.DrawRectangle(p, app.X, app.Y, app.Width - 1, app.Height - 1);
-            using (Font f = F(9f, FontStyle.Bold))
-            using (SolidBrush sb = new SolidBrush(Color.White))
-                g.DrawString(title, f, sb, new Rectangle(app.X + 14, app.Y, app.Width - 20, app.Height), LeftMiddle());
-            Rectangle tray = new Rectangle(client.Right - 190, bar.Y + 5, 180, 30);
-            using (LinearGradientBrush b = new LinearGradientBrush(tray, Color.FromArgb(88, 166, 238), Color.FromArgb(28, 96, 200), 90f))
-                g.FillRectangle(b, tray);
-            using (Font f = F(9f, FontStyle.Bold))
-            using (SolidBrush sb = new SolidBrush(Color.White))
-                g.DrawString(DateTime.Now.ToString("tt hh:mm"), f, sb, tray, Center());
+            TaskbarUI.Shared.Draw(g, client);
         }
 
         public static void DrawXPWindow(Graphics g, Rectangle r, string title, bool error)
@@ -316,7 +267,131 @@ namespace DebugHeroFileDungeonRPG
             DrawButton(g, btn, "확인", true);
         }
 
+        private static Image LoadPlayerSheet(string fileName)
+        {
+            if (playerSpriteSheets.ContainsKey(fileName))
+                return playerSpriteSheets[fileName];
 
+            string path = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "Assets", "Characters", "Player", fileName
+            );
+
+            Image img = null;
+
+            try
+            {
+                if (File.Exists(path))
+                    img = Image.FromFile(path);
+            }
+            catch
+            {
+                img = null;
+            }
+
+            playerSpriteSheets[fileName] = img;
+            return img;
+        }
+
+        private static void DrawPlayerSwordSprite(Graphics g, PlayerState p, float drawX, float baseY, bool walking)
+        {
+            string fileName;
+            int columns;
+            int rows;
+            int row;
+            bool flip = false;
+
+            if (!walking)
+            {
+                fileName = "player_still_sword.png";
+                columns = 1;
+                rows = 1;
+                row = 0;
+            }
+            else if (p.Direction == 0)
+            {
+                fileName = "player_walk_sword_front.png";
+                columns = 4;
+                rows = 1;
+                row = 0;
+            }
+            else if (p.Direction == 2)
+            {
+                fileName = "player_walk_sword_back.png";
+                columns = 4;
+                rows = 1;
+                row = 0;
+            }
+            else
+            {
+                fileName = "player_walk_sword_right.png";
+                columns = 5;
+                rows = 5;
+                row = 0;
+                flip = p.Direction == 3;
+            }
+
+            Image sheet = LoadPlayerSheet(fileName);
+
+            if (sheet == null)
+            {
+                DrawAntiVirusAgentCharacter(g, drawX, baseY, p.Facing, walking, Environment.TickCount / 180.0, false, false);
+                return;
+            }
+
+            int frameCount = walking ? columns : 1;
+            int frame = walking ? ((int)Math.Floor(p.WalkCycle)) % frameCount : 0;
+
+            int frameW = sheet.Width / columns;
+            int frameH = sheet.Height / rows;
+
+            Rectangle src = new Rectangle(
+                frame * frameW,
+                row * frameH,
+                frameW,
+                frameH
+            );
+            int destW = 112;
+            int destH = 112;
+
+            int offsetX = 0;
+            int offsetY = 0;
+
+            if (p.Direction == 0 && walking) // 아래 / front
+            {
+                int[] frontFrameOffsetX = { 0, 0, 0, 4 };
+                offsetX += frontFrameOffsetX[frame];
+                offsetY += 4;
+            }
+
+            Rectangle dest = new Rectangle(
+                (int)(drawX - destW / 2 + offsetX),
+                (int)(baseY - destH + 8 + offsetY),
+                destW,
+                destH
+            );
+
+            GraphicsState state = g.Save();
+
+            g.InterpolationMode = InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode = PixelOffsetMode.Half;
+
+            if (flip)
+            {
+                g.TranslateTransform(drawX, baseY);
+                g.ScaleTransform(-1f, 1f);
+
+                dest = new Rectangle(
+                    -destW / 2,
+                    -destH + 8,
+                    destW,
+                    destH
+                );
+            }
+
+            g.DrawImage(sheet, dest, src, GraphicsUnit.Pixel);
+            g.Restore(state);
+        }
 
         private static Image LoadPlayerAgentFrame(int index)
         {
@@ -469,11 +544,148 @@ namespace DebugHeroFileDungeonRPG
             g.Restore(state);
         }
 
+        private static Image GetPlayerActionSheet()
+        {
+            if (playerActionSheet != null)
+                return playerActionSheet;
+
+            string path = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "Assets",
+                "Characters",
+                "Player",
+                "player_action.png"
+            );
+
+            if (File.Exists(path))
+                playerActionSheet = Image.FromFile(path);
+
+            return playerActionSheet;
+        }
+
+        private static Rectangle GetPlayerActionSourceRect(Image sheet, int skillIndex, int frame)
+        {
+            int[] framesPerRow = { 4, 5, 5 };
+
+            int row = 0;
+
+            if (skillIndex == 0)
+                row = 0;
+            else if (skillIndex == 1)
+                row = 1;
+            else
+                row = 2;
+
+            int frameCount = framesPerRow[row];
+
+            if (frame < 0) frame = 0;
+            if (frame >= frameCount) frame = frameCount - 1;
+
+            int x1 = (int)Math.Round(frame * sheet.Width / (double)frameCount);
+            int x2 = (int)Math.Round((frame + 1) * sheet.Width / (double)frameCount);
+
+            int y1 = (int)Math.Round(row * sheet.Height / 3.0);
+            int y2 = (int)Math.Round((row + 1) * sheet.Height / 3.0);
+
+            return new Rectangle(x1, y1, x2 - x1, y2 - y1);
+        }
+        private static Image GetPlayerStillSwordImage()
+        {
+            if (playerStillSwordImage != null)
+                return playerStillSwordImage;
+
+            string path = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "Assets",
+                "Characters",
+                "Player",
+                "player_still_sword.png"
+            );
+
+            if (File.Exists(path))
+                playerStillSwordImage = Image.FromFile(path);
+
+            return playerStillSwordImage;
+        }
+
+        private static void DrawPlayerStillSprite(Graphics g, PlayerState p, float drawX, float baseY, int facing)
+        {
+            Image img = GetPlayerStillSwordImage();
+
+            if (img == null)
+            {
+                DrawPlayerAgentCharacterFrame(g, "idle", drawX, baseY, facing, 0);
+                return;
+            }
+
+            float scale = 0.10f;
+
+            int drawW = (int)(img.Width * scale);
+            int drawH = (int)(img.Height * scale);
+
+            Rectangle dst = new Rectangle(
+                (int)(drawX - drawW / 2),
+                (int)(baseY - drawH),
+                drawW,
+                drawH
+            );
+
+            if (facing < 0)
+            {
+                using (Bitmap flipped = new Bitmap(img))
+                {
+                    flipped.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                    g.DrawImage(flipped, dst);
+                }
+            }
+            else
+            {
+                g.DrawImage(img, dst);
+            }
+        }
+        private static void DrawPlayerActionFrame(Graphics g, PlayerState p, float drawX, float baseY, int facing)
+        {
+            Image sheet = GetPlayerActionSheet();
+
+            if (sheet == null)
+                return;
+
+            Rectangle src = GetPlayerActionSourceRect(sheet, p.SkillIndex, p.ActionFrame);
+
+            float scale = 0.32f;
+
+            int drawW = (int)(src.Width * scale);
+            int drawH = (int)(src.Height * scale);
+
+            Rectangle dst = new Rectangle(
+                (int)(drawX - drawW / 2),
+                (int)(baseY - drawH),
+                drawW,
+                drawH
+            );
+
+            if (facing < 0)
+            {
+                using (Bitmap frameBmp = new Bitmap(src.Width, src.Height))
+                {
+                    using (Graphics fg = Graphics.FromImage(frameBmp))
+                    {
+                        fg.DrawImage(sheet, new Rectangle(0, 0, src.Width, src.Height), src, GraphicsUnit.Pixel);
+                    }
+
+                    frameBmp.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                    g.DrawImage(frameBmp, dst);
+                }
+            }
+            else
+            {
+                g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+            }
+        }
         public static void DrawRecoveryProgram(Graphics g, PlayerState p, bool selected)
         {
             DrawRecoveryProgram(g, p, selected, 0f, false);
         }
-
 
         public static void DrawRecoveryProgram(Graphics g, PlayerState p, bool selected, float cameraX, bool moving)
         {
@@ -483,10 +695,8 @@ namespace DebugHeroFileDungeonRPG
             bool walking = moving && speed > 0.18f;
             int facing = p.Facing == 0 ? 1 : p.Facing;
 
-            // 원본 Player.exe 캐릭터 디자인을 유지하면서, 양쪽 팔과 다리가 번갈아 움직이는 전용 보행 프레임을 사용합니다.
-            // 모든 프레임은 같은 발 위치와 중심점에 정렬되어 문워크/좌우 흔들림을 줄입니다.
             int frame = walking ? ((int)Math.Floor(p.WalkCycle)) % 8 : -1;
-            // 아주 작은 보행 bob만 적용해 사람처럼 무게중심이 자연스럽게 이어지도록 합니다.
+
             float walkPhase = (float)((p.WalkCycle / 8f) * Math.PI * 2f);
             float bob = walking ? -Math.Abs((float)Math.Sin(walkPhase)) * 1.15f : 0f;
 
@@ -500,8 +710,18 @@ namespace DebugHeroFileDungeonRPG
                 using (Pen shield = new Pen(Color.FromArgb(150, 120, 210, 255), 3f))
                     g.DrawEllipse(shield, drawX - 58, baseY - 120, 116, 130);
             }
-
-            DrawPlayerAgentCharacterFrame(g, walking ? "walk" : "idle", drawX, baseY + bob, facing, frame);
+            if (p.ActionState == PlayerActionState.Skill)
+            {
+                DrawPlayerSkillAction(g, p, drawX, baseY, facing);
+            }
+            else if (walking)
+            {
+                DrawPlayerSwordSprite(g, p, drawX, baseY + bob, walking);
+            }
+            else
+            {
+                DrawPlayerStillSprite(g, p, drawX, baseY + bob, facing);
+            }
 
             using (Font f = F(7.5f, FontStyle.Bold))
             using (SolidBrush b = new SolidBrush(Color.White))
@@ -510,6 +730,89 @@ namespace DebugHeroFileDungeonRPG
                 Rectangle label = new Rectangle((int)drawX - 75, (int)baseY + 18, 150, 34);
                 g.FillRectangle(back, label);
                 g.DrawString("Player.exe\n(AntiVirus Agent)", f, b, label, Center());
+            }
+        }
+        private static void DrawPlayerSkillAction(Graphics g, PlayerState p, float drawX, float baseY, int facing)
+        {
+            Image sheet = GetPlayerActionSheet();
+
+            if (sheet == null)
+            {
+                DrawPlayerAgentCharacterFrame(g, "idle", drawX, baseY, facing, 0);
+                return;
+            }
+
+            // player_action.png 구조:
+            // 1행: 4프레임 → Q
+            // 2행: 5프레임 → W
+            // 3행: 5프레임 → E
+            int row = 0;
+            int frameCountInRow = 4;
+
+            if (p.SkillIndex == 0)
+            {
+                row = 0;
+                frameCountInRow = 4;
+            }
+            else if (p.SkillIndex == 1)
+            {
+                row = 1;
+                frameCountInRow = 5;
+            }
+            else if (p.SkillIndex == 2)
+            {
+                row = 2;
+                frameCountInRow = 5;
+            }
+            else if (p.SkillIndex == 3)
+            {
+                row = 2;
+                frameCountInRow = 5;
+            }
+
+            int totalRows = 3;
+            int frameW = sheet.Width / frameCountInRow;
+            int frameH = sheet.Height / totalRows;
+
+            int frame = p.ActionFrame;
+            if (frame < 0) frame = 0;
+            if (frame >= frameCountInRow) frame = frameCountInRow - 1;
+
+            Rectangle src = new Rectangle(
+                frame * frameW,
+                row * frameH,
+                frameW,
+                frameH
+            );
+
+            float scale = 0.35f;
+
+            int drawW = (int)(frameW * scale);
+            int drawH = (int)(frameH * scale);
+
+            Rectangle dst = new Rectangle(
+                (int)(drawX - drawW / 2),
+                (int)(baseY - drawH),
+                drawW,
+                drawH
+            );
+
+            if (facing < 0)
+            {
+                using (Bitmap frameBmp = new Bitmap(frameW, frameH))
+                {
+                    using (Graphics fg = Graphics.FromImage(frameBmp))
+                    {
+                        fg.DrawImage(sheet, new Rectangle(0, 0, frameW, frameH), src, GraphicsUnit.Pixel);
+                    }
+
+                    frameBmp.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                    g.DrawImage(frameBmp, dst);
+                }
+            }
+            else
+            {
+                g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
             }
         }
 
@@ -530,7 +833,7 @@ namespace DebugHeroFileDungeonRPG
             using (SolidBrush bg = new SolidBrush(Color.FromArgb(150, 20, 70, 150))) g.FillRectangle(bg, label);
             using (Font f = F(8.5f, FontStyle.Bold))
             using (SolidBrush wb = new SolidBrush(Color.White))
-                g.DrawString("휴지통 상점\n" + coins + " coin", f, wb, label, Center());
+                g.DrawString("Recovery Tools.exe\n" + coins + " coin", f, wb, label, Center());
         }
 
         public static void DrawFileShortcut(Graphics g, Rectangle r, StageInfo st, bool selected, bool newlyCreated)
@@ -990,76 +1293,26 @@ namespace DebugHeroFileDungeonRPG
         private static void DrawBoss(Graphics g, Rectangle r, GameEntity e)
         {
             using (SolidBrush aura = new SolidBrush(Color.FromArgb(55, e.Color))) g.FillEllipse(aura, r.X - 20, r.Y - 20, r.Width + 40, r.Height + 40);
-            // [추가] Driver-K 이미지 스프라이트 렌더링 로직
-            if (e.Name.Contains("Driver-K"))
+            if (e.Name.Contains("Driver") || e.Name.Contains("Driver-K"))
             {
-                if (Renderer.ImgBoss_DriverK != null)
+                using (SolidBrush b = new SolidBrush(Color.FromArgb(70, 76, 88))) g.FillRectangle(b, r.X + 40, r.Y + 50, r.Width - 80, r.Height - 55);
+                using (SolidBrush b = new SolidBrush(Color.FromArgb(245, 210, 40))) g.FillEllipse(b, r.X + r.Width / 2 - 24, r.Y + 20, 48, 48);
+                using (Font f = F(20f, FontStyle.Bold)) g.DrawString("!", f, Brushes.Black, new Rectangle(r.X, r.Y + 18, r.Width, 54), Center());
+                using (Pen cable = new Pen(Color.FromArgb(25, 25, 25), 7f))
                 {
-                    // 1. 스프라이트 잘라내기 설정 (가로 4칸 기준)
-                    int cols = 4;
-                    int fW = Renderer.ImgBoss_DriverK.Width / cols;
-                    int fH = Renderer.ImgBoss_DriverK.Height;
-
-                    // 2. 상태에 따른 프레임 선택
-                    // IsCastingPattern이 true면 4번째 사진(인덱스 3), 아니면 방향에 따라 0~1번
-                    int fX = e.IsCastingPattern ? 3 : (e.Facing == -1 ? 1 : 0);
-
-                    Rectangle srcRect = new Rectangle(fX * fW, 0, fW, fH);
-                    Rectangle destRect = new Rectangle(r.X + r.Width / 2 - 170, r.Bottom - 300, 340, 340);
-
-                    g.DrawImage(Renderer.ImgBoss_DriverK, destRect, srcRect, GraphicsUnit.Pixel);
+                    g.DrawBezier(cable, r.X + 30, r.Y + 80, r.X - 40, r.Y + 20, r.X + 40, r.Bottom - 20, r.X - 20, r.Bottom);
+                    g.DrawBezier(cable, r.Right - 30, r.Y + 80, r.Right + 40, r.Y + 20, r.Right - 40, r.Bottom - 20, r.Right + 20, r.Bottom);
                 }
-                else
-                {
-                    // 이미지 없을 시 대체 도형 (기존 로직 유지)
-                    using (SolidBrush b = new SolidBrush(Color.FromArgb(70, 76, 88))) g.FillRectangle(b, r.X + 40, r.Y + 50, r.Width - 80, r.Height - 55);
-                    // ... 기존 드라이버 K 도형 로직 ...
-                }
-                return;
             }
             else if (e.Name.Contains("Kernel"))
             {
-                // 👇 [수정] 우리가 만든 스프라이트 이미지가 있으면 이미지를 그리고, 없으면 예전 도형을 그립니다.
-                if (ImgBoss_HighKernel != null)
+                using (SolidBrush b = new SolidBrush(Color.FromArgb(180, 184, 190))) g.FillRectangle(b, r.X + 55, r.Y + 35, r.Width - 110, r.Height - 45);
+                using (Pen p = new Pen(Color.White, 3f))
                 {
-                    int cols = 4;
-                    int rows = 1;
-                    int fW = ImgBoss_HighKernel.Width / cols;
-                    int fH = ImgBoss_HighKernel.Height / rows;
-
-                    int fX = 0;
-
-                    // 기믹 시전 중이면 4번 사진(index 3)으로 고정
-                    if (e.IsCastingPattern)
-                    {
-                        fX = 3;
-                    }
-                    else
-                    {
-                        // 대기 상태: 플레이어 방향에 따라 1번(0)과 2번(1) 스위칭
-                        if (e.Facing == -1) fX = 1;
-                        else fX = 0;
-                    }
-
-                    Rectangle srcRect = new Rectangle(fX * fW, 0, fW, fH);
-
-                    // 보스가 바닥(r.Bottom)을 딛고 서 있도록 거대하게(340x340) 좌표 보정
-                    int centerX = r.X + r.Width / 2;
-                    Rectangle destRect = new Rectangle(centerX - 170, r.Bottom - 300, 340, 340);
-
-                    g.DrawImage(ImgBoss_HighKernel, destRect, srcRect, GraphicsUnit.Pixel);
+                    g.DrawLine(p, r.X + r.Width / 2, r.Y + 42, r.X + r.Width / 2, r.Bottom - 25);
+                    g.DrawLine(p, r.X + 70, r.Y + 78, r.Right - 70, r.Y + 78);
                 }
-                else
-                {
-                    // (이미지를 못 찾았을 때 나오는 기존 임시 도형 로직)
-                    using (SolidBrush b = new SolidBrush(Color.FromArgb(180, 184, 190))) g.FillRectangle(b, r.X + 55, r.Y + 35, r.Width - 110, r.Height - 45);
-                    using (Pen p = new Pen(Color.White, 3f))
-                    {
-                        g.DrawLine(p, r.X + r.Width / 2, r.Y + 42, r.X + r.Width / 2, r.Bottom - 25);
-                        g.DrawLine(p, r.X + 70, r.Y + 78, r.Right - 70, r.Y + 78);
-                    }
-                    using (Font f = F(12f, FontStyle.Bold)) g.DrawString("SYSTEM32", f, Brushes.DarkRed, new Rectangle(r.X, r.Y + 18, r.Width, 24), Center());
-                }
+                using (Font f = F(12f, FontStyle.Bold)) g.DrawString("SYSTEM32", f, Brushes.DarkRed, new Rectangle(r.X, r.Y + 18, r.Width, 24), Center());
             }
             else if (e.Name.Contains("BSOD"))
             {
@@ -1137,13 +1390,12 @@ namespace DebugHeroFileDungeonRPG
                     g.FillRectangle(shade, client);
                 using (SolidBrush topGlow = new SolidBrush(Color.FromArgb(30, st.Accent)))
                     g.FillEllipse(topGlow, client.Width / 2 - 360, 20, 720, 180);
-                DrawXPTaskbar(g, client, bossRoom ? st.Name + " - 보스방" : st.Name);
+                //DrawXPTaskbar(g, client, bossRoom ? st.Name + " - 보스방" : st.Name);
                 return;
             }
             if (st.Index == 1)
             {
                 DrawXPWallpaper(g, client);
-                DrawXPTaskbar(g, client, st.Name);
                 DrawDesktopIcon(g, "내 문서", 24, 36, Color.FromArgb(248, 215, 64));
                 DrawDesktopIcon(g, "내 컴퓨터", 24, 126, Color.FromArgb(110, 190, 245));
                 DrawDesktopIcon(g, "휴지통", 24, 216, Color.FromArgb(210, 230, 220));
@@ -1178,7 +1430,6 @@ namespace DebugHeroFileDungeonRPG
             else if (st.Index == 8) DrawPopupField(g, content);
             else if (st.Index == 9) DrawTempField(g, content);
             else if (st.Index == 10) DrawRecycleField(g, content);
-            DrawXPTaskbar(g, client, st.Name);
         }
 
         private static void DrawDesktopIcon(Graphics g, string label, int x, int y, Color c)
