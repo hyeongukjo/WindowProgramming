@@ -48,10 +48,22 @@ namespace DebugHeroFileDungeonRPG
             {
                 if (enemies[i].Hp <= 0)
                 {
-                    // 처치 보상 지급 연동 후 리스트에서 안전하게 제거
-                    AwardDefeatReward(enemies[i]);
-                    enemies.RemoveAt(i);
+                    // 일반 스테이지(StageKind.Normal)라면 의미 없는 보스방 전환 없이 즉시 클리어 처리합니다!
+                    if (st.Kind == StageKind.Normal)
+                    {
+                        if (weaponDrops.Count > 0) return;
+                        ClearCurrentStage();
+                        return;
+                    }
+
+                    // 혹시 모를 예외 대비용 스위치 유지
+                    StartStageBossPhase();
+                    return;
                 }
+
+                // 보스 페이즈(Boss/Final Stage)에서 보스를 처치했을 경우 즉시 클리어
+                if (weaponDrops.Count > 0) return;
+                ClearCurrentStage();
             }
 
             // ---------------------------------------------------------------------------------
@@ -121,7 +133,8 @@ namespace DebugHeroFileDungeonRPG
             effects.Clear();
             weaponDrops.Clear();
             draggedWeaponDrop = null;
-
+            bossRuntime.Reset(currentStage);
+            stage1BossPhase = false;
             player.Hp = player.MaxHp;
             player.Mp = player.MaxMp;
             player.SystemStability = 100;
@@ -134,29 +147,24 @@ namespace DebugHeroFileDungeonRPG
             stageTime = 0;
             cameraX = 0;
             stageNpcHintClosed = false;
+            firstDesktopNotice = false;
+            screen = ScreenMode.Stage;
 
-            // [Bug 2 해결 핵심]: 홀수층일 때 렌더러가 강제 우회 방어막을 뚫고 무조건 이미지를 그리도록 stageBossPhase를 true로 세팅합니다.
-            // 대신 상단 UpdateStage 진입 시 짝수/홀수 분기를 통해 보스 로직이 켜지는 것은 철저하게 막아둡니다.
-            stageBossPhase = true;
-
-            if (currentStage % 2 == 0)
+            // 💡 [핵심 개편] 스테이지 속성이 보스/최종방(IsBossStage)이면 일반 몹 없이 바로 보스를 스폰합니다!
+            if (st.IsBossStage)
             {
-                // 짝수층 보스방 세팅 (기존 타 작업자 영역 보존)
-                bossRuntime.Reset(currentStage);
+                stageBossPhase = true;
+                enemies.Add(StageEnemyFactory.CreateBoss(st, Math.Max(760, ClientSize.Width - 360), ClientSize.Height, stages.Count));
+                string bossText = $"STAGE {currentStage:00} 보스 레이드 개시: {st.BossName}";
+                effects.Add(new Effect("text", player.X + 290, player.Y - 120, player.X + 290, player.Y - 120, 100, Color.Gold, bossText));
             }
             else
             {
-                // 홀수층 전용 초기화 및 첫 번째 'a 무리'(0번) 스폰
-                currentWaveIndex = 0;
-                waveDelayTicks = 0;
-                isWaveWaiting = false;
-
-                enemies.AddRange(StageEnemyFactory.CreateWaveEnemies(st, 0, ClientSize.Height));
-                effects.Add(new Effect("text", player.X + 220, player.Y - 110, player.X + 220, player.Y - 110, 100, Color.White, "a, b, c, d 무리를 차례로 정화하세요."));
+                stageBossPhase = false;
+                enemies.AddRange(StageEnemyFactory.CreatePreBossEnemies(st, ClientSize.Height, random));
+                effects.Add(new Effect("text", player.X + 220, player.Y - 110, player.X + 220, player.Y - 110, 80, Color.FromArgb(220, 255, 255), "일반 데이터 정화 후 스테이지 클리어"));
             }
 
-            firstDesktopNotice = false;
-            screen = ScreenMode.Stage;
             TryBeep(600, 80);
         }
 
