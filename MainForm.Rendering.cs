@@ -106,7 +106,7 @@ namespace DebugHeroFileDungeonRPG
             DrawDesktopInfoPanel(g);
 
             // 좌측 하단 영역의 휴지통 아이템 상점 아이콘 그리기 시스템 연동
-            RecoveryToolsUI.Shared.DrawDesktopShortcut(g, ClientRectangle, player.Coins, buttons);
+            DesktopIconUI.Shared.DrawRecoveryToolsShortcut(g, ClientRectangle, player.Coins, buttons);
 
             // 3. 하단 작업 표시줄
             TaskbarUI.Shared.Draw(g, ClientRectangle);
