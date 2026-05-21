@@ -86,6 +86,27 @@ namespace DebugHeroFileDungeonRPG
             player.ActionTick = 0;
             player.SkillIndex = skillIndex;
         }
+        
+        public static void StartHitAnimation(PlayerState player)
+        {
+            if (player == null) return;
+            if (player.ActionState == PlayerActionState.Die) return;
+
+            player.ActionState = PlayerActionState.Hit;
+            player.ActionFrame = 0;
+            player.ActionTick = 0;
+            player.SkillIndex = -1;
+        }
+
+        public static void StartDeathAnimation(PlayerState player)
+        {
+            if (player == null) return;
+
+            player.ActionState = PlayerActionState.Die;
+            player.ActionFrame = 0;
+            player.ActionTick = 0;
+            player.SkillIndex = -1;
+        }
 
         public static void UpdateActionAnimation(PlayerState player)
         {
@@ -96,6 +117,34 @@ namespace DebugHeroFileDungeonRPG
 
             player.ActionTick++;
 
+            if (player.ActionState == PlayerActionState.Hit)
+            {
+                int hitFrameDelay = 4;
+
+                if (player.ActionTick % hitFrameDelay == 0)
+                    player.ActionFrame++;
+
+                if (player.ActionFrame >= 6)
+                {
+                    player.ActionState = PlayerActionState.Idle;
+                    player.ActionFrame = 0;
+                    player.ActionTick = 0;
+                    player.SkillIndex = -1;
+                }
+
+                return;
+            }
+
+            if (player.ActionState == PlayerActionState.Die)
+            {
+                int deathFrameDelay = 7;
+
+                if (player.ActionTick % deathFrameDelay == 0 && player.ActionFrame < 5)
+                    player.ActionFrame++;
+
+                return;
+            }
+
             int frameDelay = 5;
 
             if (player.ActionTick % frameDelay == 0)
@@ -104,13 +153,13 @@ namespace DebugHeroFileDungeonRPG
             int maxFrame = 4;
 
             if (player.SkillIndex == 0)
-                maxFrame = 4;      // Q: 1��
+                maxFrame = 4;
             else if (player.SkillIndex == 1)
-                maxFrame = 5;      // W: 2��
+                maxFrame = 5;
             else if (player.SkillIndex == 2)
-                maxFrame = 5;      // E: 3��
+                maxFrame = 5;
             else if (player.SkillIndex == 3)
-                maxFrame = 5;      // R: �ӽ÷� 3�� ����
+                maxFrame = 5;
 
             if (player.ActionFrame >= maxFrame)
             {
