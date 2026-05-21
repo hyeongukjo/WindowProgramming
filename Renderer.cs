@@ -21,6 +21,7 @@ namespace DebugHeroFileDungeonRPG
         private static readonly Dictionary<string, Image> playerSpriteSheets = new Dictionary<string, Image>();
         private static readonly Dictionary<string, Image> playerActionSheetCache = new Dictionary<string, Image>();
         private static Image playerStillSwordImage;
+        private static Image normalMonsterSheet = null;
 
 
         public static Font F(float size, FontStyle style)
@@ -109,7 +110,31 @@ namespace DebugHeroFileDungeonRPG
             Rectangle src = new Rectangle(sx, sy, Math.Min(sw, img.Width - sx), Math.Min(sh, img.Height - sy));
             g.DrawImage(img, dest, src, GraphicsUnit.Pixel);
         }
+        private static Image LoadNormalMonsterSheet()
+        {
+            if (normalMonsterSheet != null)
+                return normalMonsterSheet;
 
+            string path = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "Assets",
+                "Characters",
+                "Enemise",
+                "moster.png"
+            );
+
+            try
+            {
+                if (File.Exists(path))
+                    normalMonsterSheet = Image.FromFile(path);
+            }
+            catch
+            {
+                normalMonsterSheet = null;
+            }
+
+            return normalMonsterSheet;
+        }
 
         private static Image LoadStageBackgroundImage(int stageIndex, bool bossRoom)
         {
@@ -1613,7 +1638,7 @@ namespace DebugHeroFileDungeonRPG
             {
                 Rectangle name = new Rectangle(r.X - 20, r.Y - 38, r.Width + 40, 16);
                 g.FillRectangle(bg, name);
-                g.DrawString(e.DisplayName, f, sb, name, Center());
+                g.DrawString(e.IsBoss ? e.DisplayName : "PACKET", f, sb, name, Center());
             }
         }
 
@@ -1659,15 +1684,92 @@ namespace DebugHeroFileDungeonRPG
 
         private static void DrawFileMonster(Graphics g, Rectangle r, GameEntity e)
         {
-            if (e.HitFlash > 0) using (SolidBrush flash = new SolidBrush(Color.FromArgb(120, Color.White))) g.FillEllipse(flash, r.X - 8, r.Y - 8, r.Width + 16, r.Height + 16);
+            Image sheet = LoadNormalMonsterSheet();
+
+            if (sheet == null)
+            {
+                DrawFallbackFileMonster(g, r, e);
+                return;
+            }
+
+            int cols = 3;
+            int rows = 3;
+            int totalFrames = cols * rows;
+
+            int offset = Math.Abs(((e.Name ?? "").GetHashCode()) % totalFrames);
+            int frame = ((Environment.TickCount / 130) + offset) % totalFrames;
+
+            int col = frame % cols;
+            int row = frame / cols;
+
+            int sx = (int)Math.Round(col * sheet.Width / (double)cols);
+            int sy = (int)Math.Round(row * sheet.Height / (double)rows);
+            int sx2 = (int)Math.Round((col + 1) * sheet.Width / (double)cols);
+            int sy2 = (int)Math.Round((row + 1) * sheet.Height / (double)rows);
+
+            int pad = 3;
+
+            Rectangle src = new Rectangle(
+                sx + pad,
+                sy + pad,
+                Math.Max(1, sx2 - sx - pad * 2),
+                Math.Max(1, sy2 - sy - pad * 2)
+            );
+
+            int drawW = 145;
+            int drawH = 120;
+
+            Rectangle dst = new Rectangle(
+                r.X + r.Width / 2 - drawW / 2,
+                r.Y + r.Height / 2 - drawH / 2 - 4,
+                drawW,
+                drawH
+            );
+
+            InterpolationMode oldInterpolation = g.InterpolationMode;
+            PixelOffsetMode oldPixelOffset = g.PixelOffsetMode;
+            SmoothingMode oldSmoothing = g.SmoothingMode;
+
+            g.InterpolationMode = InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode = PixelOffsetMode.Half;
+            g.SmoothingMode = SmoothingMode.None;
+
+            g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+
+            g.InterpolationMode = oldInterpolation;
+            g.PixelOffsetMode = oldPixelOffset;
+            g.SmoothingMode = oldSmoothing;
+
+            if (e.HitFlash > 0)
+            {
+                using (SolidBrush flash = new SolidBrush(Color.FromArgb(90, Color.White)))
+                    g.FillEllipse(flash, dst.X + 8, dst.Y + 10, dst.Width - 16, dst.Height - 18);
+            }
+        }
+
+        private static void DrawFallbackFileMonster(Graphics g, Rectangle r, GameEntity e)
+        {
+            if (e.HitFlash > 0)
+            {
+                using (SolidBrush flash = new SolidBrush(Color.FromArgb(120, Color.White)))
+                    g.FillEllipse(flash, r.X - 8, r.Y - 8, r.Width + 16, r.Height + 16);
+            }
+
             Rectangle icon = new Rectangle(r.X + r.Width / 2 - 25, r.Y + 8, 50, 55);
-            using (LinearGradientBrush b = new LinearGradientBrush(icon, Color.White, Color.FromArgb(225, 232, 246), 90f)) g.FillRectangle(b, icon);
-            using (Pen p = new Pen(e.Color, 2f)) g.DrawRectangle(p, icon.X, icon.Y, icon.Width - 1, icon.Height - 1);
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(54, e.Color))) g.FillRectangle(b, icon.X + 8, icon.Y + 14, icon.Width - 16, 15);
+
+            using (LinearGradientBrush b = new LinearGradientBrush(icon, Color.White, Color.FromArgb(225, 232, 246), 90f))
+                g.FillRectangle(b, icon);
+
+            using (Pen p = new Pen(e.Color, 2f))
+                g.DrawRectangle(p, icon.X, icon.Y, icon.Width - 1, icon.Height - 1);
+
+            using (SolidBrush b = new SolidBrush(Color.FromArgb(54, e.Color)))
+                g.FillRectangle(b, icon.X + 8, icon.Y + 14, icon.Width - 16, 15);
+
             using (Font f = F(7f, FontStyle.Bold))
             using (SolidBrush sb = new SolidBrush(Darken(e.Color, 30)))
                 g.DrawString(e.Kind, f, sb, new Rectangle(icon.X + 3, icon.Y + 33, icon.Width - 6, 16), Center());
-            // small eyes
+
             using (SolidBrush eye = new SolidBrush(Color.Red))
             {
                 g.FillEllipse(eye, icon.X + 12, icon.Y + 9, 5, 5);
