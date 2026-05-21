@@ -20,6 +20,7 @@ namespace DebugHeroFileDungeonRPG
         private static readonly Image[] playerAgentWalkFrames = new Image[8];
         private static readonly Dictionary<string, Image> playerSpriteSheets = new Dictionary<string, Image>();
         private static readonly Dictionary<string, Image> playerActionSheetCache = new Dictionary<string, Image>();
+        private static readonly Dictionary<string, Image> playerMotionSheetCache = new Dictionary<string, Image>();
         private static Image playerStillSwordImage;
         private static Image normalMonsterSheet = null;
 
@@ -1094,6 +1095,96 @@ namespace DebugHeroFileDungeonRPG
                 g.DrawImage(img, dst);
             }
         }
+        private static Image GetPlayerMotionSheet(string fileName)
+        {
+            Image cached;
+            if (playerMotionSheetCache.TryGetValue(fileName, out cached))
+                return cached;
+
+            string path = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "Assets",
+                "Characters",
+                "Player",
+                fileName
+            );
+
+            if (File.Exists(path))
+            {
+                cached = Image.FromFile(path);
+                playerMotionSheetCache[fileName] = cached;
+                return cached;
+            }
+
+            playerMotionSheetCache[fileName] = null;
+            return null;
+        }
+
+        private static Rectangle GetPlayerMotionSourceRect(Image sheet, int frameCount, int frame)
+        {
+            if (frame < 0) frame = 0;
+            if (frame >= frameCount) frame = frameCount - 1;
+
+            int x1 = (int)Math.Round(frame * sheet.Width / (double)frameCount);
+            int x2 = (int)Math.Round((frame + 1) * sheet.Width / (double)frameCount);
+
+            int cropY = (int)(sheet.Height * 0.22f);
+            int cropH = (int)(sheet.Height * 0.50f);
+
+            if (cropY + cropH > sheet.Height)
+                cropH = sheet.Height - cropY;
+
+            return new Rectangle(x1, cropY, x2 - x1, cropH);
+        }
+
+        private static void DrawPlayerMotionFrame(Graphics g, PlayerState p, float drawX, float baseY, int facing, string fileName)
+        {
+            Image sheet = GetPlayerMotionSheet(fileName);
+
+            if (sheet == null)
+            {
+                DrawPlayerStillSprite(g, p, drawX, baseY, facing);
+                return;
+            }
+
+            Rectangle src = GetPlayerMotionSourceRect(sheet, 6, p.ActionFrame);
+
+            float scale = 0.35f;
+
+            int drawW = (int)(src.Width * scale);
+            int drawH = (int)(src.Height * scale);
+
+            Rectangle dst = new Rectangle(
+                (int)(drawX - drawW / 2),
+                (int)(baseY - drawH + 12),
+                drawW,
+                drawH
+            );
+
+            GraphicsState state = g.Save();
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+
+            if (facing < 0)
+            {
+                using (Bitmap frameBmp = new Bitmap(src.Width, src.Height))
+                {
+                    using (Graphics fg = Graphics.FromImage(frameBmp))
+                    {
+                        fg.DrawImage(sheet, new Rectangle(0, 0, src.Width, src.Height), src, GraphicsUnit.Pixel);
+                    }
+
+                    frameBmp.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                    g.DrawImage(frameBmp, dst);
+                }
+            }
+            else
+            {
+                g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+            }
+
+            g.Restore(state);
+        }
+
         private static void DrawPlayerActionFrame(Graphics g, PlayerState p, float drawX, float baseY, int facing)
         {
             Image sheet = GetPlayerActionSheet(p.WeaponLevel);
@@ -1161,7 +1252,15 @@ namespace DebugHeroFileDungeonRPG
                 using (Pen shield = new Pen(Color.FromArgb(150, 120, 210, 255), 3f))
                     g.DrawEllipse(shield, drawX - 58, baseY - 120, 116, 130);
             }
-            if (p.ActionState == PlayerActionState.Skill)
+            if (p.ActionState == PlayerActionState.Die)
+            {
+                DrawPlayerMotionFrame(g, p, drawX, baseY, facing, "player_gameover.png");
+            }
+            else if (p.ActionState == PlayerActionState.Hit)
+            {
+                DrawPlayerMotionFrame(g, p, drawX, baseY, facing, "player_attacked.png");
+            }
+            else if (p.ActionState == PlayerActionState.Skill)
             {
                 DrawPlayerSkillAction(g, p, drawX, baseY, facing);
             }
