@@ -20,28 +20,58 @@ namespace DebugHeroFileDungeonRPG
 
         public int ClockRightMargin { get; set; } = 82;
         public int ClockYAdjust { get; set; } = 18;
+        private void DrawStartText(Graphics g, Rectangle taskbarDest, int barY, int barHeight)
+        {
+            // taskbar.png에서 시작 버튼 영역 비율 기준
+            int startButtonWidth = (int)(taskbarDest.Width * 240f / 1628f);
+
+            Rectangle textRect = new Rectangle(
+                taskbarDest.X + 62,
+                barY + 1,
+                startButtonWidth - 72,
+                barHeight - 2
+            );
+
+            var oldHint = g.TextRenderingHint;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
+
+            using (Font font = Renderer.F(15.5f, FontStyle.Bold))
+            using (SolidBrush shadowBrush = new SolidBrush(Color.FromArgb(90, 0, 80, 0)))
+            using (SolidBrush textBrush = new SolidBrush(Color.White))
+            using (StringFormat format = new StringFormat())
+            {
+                format.Alignment = StringAlignment.Center;
+                format.LineAlignment = StringAlignment.Center;
+
+                Rectangle shadowRect = new Rectangle(
+                    textRect.X + 1,
+                    textRect.Y + 1,
+                    textRect.Width,
+                    textRect.Height
+                );
+
+                g.DrawString("시작", font, shadowBrush, shadowRect, format);
+                g.DrawString("시작", font, textBrush, textRect, format);
+            }
+
+            g.TextRenderingHint = oldHint;
+        }
 
         public void Draw(Graphics g, Rectangle client)
         {
-            // 화면에 보일 작업표시줄 두께
-            // 두꺼우면 48, 더 얇게 하고 싶으면 44 추천
             int barHeight = 42;
             int barY = client.Bottom - barHeight;
 
             if (BackgroundRenderer.taskbarImg != null)
             {
-                // taskbar.png 전체 이미지 안에서 실제 작업표시줄 부분만 잘라서 사용
-                // 현재 이미지 기준 실제 taskbar 위치:
-                // X: 22 ~ 1649
-                // Y: 428 ~ 506
+                // 현재 taskbar.png 이미지에서 실제 작업표시줄 부분만 잘라서 사용
                 Rectangle src = new Rectangle(
                     22,
                     428,
                     1628,
-                    79
+                    80
                 );
 
-                // 화면 아래쪽 전체 너비로 늘려서 그림
                 Rectangle dest = new Rectangle(
                     client.X - 7,
                     barY,
@@ -53,11 +83,14 @@ namespace DebugHeroFileDungeonRPG
                 g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
 
                 g.DrawImage(
-                    BackgroundRenderer.taskbarImg, dest, src, GraphicsUnit.Pixel);
-
+                    BackgroundRenderer.taskbarImg,
+                    dest,
+                    src,
+                    GraphicsUnit.Pixel
+                );
+                DrawStartText(g, dest, barY, barHeight);
                 g.InterpolationMode = oldMode;
 
-                // 작업표시줄 오른쪽 시계 표시
                 string timeText = DateTime.Now.ToString("tt h:mm");
 
                 Rectangle clockRect = new Rectangle(
@@ -67,7 +100,7 @@ namespace DebugHeroFileDungeonRPG
                     barHeight
                 );
 
-                using (Font clockFont = Renderer.F(16f, FontStyle.Bold))
+                using (Font clockFont = Renderer.F(14f, FontStyle.Bold))
                 using (SolidBrush clockBrush = new SolidBrush(Color.White))
                 {
                     g.DrawString(
