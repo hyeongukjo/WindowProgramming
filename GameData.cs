@@ -42,6 +42,15 @@ namespace DebugHeroFileDungeonRPG
         Warning
     }
 
+    public enum PlayerActionState
+    {
+        Idle,
+        Walk,
+        Skill,
+        Hit,
+        Die
+    }
+
     public sealed class StageInfo
     {
         public int Index;
@@ -84,16 +93,15 @@ namespace DebugHeroFileDungeonRPG
         public bool IsBoss;
         public Color Color;
         public string Kind;
-       
+
         public bool RewardGiven;
         public int CoinReward;
 
-        public bool IsCastingPattern = false; // 특수 기믹 시전 여부 (true일 때 4번 특수 모션 스프라이트로 고정)
-        public int Facing = 1;                // 바라보는 방향 (1: 오른쪽, -1: 왼쪽)
-        public int HitFlash = 0;              // 피격 시 반짝임 효과 틱 (타격감 및 아우라 렌더링용)
-        public int AttackCooldown = 0;        // 보스 기본 공격 쿨타임 관리
+        public bool IsCastingPattern = false; // 특수 기믹 시전 여부
+        public int Facing = 1;                // 보스가 바라보는 방향 (1: 오른쪽, -1: 왼쪽)
+        public int HitFlash = 0;              // 피격 반짝임 효과
+        public int AttackCooldown = 0;        // 보스 기본 공격 쿨타임
 
-        // 보스 체력 페이즈별 기믹이 정확히 1번씩만 발동하도록 제어하는 스위치
         public bool Pattern75Used = false;
         public bool Pattern50Used = false;
         public bool Pattern25Used = false;
@@ -137,6 +145,11 @@ namespace DebugHeroFileDungeonRPG
         public int WeaponLevel = 1;
         public int Exp = 0;
         public int Facing = 1;
+        public int Direction = 0;
+        public PlayerActionState ActionState = PlayerActionState.Idle;
+        public int ActionFrame = 0;
+        public int ActionTick = 0;
+        public int SkillIndex = -1;
         public int RelationLog = 0;
         public int ClearedStages = 0;
         public int QuarantinedBosses = 0;

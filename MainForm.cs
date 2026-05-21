@@ -28,6 +28,7 @@ namespace DebugHeroFileDungeonRPG
         private string finalInput = "";
         private int unlockedStage = 10;
         private int selectedStage = 1;
+        private string selectedShopItem = "hp";
         private int currentStage = 0;
         private int clearStage = 0;
         private float cameraX;
@@ -40,6 +41,7 @@ namespace DebugHeroFileDungeonRPG
         private bool stage1BossPhase = false;
         private bool lastClearWasBoss = false;
         private readonly BossRuntime bossRuntime = new BossRuntime();
+        private TaskbarUI taskbarUI;
         private BossPatternManager bossManager;
 
 
@@ -60,6 +62,9 @@ namespace DebugHeroFileDungeonRPG
             timer.Interval = 33; // 렉 방지를 위해 60FPS -> 30FPS로 조정
             timer.Tick += Timer_Tick;
             timer.Start();
+
+            BackgroundRenderer.InitializeBackgrounds();
+            taskbarUI = new TaskbarUI();
 
             KeyDown += MainForm_KeyDown;
             KeyPress += MainForm_KeyPress;
