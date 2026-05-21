@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
@@ -25,7 +26,7 @@ namespace DebugHeroFileDungeonRPG
         private int introIndex;
         private string profileInput = "";
         private string finalInput = "";
-        private int unlockedStage = 1;
+        private int unlockedStage = 10;
         private int selectedStage = 1;
         private int currentStage = 0;
         private int clearStage = 0;
@@ -76,12 +77,39 @@ namespace DebugHeroFileDungeonRPG
             // [추가] BSOD 로드
             string bsodPath = System.IO.Path.Combine(bossPath, "bsod_dragon.png");
             if (System.IO.File.Exists(bsodPath)) Renderer.ImgBoss_BSOD = Image.FromFile(bsodPath);
-
+            // [추가] High Kernel 로드
             string hkPath = System.IO.Path.Combine(bossPath, "high_kernel.png");
             if (System.IO.File.Exists(hkPath))
             {
                 Renderer.ImgBoss_HighKernel = Image.FromFile(hkPath);
             }
+            // [추가] Exception Queen 로드
+            string eqPath = System.IO.Path.Combine(bossPath, "Exception_Queen.png");
+            if (System.IO.File.Exists(eqPath))
+            {
+                Renderer.ImgBoss_ExceptionQueen = Image.FromFile(eqPath);
+            }
+            // [추가] Illegal Binny 로드
+            string binnyPath = System.IO.Path.Combine(bossPath, "Illegal_Binny.png");
+            if (System.IO.File.Exists(binnyPath))
+            {
+                Renderer.ImgBoss_IllegalBinny = Image.FromFile(binnyPath);
+            }
+            string diskPath = Path.Combine(bossPath, "disk_sprites.png");
+            if (File.Exists(diskPath))
+            {
+                // 외부 사진을 GDI+ 이미지 객체로 변환하여 렌더러에 적재합니다.
+                Renderer.Img_DiskSprite = Image.FromFile(diskPath);
+            }
+            // High-Kernel 기믹 이미지 로드
+            string meteorPath = Path.Combine(bossPath, "Meteor.png");
+            if (File.Exists(meteorPath)) Renderer.Img_Meteor = Image.FromFile(meteorPath);
+
+            string meteor2Path = Path.Combine(bossPath, "Meteor2.png");
+            if (File.Exists(meteor2Path)) Renderer.Img_Meteor2 = Image.FromFile(meteor2Path);
+
+            string safePath = Path.Combine(bossPath, "safezone.png");
+            if (File.Exists(safePath)) Renderer.Img_Safezone = Image.FromFile(safePath);
         }
 
         private void Timer_Tick(object sender, EventArgs e)
@@ -106,6 +134,22 @@ namespace DebugHeroFileDungeonRPG
                 UpdateStage();
             }
             Invalidate();
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+
+            // 인게임 스테이지 작동 중이면서 보스 페이즈일 때 실시간 타이핑 해킹 입력 연동
+            if (screen == ScreenMode.Stage && stageBossPhase)
+            {
+                bossRuntime.patternManager.HandleTypingInput(
+                    e.KeyCode,
+                    player,
+                    effects,
+                    StageFlowRules.GetStageMapWidth(stages[currentStage - 1], true, ClientSize.Width)
+                );
+            }
         }
 
 

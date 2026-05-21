@@ -62,9 +62,20 @@ namespace DebugHeroFileDungeonRPG
             {
                 if (!stageBossPhase)
                 {
+                    // 일반 스테이지(StageKind.Normal)라면 의미 없는 보스방 전환 없이 즉시 클리어 처리합니다!
+                    if (st.Kind == StageKind.Normal)
+                    {
+                        if (weaponDrops.Count > 0) return;
+                        ClearCurrentStage();
+                        return;
+                    }
+
+                    // 혹시 모를 예외 대비용 스위치 유지
                     StartStageBossPhase();
                     return;
                 }
+
+                // 보스 페이즈(Boss/Final Stage)에서 보스를 처치했을 경우 즉시 클리어
                 if (weaponDrops.Count > 0) return;
                 ClearCurrentStage();
             }
@@ -103,7 +114,6 @@ namespace DebugHeroFileDungeonRPG
             weaponDrops.Clear();
             draggedWeaponDrop = null;
             bossRuntime.Reset(currentStage);
-            stageBossPhase = false;
             stage1BossPhase = false;
             player.Hp = player.MaxHp;
             player.Mp = player.MaxMp;
@@ -117,11 +127,24 @@ namespace DebugHeroFileDungeonRPG
             stageTime = 0;
             cameraX = 0;
             stageNpcHintClosed = false;
-
-            enemies.AddRange(StageEnemyFactory.CreatePreBossEnemies(st, ClientSize.Height, random));
-            effects.Add(new Effect("text", player.X + 220, player.Y - 110, player.X + 220, player.Y - 110, 80, Color.FromArgb(220, 255, 255), "몬스터 정리 후 보스방 자동 진입"));
             firstDesktopNotice = false;
             screen = ScreenMode.Stage;
+
+            // 💡 [핵심 개편] 스테이지 속성이 보스/최종방(IsBossStage)이면 일반 몹 없이 바로 보스를 스폰합니다!
+            if (st.IsBossStage)
+            {
+                stageBossPhase = true;
+                enemies.Add(StageEnemyFactory.CreateBoss(st, Math.Max(760, ClientSize.Width - 360), ClientSize.Height, stages.Count));
+                string bossText = $"STAGE {currentStage:00} 보스 레이드 개시: {st.BossName}";
+                effects.Add(new Effect("text", player.X + 290, player.Y - 120, player.X + 290, player.Y - 120, 100, Color.Gold, bossText));
+            }
+            else
+            {
+                stageBossPhase = false;
+                enemies.AddRange(StageEnemyFactory.CreatePreBossEnemies(st, ClientSize.Height, random));
+                effects.Add(new Effect("text", player.X + 220, player.Y - 110, player.X + 220, player.Y - 110, 80, Color.FromArgb(220, 255, 255), "일반 데이터 정화 후 스테이지 클리어"));
+            }
+
             TryBeep(600, 80);
         }
 

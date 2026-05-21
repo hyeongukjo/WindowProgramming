@@ -18,7 +18,7 @@ namespace DebugHeroFileDungeonRPG
             float dx = player.TargetX - player.X;
             float dy = player.TargetY - player.Y;
             if (Math.Abs(dx) > 3.0f) player.Facing = dx >= 0 ? 1 : -1;
-            float maxSpeed = 4.6f + Math.Min(2.6f, player.Level * 0.22f);
+            float maxSpeed =/* 4.6f + Math.Min(2.6f, player.Level * 0.22f);*/ 15.0f;
             float desiredVelocityX = 0f;
             float desiredVelocityY = 0f;
             float distance = (float)Math.Sqrt(dx * dx + dy * dy);

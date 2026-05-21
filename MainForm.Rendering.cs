@@ -220,6 +220,11 @@ namespace DebugHeroFileDungeonRPG
             if (stageBossPhase)
             {
                 DrawCustomBossGimmicks(g);
+                GameEntity currentBoss = enemies.Find(e => e.IsBoss);
+                if (currentBoss != null)
+                {
+                    Renderer.DrawBossGlobalUI(g, currentBoss, ClientSize);
+                }
             }
             bool playerMovingNow = Math.Abs(player.TargetX - player.X) > 3.5f || Math.Abs(player.TargetY - player.Y) > 3.5f ||
                                    Math.Abs(player.MoveVelocityX) > 0.25f || Math.Abs(player.MoveVelocityY) > 0.25f;
@@ -362,22 +367,40 @@ namespace DebugHeroFileDungeonRPG
                     g.DrawString("권한 거부 상태! 스킬 사용 시 미사일 투하!", f, Brushes.Red, new Point(ClientSize.Width / 2 - 170, 110));
             }
 
-            // 2. 투사체(Projectiles) 및 하늘 미사일(SkyMissiles) 그리기 (cameraX로 화면 좌표 보정)
+            
             foreach (var sm in bossManager.SkyMissiles)
             {
                 float sPosX = sm.X - cameraX;
                 using (Pen p = new Pen(Color.FromArgb(200, Color.Red), 2f)) g.DrawEllipse(p, sPosX - 50, sm.Y - 25, 100, 50);
                 float missileY = sm.Y - 500 + (1f - (sm.Timer / 60f)) * 500;
-                g.FillRectangle(Brushes.OrangeRed, sPosX - 5, missileY, 10, 25);
-            }
 
+                // 💡 [디자인 완전 교체] 투박한 OrangeRed 직사각형 막대 대신 Meteor 이미지 전체 투사
+                if (Renderer.Img_Meteor != null)
+                {
+                    g.DrawImage(Renderer.Img_Meteor, sPosX - 32, missileY - 32, 64, 64);
+                }
+                else
+                {
+                    g.FillRectangle(Brushes.OrangeRed, sPosX - 5, missileY, 10, 25);
+                }
+            }
             foreach (var p in bossManager.Projectiles)
             {
                 float sPosX = p.X - cameraX;
                 if (p.IsEnrageMissile)
                 {
-                    g.FillRectangle(Brushes.Red, sPosX - 15, p.Y - 5, 30, 10);
-                    g.DrawRectangle(Pens.White, sPosX - 15, p.Y - 5, 30, 10);
+                    // ❌ 기존의 투박한 주황색 사각형 채우기 및 흰색 테두리선 삭제 구역
+
+                    // 💡 [디자인 요청 반영] 10% 기믹용 이미지를 Meteor2에서 일반 Meteor(Img_Meteor) 이미지 전체 투사로 변경합니다.
+                    if (Renderer.Img_Meteor != null)
+                    {
+                        g.DrawImage(Renderer.Img_Meteor, sPosX - 32, p.Y - 32, 64, 64);
+                    }
+                    else
+                    {
+                        using (SolidBrush ob = new SolidBrush(Color.OrangeRed))
+                            g.FillEllipse(ob, sPosX - 20, p.Y - 20, 40, 40);
+                    }
                 }
                 else
                 {
@@ -415,6 +438,28 @@ namespace DebugHeroFileDungeonRPG
                 Rectangle timerBar = new Rectangle(typeBox.X, typeBox.Bottom + 2, typeBox.Width, 6);
                 int barWidth = (int)((bossManager.TypingTimer / 300f) * timerBar.Width);
                 using (SolidBrush barBg = new SolidBrush(Color.Yellow)) g.FillRectangle(barBg, timerBar.X, timerBar.Y, Math.Max(0, barWidth), timerBar.Height);
+            }
+
+            if (bossManager.IsSystemWipeActive)
+            {
+                float szX = bossManager.SafeZoneCenter.X - cameraX;
+                float szY = bossManager.SafeZoneCenter.Y;
+                float radius = bossManager.SafeZoneRadius; // 80f
+
+                if (Renderer.Img_Safezone != null)
+                {
+                    // 자르지 않고 세이프존 이미지 전체 크기를 원형 범위(지름 160px)에 맞춰 드로우
+                    g.DrawImage(Renderer.Img_Safezone, szX - radius, szY - radius, radius * 2, radius * 2);
+                }
+                else
+                {
+                    // 이미지 로드 실패 시의 가시성 확보용 네온 그린 가이드라인 백업 백업선
+                    using (Pen p = new Pen(Color.Lime, 3f))
+                    {
+                        p.DashStyle = DashStyle.Dash;
+                        g.DrawEllipse(p, szX - radius, szY - radius, radius * 2, radius * 2);
+                    }
+                }
             }
         }
 

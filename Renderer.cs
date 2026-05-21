@@ -18,9 +18,20 @@ namespace DebugHeroFileDungeonRPG
         private static Image playerAgentIdleFrame = null;
         private static readonly Image[] playerAgentWalkFrames = new Image[8];
        
+        // 보스 이미지
         public static Image ImgBoss_DriverK;
         public static Image ImgBoss_BSOD;
         public static Image ImgBoss_HighKernel;
+        public static Image ImgBoss_ExceptionQueen;
+        public static Image ImgBoss_IllegalBinny;
+
+        // 보스 공격 이펙트
+        public static Image Img_DiskSprite;
+        public static Image Img_Meteor;
+        public static Image Img_Meteor2;
+        public static Image Img_Safezone;
+
+
 
         public static Font F(float size, FontStyle style)
         {
@@ -909,16 +920,22 @@ namespace DebugHeroFileDungeonRPG
             RectangleF b = e.Bounds;
             Rectangle r = Rectangle.Round(new RectangleF(b.X - cameraX, b.Y, b.Width, b.Height));
             using (SolidBrush sh = new SolidBrush(Color.FromArgb(80, 0, 0, 0))) g.FillEllipse(sh, r.X + 4, r.Bottom - 10, r.Width - 8, 12);
+
             if (e.IsBoss)
             {
                 DrawBoss(g, r, e);
+                // 💡 [수정] 보스일 때는 여기서 레이아웃 그리기를 종료(return)하여 
+                // 아래에 있는 일반 몹용 겹침 HP 바 코드를 타지 않도록 원천 차단합니다!
+                return;
             }
             else
             {
                 DrawFileMonster(g, r, e);
             }
+
+            // 💡 [변경] 이제 이 구역은 '일반 파일 몬스터'만 사용하는 전용 머리 위 UI 구역이 됩니다.
             Rectangle hp = new Rectangle(r.X, r.Y - 18, r.Width, 8);
-            DrawBar(g, hp, e.Hp, e.MaxHp, e.IsBoss ? Color.Red : Color.OrangeRed);
+            DrawBar(g, hp, e.Hp, e.MaxHp, Color.OrangeRed);
             using (Font f = F(7f, FontStyle.Bold))
             using (SolidBrush sb = new SolidBrush(Color.White))
             using (SolidBrush bg = new SolidBrush(Color.FromArgb(140, 0, 0, 0)))
@@ -990,6 +1007,9 @@ namespace DebugHeroFileDungeonRPG
         private static void DrawBoss(Graphics g, Rectangle r, GameEntity e)
         {
             using (SolidBrush aura = new SolidBrush(Color.FromArgb(55, e.Color))) g.FillEllipse(aura, r.X - 20, r.Y - 20, r.Width + 40, r.Height + 40);
+            // ==========================================================
+            // 1번 보스: Driver-K 
+            // ==========================================================         
             if (e.Name.Contains("Driver-K"))
             {
                 if (Renderer.ImgBoss_DriverK != null)
@@ -1002,7 +1022,7 @@ namespace DebugHeroFileDungeonRPG
                     int fY = 0;
                     int fX = 0;
 
-                    // 💡 특수 기믹 패턴(75%, 50%, 25%) 시전 중일 때 무조건 7번 사진!
+                    // 특수 기믹 패턴(75%, 50%, 25%) 시전 중일 때 무조건 7번 사진!
                     if (e.IsCastingPattern)
                     {
                         fY = 1; // 2번째 줄
@@ -1033,80 +1053,208 @@ namespace DebugHeroFileDungeonRPG
                 }
                 return;
             }
-            else if (e.Name.Contains("Kernel"))
+            // ==========================================================
+            // 2번 보스: High-Kernel 
+            // ==========================================================
+            if (e.Name.Contains("High-Kernel"))
             {
-                // 👇 [수정] 우리가 만든 스프라이트 이미지가 있으면 이미지를 그리고, 없으면 예전 도형을 그립니다.
-                if (ImgBoss_HighKernel != null)
+                if (Renderer.ImgBoss_HighKernel != null)
                 {
-                    int cols = 4;
+                    int cols = 4; // 1행 4열 가로 배치 기준
                     int rows = 1;
-                    int fW = ImgBoss_HighKernel.Width / cols;
-                    int fH = ImgBoss_HighKernel.Height / rows;
+                    int fW = Renderer.ImgBoss_HighKernel.Width / cols;
+                    int fH = Renderer.ImgBoss_HighKernel.Height / rows;
 
                     int fX = 0;
+                    int fY = 0;
 
-                    // 기믹 시전 중이면 4번 사진(index 3)으로 고정
+                    // 1. 특수 패턴 시전 중일 때: 무조건 4번 사진 (인덱스 3)
                     if (e.IsCastingPattern)
                     {
                         fX = 3;
+                        fY = 0;
                     }
                     else
                     {
-                        // 대기 상태: 플레이어 방향에 따라 1번(0)과 2번(1) 스위칭
-                        if (e.Facing == -1) fX = 1;
-                        else fX = 0;
+                        // 2. 평상시 대기 상태: 플레이어 방향 추적
+                        if (e.Facing == -1)
+                        {
+                            fX = 1; // 왼쪽에 있으면 2번 사진 (인덱스 1)
+                            fY = 0;
+                        }
+                        else
+                        {
+                            fX = 0; // 오른쪽에 있으면 1번 사진 (인덱스 0)
+                            fY = 0;
+                        }
                     }
 
-                    Rectangle srcRect = new Rectangle(fX * fW, 0, fW, fH);
+                    Rectangle srcRect = new Rectangle(fX * fW, fY * fH, fW, fH);
+                    int centerX = r.X + r.Width / 2;
 
-                    // 보스가 바닥(r.Bottom)을 딛고 서 있도록 거대하게(340x340) 좌표 보정
+                    // High-Kernel의 인게임 위상에 맞춘 드로우 박스 (크기 조정 필요시 340 숫자 변경)
+                    Rectangle destRect = new Rectangle(centerX - 170, r.Bottom - 300, 340, 340);
+
+                    g.DrawImage(Renderer.ImgBoss_HighKernel, destRect, srcRect, GraphicsUnit.Pixel);
+                }
+                return;
+            }
+            // ==========================================================
+            // 3번 보스: BSOD 렌더링 수정 (위아래 중 위쪽 줄만 사용)
+            // ==========================================================
+            if (e.Name.Contains("BSOD"))
+            {
+                if (Renderer.ImgBoss_BSOD != null)
+                {
+                    // 💡 [핵심 수정] 올려주신 이미지 파일은 물리적으로 가로로 4칸(cols), 세로로 2칸(rows) 배치되어 있습니다.
+                    // 위아래가 동시에 나왔던 이유는 기존 rows가 1이어서 frame height가 두 배로 크게 계산되었기 때문입니다.
+                    int cols = 4; // 가로 4칸
+                    int rows = 2; // 💡 [핵심 수정] 물리적인 세로줄 개수를 2로 명시합니다. (위쪽 줄, 아래쪽 줄)
+                    int fW = Renderer.ImgBoss_BSOD.Width / cols;
+                    int fH = Renderer.ImgBoss_BSOD.Height / rows;
+
+                    // 유저님의 매핑 요청: 0번, 1번, 3번 인덱스는 모두 '위쪽 줄'에 위치한다고 가정합니다.
+                    int targetIndex = 0;
+
+                    // 1. 특수 기믹 시전 중일 때: 무조건 1번 인덱스 사진 고정
+                    if (e.IsCastingPattern)
+                    {
+                        targetIndex = 1;
+                    }
+                    else
+                    {
+                        // 2. 평상시 대기 상태: 플레이어 위치에 따른 인덱스 분기
+                        if (e.Facing == -1)
+                        {
+                            targetIndex = 3; // 플레이어가 왼쪽에 있으면 3번 인덱스
+                        }
+                        else
+                        {
+                            targetIndex = 0; // 플레이어가 오른쪽에 있으면 0번 인덱스
+                        }
+                    }
+
+                    // 💡 [자동화 공식 해설]
+                    // targetIndex가 0, 1, 3 중 하나라면 
+                    // fX = 0, 1, 3 (순서대로)
+                    // fY = targetIndex / cols = (0/4), (1/4), (3/4) = 모두 정수 결과값은 0이 됩니다.
+                    // fY가 0으로 고정되므로, srcRect는 무조건 이미지의 '위쪽 줄' 영역만 잘라냅니다.
+                    int fX = targetIndex % cols;
+                    int fY = targetIndex / cols;
+
+                    // 정확히 계산된 fY 좌표를 사용하여 위쪽 줄의 프레임만 잘라냅니다.
+                    Rectangle srcRect = new Rectangle(fX * fW, fY * fH, fW, fH);
                     int centerX = r.X + r.Width / 2;
                     Rectangle destRect = new Rectangle(centerX - 170, r.Bottom - 300, 340, 340);
 
-                    g.DrawImage(ImgBoss_HighKernel, destRect, srcRect, GraphicsUnit.Pixel);
+                    g.DrawImage(Renderer.ImgBoss_BSOD, destRect, srcRect, GraphicsUnit.Pixel);
+                }
+                return;
+            }
+            // ==========================================================
+            // 4번 보스: Exception Queen [크기 1.5배 축소 및 바닥선 정렬 완벽 반영]
+            // ==========================================================
+            if (e.Name.Contains("Exception Queen") || e.Name.Contains("Exception_Queen"))
+            {
+                if (Renderer.ImgBoss_ExceptionQueen != null)
+                {
+                    int totalH = Renderer.ImgBoss_ExceptionQueen.Height; // 686
+
+                    // 유저님이 지정해주신 최적의 슬라이싱 픽셀 수치 그대로 고정
+                    int srcX = 0;
+                    int srcY = 0;
+                    int srcW = 800;
+                    int srcH = totalH;
+
+                    if (e.Facing == -1)
+                    {
+                        // 👈 [플레이어가 왼쪽에 있을 때] -> 왼쪽 대기 칸 출력
+                        srcX = 800 + 10;
+                        srcW = 790;
+                    }
+                    else
+                    {
+                        // 👈 [플레이어가 오른쪽에 있을 때] -> 오른쪽 대기 칸 출력
+                        srcX = 0;
+                        srcW = 800;
+                    }
+
+                    Rectangle srcRect = new Rectangle(srcX, srcY, srcW, srcH);
+                    int centerX = r.X + r.Width / 2;
+
+                    // 💡 [핵심: 1.5배 축소 연산] 기존 580px 크기를 1.5로 나누어 386px 규격으로 조정합니다.
+                    int destW = 386;
+                    int destH = 356;
+
+                    // 💡 크기가 작아진 만큼 발바닥 위치가 공중에 뜨지 않도록 (r.Bottom - destH - 40) 공식으로 지면에 밀착시킵니다.
+                    Rectangle destRect = new Rectangle(centerX - (destW / 2), r.Bottom - destH - 40, destW, destH);
+
+                    g.DrawImage(Renderer.ImgBoss_ExceptionQueen, destRect, srcRect, GraphicsUnit.Pixel);
                 }
                 else
                 {
-                    // (이미지를 못 찾았을 때 나오는 기존 임시 도형 로직)
-                    using (SolidBrush b = new SolidBrush(Color.FromArgb(180, 184, 190))) g.FillRectangle(b, r.X + 55, r.Y + 35, r.Width - 110, r.Height - 45);
-                    using (Pen p = new Pen(Color.White, 3f))
+                    using (Font f = F(11f, FontStyle.Bold))
+                    using (SolidBrush sb = new SolidBrush(Color.Red))
                     {
-                        g.DrawLine(p, r.X + r.Width / 2, r.Y + 42, r.X + r.Width / 2, r.Bottom - 25);
-                        g.DrawLine(p, r.X + 70, r.Y + 78, r.Right - 70, r.Y + 78);
+                        g.DrawString("⚠️ Exception_Queen 로드 실패!\n(Resource/boss/Exception_Queen 파일 경로 확인)", f, sb, r, Center());
                     }
-                    using (Font f = F(12f, FontStyle.Bold)) g.DrawString("SYSTEM32", f, Brushes.DarkRed, new Rectangle(r.X, r.Y + 18, r.Width, 24), Center());
                 }
+                return;
             }
-            else if (e.Name.Contains("BSOD"))
+
+            // ==========================================================
+            // 5번 보스: Illegal_Binny 
+            // ==========================================================
+            if (e.Name.Contains("Illegal_Binny"))
             {
-                using (SolidBrush b = new SolidBrush(Color.FromArgb(16, 62, 190))) g.FillRectangle(b, r.X + 20, r.Y + 20, r.Width - 40, r.Height - 30);
-                using (Font f = F(14f, FontStyle.Bold)) g.DrawString("BSOD", f, Brushes.White, new Rectangle(r.X, r.Y + 34, r.Width, 26), Center());
-                using (Font f = F(8f, FontStyle.Bold))
+                if (Renderer.ImgBoss_IllegalBinny != null)
                 {
-                    g.DrawString("STOP: 0x0000007E", f, Brushes.White, new Rectangle(r.X + 30, r.Y + 72, r.Width - 60, 18), Center());
-                    g.DrawString("CRASH DUMP", f, Brushes.White, new Rectangle(r.X + 30, r.Y + 96, r.Width - 60, 18), Center());
+                    int totalH = Renderer.ImgBoss_IllegalBinny.Height; // 543
+                    int frameW = 521; // 1563 / 3
+
+                    int srcX = 0;
+                    int srcY = 0;
+                    int srcW = frameW;
+                    int srcH = totalH;
+
+                    // 💡 [조절 포인트] 모션 인덱스별 정밀 슬라이싱
+                    if (e.MotionIndex == 0) // 오른쪽 바라봄
+                    {
+                        srcX = 0;      // 시작 위치
+                        srcW = 450;    // 가로 폭
+                    }
+                    else if (e.MotionIndex == 1) // 왼쪽 바라봄
+                    {
+                        // 👈 왼쪽 바라볼 때의 좌표 조정 (예: 10px 밀고 10px 줄이기)
+                        srcX = frameW - 50;
+                        srcW = 511;
+                    }
+                    else // 인덱스 2번: 특수 기믹
+                    {
+                        srcX = frameW * 2;
+                        srcW = 521;
+                    }
+
+                    Rectangle srcRect = new Rectangle(srcX, srcY, srcW, srcH);
+                    int centerX = r.X + r.Width / 2;
+
+                    int destW = 347;
+                    int destH = 360;
+
+                    Rectangle destRect = new Rectangle(centerX - (destW / 2), r.Bottom - destH - 40, destW, destH);
+
+                    g.DrawImage(Renderer.ImgBoss_IllegalBinny, destRect, srcRect, GraphicsUnit.Pixel);
                 }
-            }
-            else if (e.Name.Contains("Exception"))
-            {
-                for (int i = 0; i < 5; i++)
+                else
                 {
-                    Rectangle win = new Rectangle(r.X + 25 + i * 18, r.Y + 18 + i * 14, r.Width - 70, 54);
-                    DrawXPWindow(g, win, "Exception", true);
+                    using (Font f = F(11f, FontStyle.Bold))
+                    using (SolidBrush sb = new SolidBrush(Color.Red))
+                    {
+                        g.DrawString("⚠️ Illegal_Binny 로드 실패!\n(Resource/boss/Illegal_Binny.jpg 확인)", f, sb, r, Center());
+                    }
                 }
-                using (Font f = F(10f, FontStyle.Bold)) g.DrawString("Exception Queen", f, Brushes.DarkRed, new Rectangle(r.X, r.Bottom - 45, r.Width, 24), Center());
+                return;
             }
-            else if (e.Name.Contains("Binny"))
-            {
-                using (SolidBrush b = new SolidBrush(Color.FromArgb(210, 225, 218))) g.FillRectangle(b, r.X + 45, r.Y + 35, r.Width - 90, r.Height - 35);
-                using (Pen p = new Pen(Color.FromArgb(80, 150, 88), 6f)) g.DrawArc(p, r.X + 65, r.Y + 55, r.Width - 130, r.Height - 80, 30, 260);
-                using (Font f = F(12f, FontStyle.Bold)) g.DrawString("Illegal_Binny.dat", f, Brushes.DarkGreen, new Rectangle(r.X, r.Y + 18, r.Width, 26), Center());
-            }
-            else
-            {
-                using (SolidBrush b = new SolidBrush(e.Color)) g.FillEllipse(b, r);
-            }
-            using (Pen p = new Pen(Color.FromArgb(245, 255, 255), 3f)) g.DrawRectangle(p, r.X + 12, r.Y + 12, r.Width - 24, r.Height - 24);
         }
 
         public static void DrawStageBackground(Graphics g, Rectangle client, StageInfo st, float cameraX)
@@ -1365,6 +1513,8 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
+        
+
         public static void DrawEffect(Graphics g, Effect e, float cameraX)
         {
             int alpha = ClampAlpha((int)(235 * e.Ticks / (float)Math.Max(1, e.MaxTicks)));
@@ -1372,6 +1522,33 @@ namespace DebugHeroFileDungeonRPG
             float x1 = e.X - cameraX;
             float x2 = e.X2 - cameraX;
             g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            if (e.Kind == "driveShard")
+            {
+                if (Renderer.Img_DiskSprite != null)
+                {
+                    // 1. 투사체의 현재 월드 좌표 실시간 계산
+                    float visibleProgress = EaseOut(1f - e.Ticks / (float)Math.Max(1, e.MaxTicks));
+                    float dx = e.X2 - e.X; float dy = e.Y2 - e.Y;
+                    float drawX = (e.X + dx * visibleProgress) - cameraX;
+                    float drawY = e.Y + dy * visibleProgress;
+
+                    // 2. 10등분 애니메이션 적용 (틱 타임에 따라 0~9번 프레임 순환)
+                    int frameIndex = (Environment.TickCount / 100) % 10;
+
+                    // 3. 3680 x 320 해상도 기반 정밀 10등분 슬라이싱 (한 칸당 368px)
+                    int srcFrameW = Renderer.Img_DiskSprite.Width / 10;
+                    int srcFrameH = Renderer.Img_DiskSprite.Height;
+                    Rectangle srcRect = new Rectangle(frameIndex * srcFrameW, 0, srcFrameW, srcFrameH);
+
+                    // 4. 인게임 화면에 그려질 디스크 크기 결정 (눈에 잘 보이도록 45x45 스케일 지정)
+                    int drawSize = 45;
+                    Rectangle destRect = new Rectangle((int)drawX - drawSize / 2, (int)drawY - drawSize / 2, drawSize, drawSize);
+
+                    g.DrawImage(Renderer.Img_DiskSprite, destRect, srcRect, GraphicsUnit.Pixel);
+                }
+                return; // 디스크를 그렸으므로 아래 일반 이펙트 코드를 타지 않고 종료
+            }
 
             if (e.Kind == "playerSlash")
             {
@@ -1448,7 +1625,70 @@ namespace DebugHeroFileDungeonRPG
                 }
             }
         }
+        // ==========================================================
+        // [추가] 보스 영어 고유 명칭에 대응하는 한글 화면 표기명 매핑 테이블
+        // ==========================================================
+        public static string GetBossKoreanName(string engName)
+        {
+            if (engName.Contains("Driver-K")) return "드라이버 정비공";
+            if (engName.Contains("High-Kernel") || engName.Contains("High_Kernel")) return "커널 골렘";
+            if (engName.Contains("BSOD")) return "블루스크린 드래곤";
+            if (engName.Contains("Exception Queen") || engName.Contains("Exception_Queen")) return "오류지옥 집행관";
+            if (engName.Contains("Illegal_Binny") || engName.Contains("Binny")) return "휴지통 관리자";
+            return engName;
+        }
+
+        // ==========================================================
+        // [추가] 모든 보스맵 공통 상단 고정 거대 HP 바 및 최하단 쿨타임 시스템
+        // ==========================================================
+        public static void DrawBossGlobalUI(Graphics g, GameEntity boss, Size clientSize)
+        {
+            if (boss == null || boss.Hp <= 0) return;
+
+            // --------------------------------------------------
+            // 1. [상단 고정 레이드 스타일 거대 보스 HP 바] (가로 700px)
+            // --------------------------------------------------
+            Rectangle hpBarRect = new Rectangle(clientSize.Width / 2 - 350, 45, 700, 24);
+            // 묵직한 다크 레드 메탈 색상으로 보스 라이프 게이지 렌더링
+            DrawBar(g, hpBarRect, boss.Hp, boss.MaxHp, Color.FromArgb(210, 35, 35));
+
+            // 거대 테두리 선 보정
+            using (Pen p = new Pen(Color.FromArgb(200, 20, 20, 20), 2f))
+                g.DrawRectangle(p, hpBarRect);
+
+            // 한글 표기 변환 세팅 및 데이터 로드
+            string krName = GetBossKoreanName(boss.Name);
+            string hpText = $"{krName}  [ HP : {boss.Hp} / {boss.MaxHp} ]";
+
+            using (Font f = F(11.5f, FontStyle.Bold))
+            using (SolidBrush sb = new SolidBrush(Color.White))
+            {
+                // 가시성 극대화를 위한 백그라운드 블랙 드롭 섀도우 연출
+                g.DrawString(hpText, f, Brushes.Black, hpBarRect.X + 2, hpBarRect.Y + 2, Center());
+                g.DrawString(hpText, f, sb, hpBarRect, Center());
+            }
+
+            // --------------------------------------------------
+            // 2. [중앙 최하단 스킬 쿨타임 UI 표기] (초 단위 실시간 스캔)
+            // --------------------------------------------------
+            // 현재 MainForm.cs에서 timer.Interval = 33(30 FPS)으로 리미트가 걸려 있으므로,
+            // 1초는 정확히 30틱입니다. 30.0f로 나누어 리얼타임 초 단위 소수점 디스플레이를 가동합니다.
+            if (boss.AttackCooldown > 0)
+            {
+                float cooldownSeconds = boss.AttackCooldown / 30.0f;
+                string coolText = $"⚡ 시스템 브레이크 특수 패턴 재충전 중: {cooldownSeconds:0.0}초";
+                Rectangle coolRect = new Rectangle(clientSize.Width / 2 - 220, clientSize.Height - 88, 440, 26);
+
+                using (SolidBrush bg = new SolidBrush(Color.FromArgb(170, 10, 15, 25))) g.FillRectangle(bg, coolRect);
+                using (Pen p = new Pen(Color.FromArgb(240, 180, 40), 1.5f)) g.DrawRectangle(p, coolRect);
+                using (Font f = F(9.5f, FontStyle.Bold))
+                {
+                    g.DrawString(coolText, f, Brushes.Gold, coolRect, Center());
+                }
+            }
+        }
     }
+   
 
     internal static class GraphicsRoundedExtensions
     {
@@ -1473,6 +1713,11 @@ namespace DebugHeroFileDungeonRPG
         {
             using (GraphicsPath path = RoundedPath(bounds, radius)) g.DrawPath(pen, path);
         }
+
+        
     }
+
+
+
 
 }
