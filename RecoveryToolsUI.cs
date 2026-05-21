@@ -106,6 +106,294 @@ namespace DebugHeroFileDungeonRPG
             if (buttons != null)
                 buttons.Add(new UiButton(iconRect, "openShop"));
         }
+        public void DrawDesktopStatusPanel(
+    Graphics g,
+    Rectangle client,
+    PlayerState player,
+    int unlockedStage,
+    int totalStages)
+        {
+            int panelWidth = 358;
+
+            int topY = 48;
+            int margin = 12;
+            int titleAreaHeight = 30;
+            int gap = 2;
+            int bottomPadding = 30;
+
+            int programH = 64;
+            int itemH = 128;
+            int commandH = 132;
+            int progressH = 78;
+
+            int panelHeight =
+                titleAreaHeight +
+                programH + gap +
+                itemH + gap +
+                commandH + gap +
+                progressH +
+                bottomPadding;
+
+            Rectangle win = new Rectangle(
+                client.Width - panelWidth - 24,
+                topY,
+                panelWidth,
+                panelHeight
+            );
+
+            SystemWindowUI.Shared.DrawSystemPanelFrame(
+                g,
+                win,
+                "Recovery Program - Status",
+                SystemWindowStyle.Blue,
+                true,
+                null,
+                null,
+                30,
+                30,
+                76
+            );
+
+            int y = win.Y + titleAreaHeight;
+            int innerWidth = win.Width - margin * 2;
+
+            Rectangle programBox = new Rectangle(win.X + margin, y, innerWidth, programH);
+            y = programBox.Bottom + gap;
+
+            Rectangle itemBox = new Rectangle(win.X + margin, y, innerWidth, itemH);
+            y = itemBox.Bottom + gap;
+
+            Rectangle commandBox = new Rectangle(win.X + margin, y, innerWidth, commandH);
+            y = commandBox.Bottom + gap;
+
+            Rectangle progressBox = new Rectangle(win.X + margin, y, innerWidth, progressH);
+
+            DrawDesktopProgramBox(g, programBox, player);
+            DrawDesktopItemBox(g, itemBox, player);
+            DrawDesktopCommandBox(g, commandBox);
+            DrawDesktopProgressBox(g, progressBox, player, unlockedStage, totalStages);
+        }
+
+        private void DrawDesktopProgramBox(Graphics g, Rectangle r, PlayerState player)
+        {
+            DrawGroupBox(g, r, "프로그램 상태");
+
+            using (Font f = Renderer.F(8.4f, FontStyle.Bold))
+            using (SolidBrush textBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
+            using (SolidBrush blueBrush = new SolidBrush(Color.FromArgb(0, 62, 160)))
+            using (StringFormat sf = LeftMiddle())
+            {
+                string profileName = string.IsNullOrWhiteSpace(player.ProfileName)
+                    ? "ProfileName"
+                    : player.ProfileName;
+
+                g.DrawString(
+                    "Profile: " + profileName,
+                    f,
+                    textBrush,
+                    new Rectangle(r.X + 12, r.Y + 31, r.Width - 24, 17),
+                    sf
+                );
+
+                g.DrawString(
+                    "Level " + player.Level + "    Weapon +" + player.WeaponLevel,
+                    f,
+                    blueBrush,
+                    new Rectangle(r.X + 12, r.Y + 49, r.Width - 24, 17),
+                    sf
+                );
+            }
+        }
+
+        private void DrawDesktopItemRow(
+    Graphics g,
+    Rectangle row,
+    Image iconImage,
+    Rectangle iconSource,
+    string itemName,
+    int count,
+    string shortcutText)
+        {
+            Rectangle icon = new Rectangle(row.X + 2, row.Y + 1, 32, 32);
+            DrawItemIcon(g, iconImage, iconSource, icon);
+
+            using (Font f = Renderer.F(8.1f, FontStyle.Bold))
+            using (SolidBrush textBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
+            using (SolidBrush blueBrush = new SolidBrush(Color.FromArgb(0, 62, 160)))
+            using (StringFormat left = LeftMiddle())
+            using (StringFormat right = RightMiddle())
+            {
+                g.DrawString(
+                    itemName,
+                    f,
+                    textBrush,
+                    new Rectangle(icon.Right + 7, row.Y, 130, row.Height),
+                    left
+                );
+
+                g.DrawString(
+                    "x" + count,
+                    f,
+                    blueBrush,
+                    new Rectangle(row.Right - 82, row.Y, 34, row.Height),
+                    right
+                );
+
+                g.DrawString(
+                    shortcutText,
+                    f,
+                    textBrush,
+                    new Rectangle(row.Right - 44, row.Y, 44, row.Height),
+                    right
+                );
+            }
+        }
+        private void DrawDesktopItemBox(Graphics g, Rectangle r, PlayerState player)
+        {
+            DrawGroupBox(g, r, "보유 도구");
+
+            int rowY = r.Y + 33;
+            int rowHeight = 34;
+
+            DrawDesktopCoinRow(
+                g,
+                new Rectangle(r.X + 10, rowY, r.Width - 20, rowHeight),
+                player.Coins
+            );
+
+            DrawDesktopItemRow(
+                g,
+                new Rectangle(r.X + 10, rowY + rowHeight, r.Width - 20, rowHeight),
+                recoveryKitImage,
+                recoveryKitSource,
+                "Recovery Kit",
+                player.HpPotions,
+                "D 사용"
+            );
+
+            DrawDesktopItemRow(
+                g,
+                new Rectangle(r.X + 10, rowY + rowHeight * 2, r.Width - 20, rowHeight),
+                memoryKitImage,
+                memoryKitSource,
+                "Memory Kit",
+                player.MpPotions,
+                "F 사용"
+            );
+        }
+
+        private void DrawDesktopCoinRow(Graphics g, Rectangle row, int coins)
+        {
+            using (Font f = Renderer.F(8.8f, FontStyle.Bold))
+            using (SolidBrush textBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
+            using (SolidBrush blueBrush = new SolidBrush(Color.FromArgb(0, 62, 160)))
+            using (StringFormat left = LeftMiddle())
+            using (StringFormat right = RightMiddle())
+            {
+                g.DrawString(
+                    "Recovered Coin",
+                    f,
+                    textBrush,
+                    new Rectangle(row.X + 4, row.Y, 170, row.Height),
+                    left
+                );
+
+                g.DrawString(
+                    coins.ToString(),
+                    f,
+                    blueBrush,
+                    new Rectangle(row.Right - 90, row.Y, 86, row.Height),
+                    right
+                );
+            }
+        }
+
+        private void DrawDesktopCommandBox(Graphics g, Rectangle r)
+        {
+            DrawGroupBox(g, r, "복구 명령");
+
+            int y = r.Y + 34;
+            int lineHeight = 18;
+
+            DrawCommandLine(g, r.X + 12, y + lineHeight * 0, r.Width - 24, "Q", "Quick Scan", "기본 공격");
+            DrawCommandLine(g, r.X + 12, y + lineHeight * 1, r.Width - 24, "W", "Data Sweep", "범위 정리");
+            DrawCommandLine(g, r.X + 12, y + lineHeight * 2, r.Width - 24, "E", "Error Flash", "오류 섬광");
+            DrawCommandLine(g, r.X + 12, y + lineHeight * 3, r.Width - 24, "R", "Guard Process", "방어 / 안정화");
+
+            using (Font f = Renderer.F(7.5f, FontStyle.Bold))
+            using (SolidBrush b = new SolidBrush(Color.FromArgb(70, 70, 70)))
+            using (StringFormat sf = LeftMiddle())
+            {
+                g.DrawString(
+                    "Mouse Click: 이동 / 부드러운 추적",
+                    f,
+                    b,
+                    new Rectangle(r.X + 12, y + lineHeight * 4 + 3, r.Width - 24, 18),
+                    sf
+                );
+            }
+        }
+
+        private void DrawCommandLine(
+     Graphics g,
+     int x,
+     int y,
+     int width,
+     string key,
+     string commandName,
+     string description)
+        {
+            using (Font keyFont = Renderer.F(8.2f, FontStyle.Bold))
+            using (Font textFont = Renderer.F(8.0f, FontStyle.Bold))
+            using (SolidBrush keyBrush = new SolidBrush(Color.FromArgb(0, 62, 160)))
+            using (SolidBrush textBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
+            using (StringFormat left = LeftMiddle())
+            {
+                g.DrawString(key + ":",keyFont,keyBrush,new Rectangle(x, y, 24, 19),left);
+                g.DrawString(commandName + "  -  " + description,textFont,textBrush,new Rectangle(x + 28, y, width - 28, 19),left);
+            }
+        }
+        private void DrawDesktopProgressBox(
+    Graphics g,
+    Rectangle r,
+    PlayerState player,
+    int unlockedStage,
+    int totalStages)
+        {
+            DrawGroupBox(g, r, "진행 상태");
+
+            using (Font f = Renderer.F(7.9f, FontStyle.Bold))
+            using (SolidBrush b = new SolidBrush(Color.FromArgb(20, 24, 32)))
+            using (StringFormat sf = LeftMiddle())
+            {
+                int y = r.Y + 33;
+                int lineHeight = 16;
+
+                g.DrawString(
+                    "해금된 파일: " + unlockedStage + " / " + totalStages,
+                    f,
+                    b,
+                    new Rectangle(r.X + 12, y, r.Width - 24, lineHeight),
+                    sf
+                );
+
+                g.DrawString(
+                    "클리어: " + player.ClearedStages + " / " + totalStages,
+                    f,
+                    b,
+                    new Rectangle(r.X + 12, y + lineHeight, r.Width - 24, lineHeight),
+                    sf
+                );
+
+                g.DrawString(
+                    "격리된 보스: " + player.QuarantinedBosses,
+                    f,
+                    b,
+                    new Rectangle(r.X + 12, y + lineHeight * 2, r.Width - 24, lineHeight),
+                    sf
+                );
+            }
+        }
 
         // 기존 호출부가 아직 안 바뀌어도 컴파일되도록 남겨둔 기본 버전
         public void DrawShop(
@@ -520,18 +808,32 @@ namespace DebugHeroFileDungeonRPG
 
         private void DrawGroupBox(Graphics g, Rectangle r, string title)
         {
-            using (SolidBrush fill = new SolidBrush(Color.FromArgb(252, 248, 235)))
-                g.FillRectangle(fill, r);
-
-            using (Pen border = new Pen(Color.FromArgb(175, 165, 145), 1.4f))
-                g.DrawRectangle(border, r);
-
-            using (Font f = Renderer.F(11.2f, FontStyle.Bold))
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(0, 62, 145)))
-            using (StringFormat sf = LeftMiddle())
+            using (Font titleFont = Renderer.F(10.5f, FontStyle.Bold))
+            using (SolidBrush titleBrush = new SolidBrush(Color.FromArgb(0, 62, 160)))
+            using (Pen linePen = new Pen(Color.FromArgb(185, 180, 155), 1f))
             {
-                Rectangle titleRect = new Rectangle(r.X + 18, r.Y + 8, r.Width - 36, 30);
-                g.DrawString(title, f, b, titleRect, sf);
+                Rectangle titleRect = new Rectangle(
+                    r.X + 10,
+                    r.Y + 2,
+                    r.Width - 20,
+                    26
+                );
+
+                g.DrawString(
+                    title,
+                    titleFont,
+                    titleBrush,
+                    titleRect,
+                    LeftMiddle()
+                );
+
+                g.DrawLine(
+                    linePen,
+                    r.X + 10,
+                    r.Y + 31,
+                    r.Right - 10,
+                    r.Y + 31
+                );
             }
         }
 

@@ -189,31 +189,16 @@ namespace DebugHeroFileDungeonRPG
         }
 
         //게임 진행상 불필요 할수도... 삭제??
+        // 바탕화면 우측 상태 패널: 개발용 스테이지 설명 대신 실제 플레이 정보 표시
         private void DrawDesktopInfoPanel(Graphics g)
         {
-            Rectangle p = new Rectangle(ClientSize.Width - 400, 70, 370, 520);
-            Renderer.DrawXPWindow(g, p, "파일 속성 / 복구 상태", false);
-            StageInfo st = stages[Math.Max(0, selectedStage - 1)];
-            using (Font f = Renderer.F(10f, FontStyle.Bold))
-            using (SolidBrush b = new SolidBrush(Color.Navy))
-                g.DrawString(st.FileName, f, b, new Rectangle(p.X + 20, p.Y + 48, p.Width - 40, 24), Renderer.LeftMiddle());
-            using (Font f = Renderer.F(8.4f, FontStyle.Regular))
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(42, 50, 68)))
-            {
-                string info = "스테이지: " + st.Name + "\n" +
-                              "유형: " + (st.Kind == StageKind.Normal ? "일반" : st.Kind == StageKind.Boss ? "보스" : "최종") + "\n" +
-                              "주요 배경: " + st.Background + "\n" +
-                              "전투 공간: " + st.CombatSpace + "\n" +
-                              "플레이어: " + st.PlayerCharacter + "\n" +
-                              "NPC: " + st.Npc + "\n" +
-                              "분위기: " + st.Mood + "\n\n" +
-                              "문서 핵심 지시:\n" + st.MustKeep + "\n\n" +
-                              "진행:\n" + st.Flow;
-                g.DrawString(info, f, b, new Rectangle(p.X + 20, p.Y + 80, p.Width - 40, 312), Renderer.Left());
-            }
-            using (Font f = Renderer.F(8f, FontStyle.Bold))
-            using (SolidBrush b = new SolidBrush(Color.DarkGreen))
-                g.DrawString("해금된 파일: " + unlockedStage + " / " + stages.Count + "\n클리어: " + player.ClearedStages + " / " + stages.Count + "\n격리된 보스: " + player.QuarantinedBosses, f, b, new Rectangle(p.X + 20, p.Bottom - 106, p.Width - 40, 70), Renderer.Left());
+            RecoveryToolsUI.Shared.DrawDesktopStatusPanel(
+                g,
+                ClientRectangle,
+                player,
+                unlockedStage,
+                stages.Count
+            );
         }
 
         private void DrawStage(Graphics g)
@@ -249,26 +234,62 @@ namespace DebugHeroFileDungeonRPG
 
         private void DrawHud(Graphics g, StageInfo st)
         {
-            Rectangle h = new Rectangle(18, 18, 255, 218);
-            Renderer.DrawXPWindow(g, h, "Recovery Program", false);
+            int hudWidth = 350;
+            int hudHeight = 250;
+            int hudMargin = 18;
+
+            Rectangle h = new Rectangle(
+                ClientSize.Width - hudWidth - hudMargin,
+                hudMargin,
+                hudWidth,
+                hudHeight
+            );
+
+            // HUD 전용 이미지 배경 사용
+            SystemWindowUI.Shared.DrawBlueHudFrame(
+                g,
+                h,
+                "Recovery Program"
+            );
+
             using (Font f = Renderer.F(8.5f, FontStyle.Bold))
             using (SolidBrush b = new SolidBrush(Color.FromArgb(34, 42, 60)))
             {
-                g.DrawString("Profile: " + player.ProfileName, f, b, new Rectangle(h.X + 16, h.Y + 46, h.Width - 32, 18), Renderer.LeftMiddle());
-                g.DrawString("Program: Recovery Program", f, b, new Rectangle(h.X + 16, h.Y + 66, h.Width - 32, 18), Renderer.LeftMiddle());
-                g.DrawString("Level: " + player.Level + "   Weapon: +" + player.WeaponLevel + "   Coin: " + player.Coins, f, b, new Rectangle(h.X + 16, h.Y + 86, h.Width - 32, 18), Renderer.LeftMiddle());
+                g.DrawString("Profile: " + player.ProfileName, f, b, new Rectangle(h.X + 22, h.Y + 52, h.Width - 44, 18), Renderer.LeftMiddle());
+                g.DrawString("Program: Recovery Program", f, b, new Rectangle(h.X + 22, h.Y + 72, h.Width - 44, 18), Renderer.LeftMiddle());
+                g.DrawString("Level: " + player.Level + "   Weapon: +" + player.WeaponLevel + "   Coin: " + player.Coins, f, b, new Rectangle(h.X + 22, h.Y + 92, h.Width - 44, 18), Renderer.LeftMiddle());
             }
-            Renderer.DrawBar(g, new Rectangle(h.X + 82, h.Y + 114, 156, 12), player.Hp, player.MaxHp, Color.LimeGreen);
-            Renderer.DrawBar(g, new Rectangle(h.X + 82, h.Y + 136, 156, 12), player.Mp, player.MaxMp, Color.DeepSkyBlue);
-            Renderer.DrawBar(g, new Rectangle(h.X + 82, h.Y + 158, 156, 12), player.SystemStability, 100, Color.FromArgb(75, 150, 255));
+
+            int labelX = h.X + 22;
+            int barX = h.X + 104;
+            int barW = h.Width - 128;
+
+            Renderer.DrawBar(g, new Rectangle(barX, h.Y + 122, barW, 12), player.Hp, player.MaxHp, Color.LimeGreen);
+            Renderer.DrawBar(g, new Rectangle(barX, h.Y + 144, barW, 12), player.Mp, player.MaxMp, Color.DeepSkyBlue);
+            Renderer.DrawBar(g, new Rectangle(barX, h.Y + 166, barW, 12), player.SystemStability, 100, Color.FromArgb(75, 150, 255));
+
             using (Font f = Renderer.F(7.5f, FontStyle.Bold))
             using (SolidBrush b = new SolidBrush(Color.Black))
             {
-                g.DrawString("HP", f, b, h.X + 16, h.Y + 109);
-                g.DrawString("MP", f, b, h.X + 16, h.Y + 131);
-                g.DrawString("Stability", f, b, h.X + 16, h.Y + 153);
-                g.DrawString("D: HP포션(" + player.HpPotions + ")   F: MP포션(" + player.MpPotions + ")", f, b, new Rectangle(h.X + 16, h.Y + 178, h.Width - 32, 18), Renderer.LeftMiddle());
-                g.DrawString("마우스 클릭 이동 / 부드러운 추적 / Q W E R", f, b, new Rectangle(h.X + 16, h.Y + 196, h.Width - 32, 18), Renderer.LeftMiddle());
+                g.DrawString("HP", f, b, labelX, h.Y + 117);
+                g.DrawString("MP", f, b, labelX, h.Y + 139);
+                g.DrawString("Stability", f, b, labelX, h.Y + 161);
+
+                g.DrawString(
+                    "D: HP포션(" + player.HpPotions + ")   F: MP포션(" + player.MpPotions + ")",
+                    f,
+                    b,
+                    new Rectangle(h.X + 22, h.Y + 188, h.Width - 44, 18),
+                    Renderer.LeftMiddle()
+                );
+
+                g.DrawString(
+                    "마우스 클릭 이동 / 부드러운 추적 / Q W E R",
+                    f,
+                    b,
+                    new Rectangle(h.X + 22, h.Y + 206, h.Width - 44, 18),
+                    Renderer.LeftMiddle()
+                );
             }
         }
 
