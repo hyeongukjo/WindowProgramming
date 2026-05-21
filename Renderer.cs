@@ -139,15 +139,19 @@ namespace DebugHeroFileDungeonRPG
             if (e == null) return;
 
             int screenX = (int)(e.X - cameraX);
-            Rectangle r = new Rectangle(screenX - 32, (int)e.Y - 32, 64, 64);
+            // [수정]: 기준 좌표 r을 잡되, 크기나 해상도 처리는 하단 분할 함수에서 완벽하게 제어하도록 넘겨줍니다.
+            Rectangle r = new Rectangle(screenX, (int)e.Y, 0, 0);
 
             if (e.IsBoss || e.Kind == "BOSS")
             {
-                DrawBoss(g, r, e); // 보스전 시스템 보존
+                // 보스는 기존 64x64 사각형 보정이 필요하므로 별도 Rectangle 재계산 후 전송
+                Rectangle bossRect = new Rectangle(screenX - 32, (int)e.Y - 32, 64, 64);
+                DrawBoss(g, bossRect, e);
             }
             else
             {
-                DrawFileMonster(g, r, e); // 일반 웨이브 몹은 무조건 1:1 이미지 처리로 직행
+                // 일반 몬스터는 무조건 9분할 연산이 살아있는 함수로 다이렉트 슛!
+                DrawFileMonster(g, r, e);
             }
         }
 
@@ -242,6 +246,7 @@ namespace DebugHeroFileDungeonRPG
         // [근본 해결 3]: 단일 통짜 PNG 파일 및 3x3 스프라이트 규격을 자동으로 하이브리드 판정하여 그리는 도트 렌더러
         private static void DrawFileMonster(Graphics g, Rectangle r, GameEntity e)
         {
+            // 형진님이 구축하신 1:1 매퍼로 이미지 로드
             Image sheet = LoadStrictMonsterAssetDirect(e);
 
             if (sheet == null)
@@ -250,38 +255,38 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
 
-            Rectangle src;
+            // [핵심]: 묻지도 따지지도 않고 3x3 구조로 칼같이 분할 선언
+            int cols = 3;
+            int rows = 3;
+            int totalFrames = cols * rows;
 
-            // 이미지가 가로로 3배 이상 길지 않은 '단일 통짜 프레임'일 경우 쪼개지 않고 전체를 온전히 출력합니다.
-            if (sheet.Width <= sheet.Height * 1.5)
-            {
-                src = new Rectangle(0, 0, sheet.Width, sheet.Height);
-            }
-            else
-            {
-                // 정교한 3x3 애니메이션 가로세로 바둑판 자르기 연산
-                int cols = 3, rows = 3;
-                int totalFrames = cols * rows;
-                int offset = Math.Abs(((e.Name ?? "").GetHashCode()) % totalFrames);
-                int frame = ((Environment.TickCount / 130) + offset) % totalFrames;
+            int offset = Math.Abs(((e.Name ?? "").GetHashCode()) % totalFrames);
+            int frame = ((Environment.TickCount / 130) + offset) % totalFrames;
 
-                int col = frame % cols;
-                int row = frame / cols;
+            int col = frame % cols;
+            int row = frame / cols;
 
-                int cellW = sheet.Width / cols;
-                int cellH = sheet.Height / rows;
+            // 전체 해상도 기반 정확히 3등분한 1칸의 순수 픽셀 크기 계산
+            int cellW = sheet.Width / cols;
+            int cellH = sheet.Height / rows;
 
-                int sx = col * cellW;
-                int sy = row * cellH;
-                int pad = 2;
-                src = new Rectangle(sx + pad, sy + pad, Math.Max(1, cellW - pad * 2), Math.Max(1, cellH - pad * 2));
-            }
+            int sx = col * cellW;
+            int sy = row * cellH;
+            int pad = 2; // 외곽 도트 왜곡 방지 패딩
 
-            // 기획안 표준 몬스터 출력 규격 (145x120 크기로 화면 보정)
+            // 💡 [여기가 핵심]: 전체 이미지가 아닌 '딱 9분의 1조각'만 오려내도록 구역(src) 강제 고정!
+            Rectangle src = new Rectangle(
+                sx + pad,
+                sy + pad,
+                Math.Max(1, cellW - pad * 2),
+                Math.Max(1, cellH - pad * 2)
+            );
+
+            // 인게임 화면에 그려질 최종 몬스터 크기 규격화 (145x120)
             int drawW = 145, drawH = 120;
             Rectangle dst = new Rectangle(
-                r.X + r.Width / 2 - drawW / 2,
-                r.Y + r.Height / 2 - drawH / 2 - 4,
+                r.X - drawW / 2,
+                r.Y - drawH / 2 - 4,
                 drawW,
                 drawH
             );
@@ -294,6 +299,7 @@ namespace DebugHeroFileDungeonRPG
             g.PixelOffsetMode = PixelOffsetMode.Half;
             g.SmoothingMode = SmoothingMode.None;
 
+            // 💡 [출력]: 이제 전체 바둑판이 아닌 정교하게 잘라낸 1칸(src)만 화면(dst)에 그려집니다!
             g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
 
             g.InterpolationMode = oldInterpolation;
@@ -306,7 +312,6 @@ namespace DebugHeroFileDungeonRPG
                     g.FillEllipse(flash, dst.X + 8, dst.Y + 10, dst.Width - 16, dst.Height - 18);
             }
         }
-
 
         private static Image LoadStageBackgroundImage(int stageIndex, bool bossRoom)
         {
@@ -927,34 +932,23 @@ namespace DebugHeroFileDungeonRPG
             int frameW = sheet.Width / columns;
             int frameH = sheet.Height / rows;
 
-            Rectangle src = new Rectangle(
-                frame * frameW,
-                row * frameH,
-                frameW,
-                frameH
-            );
+            Rectangle src = new Rectangle(frame * frameW, row * frameH, frameW, frameH);
+
             int destW = 112;
             int destH = 112;
-
             int offsetX = 0;
             int offsetY = 0;
 
-            if (p.Direction == 0 && walking) // 아래 / front
+            if (p.Direction == 0 && walking)
             {
                 int[] frontFrameOffsetX = { 0, 0, 0, 4 };
-                offsetX += frontFrameOffsetX[frame];
+                offsetX += frontFrameOffsetX[frame % frontFrameOffsetX.Length];
                 offsetY += 4;
             }
 
-            Rectangle dest = new Rectangle(
-                (int)(drawX - destW / 2 + offsetX),
-                (int)(baseY - destH + 8 + offsetY),
-                destW,
-                destH
-            );
+            Rectangle dest = new Rectangle((int)(drawX - destW / 2 + offsetX), (int)(baseY - destH + 8 + offsetY), destW, destH);
 
             GraphicsState state = g.Save();
-
             g.InterpolationMode = InterpolationMode.NearestNeighbor;
             g.PixelOffsetMode = PixelOffsetMode.Half;
 
@@ -962,13 +956,7 @@ namespace DebugHeroFileDungeonRPG
             {
                 g.TranslateTransform(drawX, baseY);
                 g.ScaleTransform(-1f, 1f);
-
-                dest = new Rectangle(
-                    -destW / 2,
-                    -destH + 8,
-                    destW,
-                    destH
-                );
+                dest = new Rectangle(-destW / 2, -destH + 8, destW, destH);
             }
 
             g.DrawImage(sheet, dest, src, GraphicsUnit.Pixel);

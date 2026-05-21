@@ -48,22 +48,8 @@ namespace DebugHeroFileDungeonRPG
             {
                 if (enemies[i].Hp <= 0)
                 {
-                    // 일반 스테이지(StageKind.Normal)라면 의미 없는 보스방 전환 없이 즉시 클리어 처리합니다!
-                    if (st.Kind == StageKind.Normal)
-                    {
-                        if (weaponDrops.Count > 0) return;
-                        ClearCurrentStage();
-                        return;
-                    }
-
-                    // 혹시 모를 예외 대비용 스위치 유지
-                    StartStageBossPhase();
-                    return;
+                    enemies.RemoveAt(i); // 완전히 리스트에서 소거
                 }
-
-                // 보스 페이즈(Boss/Final Stage)에서 보스를 처치했을 경우 즉시 클리어
-                if (weaponDrops.Count > 0) return;
-                ClearCurrentStage();
             }
 
             // ---------------------------------------------------------------------------------
@@ -161,8 +147,9 @@ namespace DebugHeroFileDungeonRPG
             else
             {
                 stageBossPhase = false;
-                enemies.AddRange(StageEnemyFactory.CreatePreBossEnemies(st, ClientSize.Height, random));
-                effects.Add(new Effect("text", player.X + 220, player.Y - 110, player.X + 220, player.Y - 110, 80, Color.FromArgb(220, 255, 255), "일반 데이터 정화 후 스테이지 클리어"));
+                // [수정]: 5초 대기 없이 진입 즉시 첫 번째 'a' 무리(인덱스 0)를 필드에 강제 소환합니다!
+                enemies.AddRange(StageEnemyFactory.CreateWaveEnemies(st, currentWaveIndex, ClientSize.Height));
+                effects.Add(new Effect("text", player.X + 220, player.Y - 110, player.X + 220, player.Y - 110, 80, Color.FromArgb(220, 255, 255), "일반 데이터 정화 시작"));
             }
 
             TryBeep(600, 80);
