@@ -232,7 +232,7 @@ namespace DebugHeroFileDungeonRPG
                 g.DrawString(stageTitle, f, b, top, Renderer.Center());
             }
             DrawHud(g, st);
-            foreach (GameEntity m in enemies) if (m.Hp > 0) Renderer.DrawEnemy(g, m, cameraX);
+            foreach (GameEntity m in enemies) if (m.Hp > 0) Renderer.DrawEnemy(g, m, cameraX, ClientSize.Height); 
             for (int i = 0; i < weaponDrops.Count; i++) Renderer.DrawWeaponUpgradeFile(g, weaponDrops[i], cameraX);
             bossRuntime.DrawOverlay(g, currentStage, stageBossPhase, cameraX, ClientSize);
             bool playerMovingNow = Math.Abs(player.TargetX - player.X) > 3.5f || Math.Abs(player.TargetY - player.Y) > 3.5f ||

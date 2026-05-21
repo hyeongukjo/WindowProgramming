@@ -23,6 +23,9 @@ namespace DebugHeroFileDungeonRPG
         private static readonly Dictionary<string, Image> playerMotionSheetCache = new Dictionary<string, Image>();
         private static Image playerStillSwordImage;
         private static Image normalMonsterSheet = null;
+        // 몬스터 이미지 호출 관련 코드 //
+        private static readonly Dictionary<string, Image> strictMonsterCache = new Dictionary<string, Image>();
+        private static readonly object strictMonsterLock = new object();
 
 
         public static Font F(float size, FontStyle style)
@@ -111,31 +114,184 @@ namespace DebugHeroFileDungeonRPG
             Rectangle src = new Rectangle(sx, sy, Math.Min(sw, img.Width - sx), Math.Min(sh, img.Height - sy));
             g.DrawImage(img, dest, src, GraphicsUnit.Pixel);
         }
-        private static Image LoadNormalMonsterSheet()
-        {
-            if (normalMonsterSheet != null)
-                return normalMonsterSheet;
 
-            string path = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "Assets",
-                "Characters",
-                "Enemise",
-                "moster.png"
+        // 몬스터 그리기 //
+
+        // [근본 해결 1]: MainForm에서 호출하는 메인 진입점. 
+        // 짝수층 보스가 아닐 경우 무조건 형진님의 기획안 1:1 매핑 렌더러로 흐름을 강제 전환합니다.
+        public static void DrawEnemy(Graphics g, GameEntity e, float cameraX, int clientHeight)
+        {
+            if (e == null) return;
+
+            int screenX = (int)(e.X - cameraX);
+            Rectangle r = new Rectangle(screenX - 32, (int)e.Y - 32, 64, 64);
+
+            if (e.IsBoss || e.Kind == "BOSS")
+            {
+                DrawBoss(g, r, e); // 보스전 시스템 보존
+            }
+            else
+            {
+                DrawFileMonster(g, r, e); // 일반 웨이브 몹은 무조건 1:1 이미지 처리로 직행
+            }
+        }
+
+        // [근본 해결 2]: 몬스터 이름을 다이렉트로 추적해 대소문자나 출력 디렉토리 유실을 방어하고 png 로딩
+        private static Image LoadStrictMonsterAssetDirect(GameEntity e)
+        {
+            if (e == null) return null;
+
+            string targetPngName = "moster.png"; // 리소스가 아직 없을 때의 백업 기본값
+            string monsterName = (e.Name ?? "").Trim();
+
+            // 기획안 전 스테이지 적 명칭 1:1 실시간 수동 배정 매핑 테이블
+            // STAGE 01
+            if (monsterName == "Broken_Document.txt") targetPngName = "file_monster.png";
+            else if (monsterName == "Empty_Folder") targetPngName = "folder_monster.png";
+            else if (monsterName == "Broken_Shortcut.lnk") targetPngName = "shortcut_monster.png";
+            else if (monsterName == "Unemptied_Trash.bak") targetPngName = "trash_monster.png";
+
+            // STAGE 03
+            else if (monsterName == "Update Patch 조각") targetPngName = "patch_monster.png";
+            else if (monsterName == "Loading Bar Slime") targetPngName = "slime_monster.png";
+            else if (monsterName == "Restart Reminder") targetPngName = "reminder_monster.png";
+            else if (monsterName == "Failed Update") targetPngName = "failed_monster.png";
+
+            // STAGE 05
+            else if (monsterName == "Packet Minnow") targetPngName = "packet_monster.png";
+            else if (monsterName == "Open Port Buoy") targetPngName = "port_monster.png";
+            else if (monsterName == "Request Crab") targetPngName = "crab_monster.png";
+            else if (monsterName == "Firewall Barnacle") targetPngName = "firewall_monster.png";
+
+            // STAGE 07
+            else if (monsterName == "Broken Key") targetPngName = "key_monster.png";
+            else if (monsterName == "Duplicate Value") targetPngName = "value_monster.png";
+            else if (monsterName == "Orphan Entry") targetPngName = "orphan_monster.png";
+            else if (monsterName == "Recent Trace") targetPngName = "trace_monster.png";
+
+            // STAGE 09
+            else if (monsterName == "Temp Fragment") targetPngName = "temp_monster.png";
+            else if (monsterName == "Cache Dust") targetPngName = "leech_monster.png";
+            else if (monsterName == "Unsent Report") targetPngName = "report_monster.png";
+            else if (monsterName == "Recent Ghost") targetPngName = "ghost_monster.png";
+
+            lock (strictMonsterLock)
+            {
+                if (strictMonsterCache.TryGetValue(targetPngName, out Image cachedImg) && cachedImg != null)
+                    return cachedImg;
+
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+                // 디렉토리 오타나 대소문자 혼선을 완전히 차단하는 유연한 경로 탐색 시도
+                string[] folderNames = { "Assets/Characters/Enemies", "Assets/Characters/Enemise", "Assets/Monsters" };
+                string fullPath = "";
+
+                foreach (var folder in folderNames)
+                {
+                    string checkPath = Path.Combine(baseDir, folder.Replace('/', Path.DirectorySeparatorChar), targetPngName);
+                    if (File.Exists(checkPath))
+                    {
+                        fullPath = checkPath;
+                        break;
+                    }
+                }
+
+                try
+                {
+                    if (!string.IsNullOrEmpty(fullPath) && File.Exists(fullPath))
+                    {
+                        Image img = Image.FromFile(fullPath);
+                        strictMonsterCache[targetPngName] = img;
+                        return img;
+                    }
+                    else
+                    {
+                        // 만약 지정한 특수 파일이 복사 누락 등으로 없으면, 다운 방지를 위해 기본 moster.png를 자동 매핑합니다.
+                        foreach (var folder in folderNames)
+                        {
+                            string fbPath = Path.Combine(baseDir, folder.Replace('/', Path.DirectorySeparatorChar), "moster.png");
+                            if (File.Exists(fbPath))
+                            {
+                                Image img = Image.FromFile(fbPath);
+                                strictMonsterCache[targetPngName] = img;
+                                return img;
+                            }
+                        }
+                    }
+                }
+                catch { }
+                return null;
+            }
+        }
+
+        // [근본 해결 3]: 단일 통짜 PNG 파일 및 3x3 스프라이트 규격을 자동으로 하이브리드 판정하여 그리는 도트 렌더러
+        private static void DrawFileMonster(Graphics g, Rectangle r, GameEntity e)
+        {
+            Image sheet = LoadStrictMonsterAssetDirect(e);
+
+            if (sheet == null)
+            {
+                DrawFallbackFileMonster(g, r, e);
+                return;
+            }
+
+            Rectangle src;
+
+            // 이미지가 가로로 3배 이상 길지 않은 '단일 통짜 프레임'일 경우 쪼개지 않고 전체를 온전히 출력합니다.
+            if (sheet.Width <= sheet.Height * 1.5)
+            {
+                src = new Rectangle(0, 0, sheet.Width, sheet.Height);
+            }
+            else
+            {
+                // 정교한 3x3 애니메이션 가로세로 바둑판 자르기 연산
+                int cols = 3, rows = 3;
+                int totalFrames = cols * rows;
+                int offset = Math.Abs(((e.Name ?? "").GetHashCode()) % totalFrames);
+                int frame = ((Environment.TickCount / 130) + offset) % totalFrames;
+
+                int col = frame % cols;
+                int row = frame / cols;
+
+                int cellW = sheet.Width / cols;
+                int cellH = sheet.Height / rows;
+
+                int sx = col * cellW;
+                int sy = row * cellH;
+                int pad = 2;
+                src = new Rectangle(sx + pad, sy + pad, Math.Max(1, cellW - pad * 2), Math.Max(1, cellH - pad * 2));
+            }
+
+            // 기획안 표준 몬스터 출력 규격 (145x120 크기로 화면 보정)
+            int drawW = 145, drawH = 120;
+            Rectangle dst = new Rectangle(
+                r.X + r.Width / 2 - drawW / 2,
+                r.Y + r.Height / 2 - drawH / 2 - 4,
+                drawW,
+                drawH
             );
 
-            try
-            {
-                if (File.Exists(path))
-                    normalMonsterSheet = Image.FromFile(path);
-            }
-            catch
-            {
-                normalMonsterSheet = null;
-            }
+            var oldInterpolation = g.InterpolationMode;
+            var oldPixelOffset = g.PixelOffsetMode;
+            var oldSmoothing = g.SmoothingMode;
 
-            return normalMonsterSheet;
+            g.InterpolationMode = InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode = PixelOffsetMode.Half;
+            g.SmoothingMode = SmoothingMode.None;
+
+            g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+
+            g.InterpolationMode = oldInterpolation;
+            g.PixelOffsetMode = oldPixelOffset;
+            g.SmoothingMode = oldSmoothing;
+
+            if (e.HitFlash > 0)
+            {
+                using (SolidBrush flash = new SolidBrush(Color.FromArgb(90, Color.White)))
+                    g.FillEllipse(flash, dst.X + 8, dst.Y + 10, dst.Width - 16, dst.Height - 18);
+            }
         }
+
 
         private static Image LoadStageBackgroundImage(int stageIndex, bool bossRoom)
         {
@@ -1716,31 +1872,6 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
-        public static void DrawEnemy(Graphics g, GameEntity e, float cameraX)
-        {
-            RectangleF b = e.Bounds;
-            Rectangle r = Rectangle.Round(new RectangleF(b.X - cameraX, b.Y, b.Width, b.Height));
-            using (SolidBrush sh = new SolidBrush(Color.FromArgb(80, 0, 0, 0))) g.FillEllipse(sh, r.X + 4, r.Bottom - 10, r.Width - 8, 12);
-            if (e.IsBoss)
-            {
-                DrawBoss(g, r, e);
-            }
-            else
-            {
-                DrawFileMonster(g, r, e);
-            }
-            Rectangle hp = new Rectangle(r.X, r.Y - 18, r.Width, 8);
-            DrawBar(g, hp, e.Hp, e.MaxHp, e.IsBoss ? Color.Red : Color.OrangeRed);
-            using (Font f = F(7f, FontStyle.Bold))
-            using (SolidBrush sb = new SolidBrush(Color.White))
-            using (SolidBrush bg = new SolidBrush(Color.FromArgb(140, 0, 0, 0)))
-            {
-                Rectangle name = new Rectangle(r.X - 20, r.Y - 38, r.Width + 40, 16);
-                g.FillRectangle(bg, name);
-                g.DrawString(e.IsBoss ? e.DisplayName : "PACKET", f, sb, name, Center());
-            }
-        }
-
         public static void DrawWeaponUpgradeFile(Graphics g, WeaponUpgradeFile drop, float cameraX)
         {
             RectangleF b = drop.Bounds;
@@ -1780,72 +1911,6 @@ namespace DebugHeroFileDungeonRPG
                 g.DrawString("+" + drop.UpgradeLevel, f, text, new Rectangle(r.X + 6, r.Y + 38, r.Width - 12, 16), Center());
             }
         }
-
-        private static void DrawFileMonster(Graphics g, Rectangle r, GameEntity e)
-        {
-            Image sheet = LoadNormalMonsterSheet();
-
-            if (sheet == null)
-            {
-                DrawFallbackFileMonster(g, r, e);
-                return;
-            }
-
-            int cols = 3;
-            int rows = 3;
-            int totalFrames = cols * rows;
-
-            int offset = Math.Abs(((e.Name ?? "").GetHashCode()) % totalFrames);
-            int frame = ((Environment.TickCount / 130) + offset) % totalFrames;
-
-            int col = frame % cols;
-            int row = frame / cols;
-
-            int sx = (int)Math.Round(col * sheet.Width / (double)cols);
-            int sy = (int)Math.Round(row * sheet.Height / (double)rows);
-            int sx2 = (int)Math.Round((col + 1) * sheet.Width / (double)cols);
-            int sy2 = (int)Math.Round((row + 1) * sheet.Height / (double)rows);
-
-            int pad = 3;
-
-            Rectangle src = new Rectangle(
-                sx + pad,
-                sy + pad,
-                Math.Max(1, sx2 - sx - pad * 2),
-                Math.Max(1, sy2 - sy - pad * 2)
-            );
-
-            int drawW = 145;
-            int drawH = 120;
-
-            Rectangle dst = new Rectangle(
-                r.X + r.Width / 2 - drawW / 2,
-                r.Y + r.Height / 2 - drawH / 2 - 4,
-                drawW,
-                drawH
-            );
-
-            InterpolationMode oldInterpolation = g.InterpolationMode;
-            PixelOffsetMode oldPixelOffset = g.PixelOffsetMode;
-            SmoothingMode oldSmoothing = g.SmoothingMode;
-
-            g.InterpolationMode = InterpolationMode.NearestNeighbor;
-            g.PixelOffsetMode = PixelOffsetMode.Half;
-            g.SmoothingMode = SmoothingMode.None;
-
-            g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
-
-            g.InterpolationMode = oldInterpolation;
-            g.PixelOffsetMode = oldPixelOffset;
-            g.SmoothingMode = oldSmoothing;
-
-            if (e.HitFlash > 0)
-            {
-                using (SolidBrush flash = new SolidBrush(Color.FromArgb(90, Color.White)))
-                    g.FillEllipse(flash, dst.X + 8, dst.Y + 10, dst.Width - 16, dst.Height - 18);
-            }
-        }
-
         private static void DrawFallbackFileMonster(Graphics g, Rectangle r, GameEntity e)
         {
             if (e.HitFlash > 0)
