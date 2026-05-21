@@ -55,6 +55,40 @@ namespace DebugHeroFileDungeonRPG
             DrawIconFromSheet(g, sheet, 2, 0, x, y + gapY * 2, "Internet Explorer");
             DrawIconFromSheet(g, sheet, 3, 0, x, y + gapY * 3, "휴지통");
         }
+        public void DrawRecoveryToolsShortcut(
+    Graphics g,
+    Rectangle client,
+    int coins,
+    List<UiButton> buttons)
+        {
+            Image sheet = LoadDesktopIconsSheet();
+
+            int desktopStartX = 30;
+            int desktopStartY = 34;
+            int desktopGapY = 122;
+
+            // 휴지통이 gapY * 3 이므로, 그 아래는 gapY * 4
+            int iconX = desktopStartX;
+            int iconY = desktopStartY + desktopGapY * 4;
+
+            // icons.png 기준: 4행 2열 아이콘
+            int recoveryIconCol = 1;
+            int recoveryIconRow = 3;
+
+            string label = "Recovery Tools\n" + coins + " coin";
+
+            Rectangle hitBox = new Rectangle(
+                iconX - 30,
+                iconY - 6,
+                DesktopIconLabelWidth,
+                DesktopIconSize + 54
+            );
+
+            DrawIconFromSheet(g, sheet, recoveryIconCol, recoveryIconRow, iconX, iconY, label);
+
+            if (buttons != null)
+                buttons.Add(new UiButton(hitBox, "openShop"));
+        }
 
         private void DrawIconFromSheet(
             Graphics g,
@@ -193,36 +227,74 @@ namespace DebugHeroFileDungeonRPG
         }
 
         public void DrawStageIcons(
-            Graphics g,
-            List<StageInfo> stages,
-            int unlockedStage,
-            int selectedStage,
-            int clearedStages,
-            List<UiButton> buttons)
+    Graphics g,
+    List<StageInfo> stages,
+    int unlockedStage,
+    int selectedStage,
+    int clearedStages,
+    List<UiButton> buttons)
         {
-            int cols = 5;
-            int startX = 120;
-            int startY = 90;
+            Image sheet = LoadDesktopIconsSheet();
+
+            // 기본 바탕화면 아이콘과 같은 기준값
+            int desktopStartX = 30;
+            int desktopStartY = 34;
+            int desktopGapX = 125;
+            int desktopGapY = 122;
+
+            // 기본 아이콘들이 1열을 쓰고 있으므로, 스테이지 아이콘은 그 오른쪽 열부터 시작
+            int firstStageColumn = 1;
+
+            // icons.png에서 사용할 아이콘 위치
+            
+            int stageIconCol = 2;
+            int stageIconRow = 1;
+
+            int rowsPerColumn = 4;
 
             for (int i = 1; i <= unlockedStage && i <= stages.Count; i++)
             {
-                int col = (i - 1) % cols;
-                int row = (i - 1) / cols;
+                int index = i - 1;
 
-                Rectangle r = new Rectangle(
-                    startX + col * 170,
-                    startY + row * 145,
-                    128,
-                    112
-                );
+                int desktopCol = firstStageColumn + index / rowsPerColumn;
+                int desktopRow = index % rowsPerColumn;
+
+                int iconX = desktopStartX + desktopCol * desktopGapX;
+                int iconY = desktopStartY + desktopRow * desktopGapY;
 
                 StageInfo st = stages[i - 1];
 
                 bool selected = selectedStage == i;
                 bool newly = i == unlockedStage && i > clearedStages;
 
-                Renderer.DrawFileShortcut(g, r, st, selected, newly);
-                buttons.Add(new UiButton(r, "stage" + i.ToString()));
+                Rectangle hitBox = new Rectangle(
+                    iconX - 30,
+                    iconY - 6,
+                    DesktopIconLabelWidth,
+                    DesktopIconSize + 54
+                );
+
+                if (selected)
+                {
+                    using (SolidBrush b = new SolidBrush(Color.FromArgb(90, 40, 100, 230)))
+                        g.FillRectangle(b, hitBox);
+
+                    using (Pen p = new Pen(Color.FromArgb(210, 180, 215, 255), 2f))
+                        g.DrawRectangle(p, hitBox.X, hitBox.Y, hitBox.Width - 1, hitBox.Height - 1);
+                }
+                else if (newly)
+                {
+                    using (Pen p = new Pen(Color.FromArgb(210, 255, 245, 170), 2f))
+                        g.DrawRectangle(p, hitBox.X, hitBox.Y, hitBox.Width - 1, hitBox.Height - 1);
+                }
+
+                string label = string.IsNullOrEmpty(st.FileName)
+                    ? "Stage " + i.ToString("00")
+                    : st.FileName;
+
+                DrawIconFromSheet(g, sheet, stageIconCol, stageIconRow, iconX, iconY, label);
+
+                buttons.Add(new UiButton(hitBox, "stage" + i.ToString()));
             }
         }
     }
