@@ -1288,7 +1288,7 @@ namespace DebugHeroFileDungeonRPG
                 DrawPlayerStillSprite(g, p, drawX, baseY + bob, facing);
             }
 
-            DrawPlayerAgentCharacterFrame(g, walking ? "walk" : "idle", drawX, baseY + bob, facing, frame);
+          
 
             using (Font f = F(7.5f, FontStyle.Bold))
             using (SolidBrush b = new SolidBrush(Color.White))
@@ -2421,6 +2421,8 @@ namespace DebugHeroFileDungeonRPG
             float x2 = e.X2 - cameraX;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
+
+            
             if (e.Kind == "driveShard")
             {
                 if (Renderer.Img_DiskSprite != null)
@@ -2447,6 +2449,25 @@ namespace DebugHeroFileDungeonRPG
                 }
                 return; // 디스크를 그렸으므로 아래 일반 이펙트 코드를 타지 않고 종료
             }
+
+            if (e.Kind == "safeZone" || e.Kind == "safezone")
+            {
+                if (Renderer.Img_Safezone != null)
+                {
+                    // 💡 2.5D 측면 시선(입체감)을 주기 위해 가로와 세로 비율을 2:1에 가깝게 조절합니다.
+                    int drawW = 260;                   // 가로 폭을 살짝 넓혀서 플레이어 안착 영역 확보
+                    int drawH = (int)(drawW * 0.52f); 
+
+                    // 안전구역의 중심점(x1, e.Y) 기준으로 정확히 정중앙에 정렬되도록 좌표 보정
+                    Rectangle destRect = new Rectangle((int)x1 - drawW / 2, (int)e.Y - drawH / 2, drawW, drawH);
+
+                    // 보정된 타원형 destRect 박스 크기에 맞춰 이펙트를 입체적으로 렌더링
+                    g.DrawImage(Renderer.Img_Safezone, destRect);
+                }
+                return;
+            }
+
+
 
             if (e.Kind == "playerSlash")
             {
