@@ -12,40 +12,38 @@ namespace DebugHeroFileDungeonRPG
 
             int stageNum = st.Index;
             string monsterName = "Unknown_Enemy";
-            string targetAssetFileName = "moster.png"; // fallback
+            string targetAssetFileName = "moster.png";
 
-            // -----------------------------------------------------------------
-            // [기획서 데이터 테이블 수동 매핑 구역]
-            // -----------------------------------------------------------------
-            if (stageNum == 1) // Stage 1: File Explorer 숲 (문서 기준 파일, 폴더, 바로가기, 휴지통)
+            // * [각 스테이지별 기획서 데이터 명세 수동 테이블 매핑]
+            if (stageNum == 1)
             {
                 string[] names = { "Broken_Document.txt", "Empty_Folder", "Broken_Shortcut.lnk", "Unemptied_Trash.bak" };
                 string[] assets = { "file_monster.png", "folder_monster.png", "shortcut_monster.png", "trash_monster.png" };
                 monsterName = names[waveIndex];
                 targetAssetFileName = assets[waveIndex];
             }
-            else if (stageNum == 3) // Stage 3: Windows Update 연구소 (문서 기준 적 목록 추출)
+            else if (stageNum == 3)
             {
-                string[] names = { "Update Patch 조각", "Loading Bar Slime", "Restart Reminder", "Failed Update" };
+                string[] names = { "Unknown Device", "Broken Driver Icon", "IRQ Conflict", "Driver Cache Fragment" };
                 string[] assets = { "patch_monster.png", "slime_monster.png", "reminder_monster.png", "failed_monster.png" };
                 monsterName = names[waveIndex];
                 targetAssetFileName = assets[waveIndex];
             }
-            else if (stageNum == 5) // Stage 5: Network Port 항구 (문서 기준 적 목록 추출)
+            else if (stageNum == 5)
             {
                 string[] names = { "Packet Minnow", "Open Port Buoy", "Request Crab", "Firewall Barnacle" };
                 string[] assets = { "packet_monster.png", "port_monster.png", "crab_monster.png", "firewall_monster.png" };
                 monsterName = names[waveIndex];
                 targetAssetFileName = assets[waveIndex];
             }
-            else if (stageNum == 7) // Stage 7: Registry Hive 보관소 (문서 기준 적 목록 추출)
+            else if (stageNum == 7)
             {
                 string[] names = { "Broken Key", "Duplicate Value", "Orphan Entry", "Recent Trace" };
                 string[] assets = { "key_monster.png", "value_monster.png", "orphan_monster.png", "trace_monster.png" };
                 monsterName = names[waveIndex];
                 targetAssetFileName = assets[waveIndex];
             }
-            else if (stageNum == 9) // Stage 9: Temp Cache 동굴 (문서 기준 적 목록 추출)
+            else if (stageNum == 9)
             {
                 string[] names = { "Temp Fragment", "Cache Leech", "Unsent Report", "Recent Ghost" };
                 string[] assets = { "temp_monster.png", "leech_monster.png", "report_monster.png", "ghost_monster.png" };
@@ -53,18 +51,24 @@ namespace DebugHeroFileDungeonRPG
                 targetAssetFileName = assets[waveIndex];
             }
 
-            // 스펙 연산
             int baseHp = 44 + stageNum * 16;
             int baseAtk = 4 + stageNum;
             int hp = baseHp + (waveIndex * 14);
 
-            for (int i = 0; i < 4; i++)
+            // * [2. 정예 유닛 자동화 판정: 패턴과 무관하게 4번째 웨이브(index 3)라면 버프 적용]
+            int spawnCount = (waveIndex == 3) ? 2 : 4;
+            if (waveIndex == 3)
+            {
+                // * [피드백 반영: 4번째 웨이브 몬스터는 체력을 일반의 3배로 대폭 증폭]
+                hp = hp * 3;
+            }
+
+            for (int i = 0; i < spawnCount; i++)
             {
                 list.Add(new GameEntity
                 {
                     Name = monsterName,
                     DisplayName = monsterName,
-                    // [핵심 변경]: Kind 변수에 확장자 대신 실제 디스크에서 읽어와야 할 png 파일명을 직접 주입해버립니다!
                     Kind = targetAssetFileName,
                     X = 460 + (i * 245),
                     Y = Math.Max(140, clientHeight - 270 + (i % 2) * 60),
@@ -80,7 +84,6 @@ namespace DebugHeroFileDungeonRPG
             return list;
         }
 
-        // [기존 짝수 보스층 팩토리 원본 코드 보존 - Pass through 용]
         public static GameEntity CreateBoss(StageInfo st, float x, int clientHeight, int totalStages)
         {
             if (st == null) return null;
@@ -102,6 +105,7 @@ namespace DebugHeroFileDungeonRPG
                 Color = st.Accent
             };
         }
+
         public static List<GameEntity> CreatePreBossEnemies(StageInfo st, int clientHeight, Random random)
         {
             return new List<GameEntity>();

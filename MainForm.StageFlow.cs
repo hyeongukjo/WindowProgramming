@@ -385,10 +385,24 @@ namespace DebugHeroFileDungeonRPG
                 if (m.Hp <= 0) continue;
                 if (hit.IntersectsWith(m.Bounds))
                 {
-                    m.Hp -= damage;
+                    // * [기본 스킬 대미지 배정]
+                    int finalDamage = damage;
+
+                    // * [2. 피드백 반영: Empty_Folder가 경화 상태(MonsterState == 1)일 때 받는 피해 50% 반감 처리]
+                    if (m.Name == "Empty_Folder" && m.MonsterState == 1)
+                    {
+                        finalDamage = Math.Max(1, finalDamage / 2); // * [대미지 절반으로 감소]
+
+                        // * [단단한 껍데기에 막혔다는 시각적 피드백 효과 텍스트 추가]
+                        effects.Add(new Effect("text", m.X + 20, m.Y - 104, m.X + 20, m.Y - 104, 26, Color.LightGray, "GUARD!"));
+                    }
+
+                    // * [최종 연산된 대미지를 몬스터 체력에서 차감]
+                    m.Hp -= finalDamage;
                     m.HitFlash = 10;
                     hitAny = true;
-                    effects.Add(new Effect("text", m.X, m.Y - 84, m.X, m.Y - 84, 34, Color.Yellow, damage.ToString()));
+
+                    effects.Add(new Effect("text", m.X, m.Y - 84, m.X, m.Y - 84, 34, Color.Yellow, finalDamage.ToString()));
                     effects.Add(new Effect("spark", m.X, m.Y - 44, m.X, m.Y - 44, 22, Color.White, ""));
                     if (m.Hp <= 0) AwardDefeatReward(m);
                 }
