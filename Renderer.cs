@@ -132,26 +132,64 @@ namespace DebugHeroFileDungeonRPG
 
         // 몬스터 그리기 //
 
-        // [근본 해결 1]: MainForm에서 호출하는 메인 진입점. 
-        // 짝수층 보스가 아닐 경우 무조건 형진님의 기획안 1:1 매핑 렌더러로 흐름을 강제 전환합니다.
         public static void DrawEnemy(Graphics g, GameEntity e, float cameraX, int clientHeight)
         {
             if (e == null) return;
 
+            // 1. 카메라 좌표계 스크린 월드 변환
             int screenX = (int)(e.X - cameraX);
-            // [수정]: 기준 좌표 r을 잡되, 크기나 해상도 처리는 하단 분할 함수에서 완벽하게 제어하도록 넘겨줍니다.
-            Rectangle r = new Rectangle(screenX, (int)e.Y, 0, 0);
+            Rectangle r = new Rectangle(screenX - 32, (int)e.Y - 32, 64, 64);
 
             if (e.IsBoss || e.Kind == "BOSS")
             {
-                // 보스는 기존 64x64 사각형 보정이 필요하므로 별도 Rectangle 재계산 후 전송
-                Rectangle bossRect = new Rectangle(screenX - 32, (int)e.Y - 32, 64, 64);
-                DrawBoss(g, bossRect, e);
+                DrawBoss(g, r, e);
+                return;
             }
             else
             {
-                // 일반 몬스터는 무조건 9분할 연산이 살아있는 함수로 다이렉트 슛!
+                // 3x3 중 딱 1칸만 오려 그리는 완성형 렌더러 호출
                 DrawFileMonster(g, r, e);
+            }
+
+            // ---------------------------------------------------------------------------------
+            // 💡 145x120 크기로 그려지는 실제 몬스터의 '진짜 가로 정중앙' 축 계산 (e.X 기반)
+            // ---------------------------------------------------------------------------------
+            int monsterCenterX = screenX; // 몬스터의 완벽한 도트 중심축 (e.X 보정값)
+            int uiTopY = (int)e.Y - 70;   // 몬스터 머리 위 안전 포지셔닝 Y축
+
+            // 2. 머리 위 체력바 정상화 (몬스터 정중앙에 완벽 정렬)
+            int hpBarWidth = 64;
+            Rectangle hp = new Rectangle(monsterCenterX - (hpBarWidth / 2), uiTopY, hpBarWidth, 8);
+            DrawBar(g, hp, e.Hp, e.MaxHp, Color.OrangeRed);
+
+            // 3. 텍스트 길이에 맞춰 검은색 배경 칸 유동적 확장 (MeasureString)
+            string monsterName = e.Name ?? "UNKNOWN";
+
+            using (Font f = F(7f, FontStyle.Bold))
+            using (SolidBrush sb = new SolidBrush(Color.White))
+            using (SolidBrush bg = new SolidBrush(Color.FromArgb(140, 0, 0, 0)))
+            {
+                // 몬스터 이름의 실제 가로/세로 픽셀 길이를 실시간으로 정확하게 측정
+                SizeF textSize = g.MeasureString(monsterName, f);
+
+                // 글자가 박스 벽에 딱 붙지 않도록 좌우 여백(Padding) 부여
+                int paddingX = 14;
+                int boxWidth = (int)Math.Ceiling(textSize.Width) + paddingX;
+                int boxHeight = 16;
+
+                // 💡 [교정 완료]: monsterCenterX를 사용하여 이름 박스가 중앙을 기준으로 늘어나도록 배치
+                Rectangle nameRect = new Rectangle(
+                    monsterCenterX - (boxWidth / 2),
+                    uiTopY - 20,
+                    boxWidth,
+                    boxHeight
+                );
+
+                // 동적으로 조절된 크기의 검은색 반투명 배경판 드로우
+                g.FillRectangle(bg, nameRect);
+
+                // 늘어난 칸 정중앙에 텍스트 안착
+                g.DrawString(monsterName, f, sb, nameRect, Center());
             }
         }
 
@@ -246,7 +284,6 @@ namespace DebugHeroFileDungeonRPG
         // [근본 해결 3]: 단일 통짜 PNG 파일 및 3x3 스프라이트 규격을 자동으로 하이브리드 판정하여 그리는 도트 렌더러
         private static void DrawFileMonster(Graphics g, Rectangle r, GameEntity e)
         {
-            // 형진님이 구축하신 1:1 매퍼로 이미지 로드
             Image sheet = LoadStrictMonsterAssetDirect(e);
 
             if (sheet == null)
@@ -255,26 +292,28 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
 
-            // [핵심]: 묻지도 따지지도 않고 3x3 구조로 칼같이 분할 선언
+            // 💡 오판의 원인이 되던 비율 체크 조건문을 완전히 제거하고 3x3 분할을 강제 고정합니다.
             int cols = 3;
             int rows = 3;
             int totalFrames = cols * rows;
 
+            // 각 몬스터 이름 해시코드를 활용해 고유하게 애니메이션 박자를 분산시킵니다.
             int offset = Math.Abs(((e.Name ?? "").GetHashCode()) % totalFrames);
             int frame = ((Environment.TickCount / 130) + offset) % totalFrames;
 
+            // 현재 프레임 번호가 몇 번째 열(col), 몇 번째 행(row)에 있는지 계산
             int col = frame % cols;
             int row = frame / cols;
 
-            // 전체 해상도 기반 정확히 3등분한 1칸의 순수 픽셀 크기 계산
+            // 이미지의 전체 해상도를 기반으로 정확히 3등분한 1칸의 순수 픽셀 크기 산출
             int cellW = sheet.Width / cols;
             int cellH = sheet.Height / rows;
 
             int sx = col * cellW;
             int sy = row * cellH;
-            int pad = 2; // 외곽 도트 왜곡 방지 패딩
+            int pad = 2; // 테두리 번짐 방지 패딩
 
-            // 💡 [여기가 핵심]: 전체 이미지가 아닌 '딱 9분의 1조각'만 오려내도록 구역(src) 강제 고정!
+            // 💡 원본 이미지에서 전체가 아닌 '정확히 자른 1칸(src)'만 추출하도록 타겟 지정!
             Rectangle src = new Rectangle(
                 sx + pad,
                 sy + pad,
@@ -282,11 +321,11 @@ namespace DebugHeroFileDungeonRPG
                 Math.Max(1, cellH - pad * 2)
             );
 
-            // 인게임 화면에 그려질 최종 몬스터 크기 규격화 (145x120)
+            // 145x120 크기로 스케일을 키우면서, DrawEnemy의 UI 중심선(r.X + 32)과 완벽 동기화
             int drawW = 145, drawH = 120;
             Rectangle dst = new Rectangle(
-                r.X - drawW / 2,
-                r.Y - drawH / 2 - 4,
+                r.X + 32 - (drawW / 2),
+                r.Y + 32 - (drawH / 2) - 4,
                 drawW,
                 drawH
             );
@@ -299,7 +338,7 @@ namespace DebugHeroFileDungeonRPG
             g.PixelOffsetMode = PixelOffsetMode.Half;
             g.SmoothingMode = SmoothingMode.None;
 
-            // 💡 [출력]: 이제 전체 바둑판이 아닌 정교하게 잘라낸 1칸(src)만 화면(dst)에 그려집니다!
+            // 드디어 자른 단일 조각(src)만 화면 목적지(dst)에 출력합니다!
             g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
 
             g.InterpolationMode = oldInterpolation;
@@ -1881,30 +1920,43 @@ namespace DebugHeroFileDungeonRPG
         {
             RectangleF b = e.Bounds;
             Rectangle r = Rectangle.Round(new RectangleF(b.X - cameraX, b.Y, b.Width, b.Height));
-            using (SolidBrush sh = new SolidBrush(Color.FromArgb(80, 0, 0, 0))) g.FillEllipse(sh, r.X + 4, r.Bottom - 10, r.Width - 8, 12);
+
+            // 그림자 연산
+            using (SolidBrush sh = new SolidBrush(Color.FromArgb(80, 0, 0, 0)))
+                g.FillEllipse(sh, r.X + 4, r.Bottom - 10, r.Width - 8, 12);
 
             if (e.IsBoss)
             {
                 DrawBoss(g, r, e);
-                // 💡 [수정] 보스일 때는 여기서 레이아웃 그리기를 종료(return)하여 
-                // 아래에 있는 일반 몹용 겹침 HP 바 코드를 타지 않도록 원천 차단합니다!
                 return;
             }
             else
             {
+                // 3x3 중 딱 1칸만 오려 그리는 형진님의 완성형 렌더러 호출
                 DrawFileMonster(g, r, e);
             }
 
-            // 💡 [변경] 이제 이 구역은 '일반 파일 몬스터'만 사용하는 전용 머리 위 UI 구역이 됩니다.
-            Rectangle hp = new Rectangle(r.X, r.Y - 18, r.Width, 8);
+            // ---------------------------------------------------------------------------------
+            // 💡 [이름 & 체력바 위치 보정]: 145x120으로 커진 형진님의 몬스터 규격에 맞춰 
+            // 레이아웃 좌표(UI가 머리 위에 이쁘게 안착하도록 Y축 - 56 보정)를 정교하게 재계산합니다!
+            // ---------------------------------------------------------------------------------
+            int uiX = r.X + r.Width / 2;
+            int uiY = r.Y + r.Height / 2 - 60; // 몬스터 머리 위 정중앙 포지셔닝
+
+            // 1. 머리 위 체력바 복구
+            Rectangle hp = new Rectangle(uiX - 32, uiY, 64, 8);
             DrawBar(g, hp, e.Hp, e.MaxHp, Color.OrangeRed);
+
+            // 2. 머리 위 이름(Name) 텍스트 복구
             using (Font f = F(7f, FontStyle.Bold))
             using (SolidBrush sb = new SolidBrush(Color.White))
             using (SolidBrush bg = new SolidBrush(Color.FromArgb(140, 0, 0, 0)))
             {
-                Rectangle name = new Rectangle(r.X - 20, r.Y - 38, r.Width + 40, 16);
-                g.FillRectangle(bg, name);
-                g.DrawString(e.IsBoss ? e.DisplayName : "PACKET", f, sb, name, Center());
+                Rectangle nameRect = new Rectangle(uiX - 50, uiY - 20, 100, 16);
+                g.FillRectangle(bg, nameRect);
+
+                // 기획안 명세에 맞게 몬스터 고유 이름(e.Name)을 화면에 출력합니다.
+                g.DrawString(e.Name, f, sb, nameRect, Center());
             }
         }
 
