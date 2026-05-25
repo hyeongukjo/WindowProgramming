@@ -5,60 +5,90 @@ namespace DebugHeroFileDungeonRPG
 {
     public static class StageEnemyFactory
     {
-        public static List<GameEntity> CreatePreBossEnemies(StageInfo st, int clientHeight, Random random)
+        public static List<GameEntity> CreateWaveEnemies(StageInfo st, int waveIndex, int clientHeight)
         {
-            List<GameEntity> enemies = new List<GameEntity>();
-            if (st == null) return enemies;
-            string[] names = GetPreBossEnemyNames(st);
-            int baseHp = 48 + st.Index * 20;
-            for (int i = 0; i < names.Length; i++)
+            List<GameEntity> list = new List<GameEntity>();
+            if (st == null || waveIndex < 0 || waveIndex > 3) return list;
+
+            int stageNum = st.Index;
+            string monsterName = "Unknown_Enemy";
+            string targetAssetFileName = "moster.png";
+
+            // * [각 스테이지별 기획서 데이터 명세 수동 테이블 매핑]
+            if (stageNum == 1)
             {
-                int hp = baseHp + i * 18 + (st.Index >= 6 ? 18 : 0);
-                enemies.Add(new GameEntity
+                string[] names = { "Broken_Document.txt", "Empty_Folder", "Broken_Shortcut.lnk", "Unemptied_Trash.bak" };
+                string[] assets = { "file_monster.png", "folder_monster.png", "shortcut_monster.png", "trash_monster.png" };
+                monsterName = names[waveIndex];
+                targetAssetFileName = assets[waveIndex];
+            }
+            else if (stageNum == 3)
+            {
+                string[] names = { "Unknown Device", "Broken Driver Icon", "IRQ Conflict", "Driver Cache Fragment" };
+                string[] assets = { "patch_monster.png", "slime_monster.png", "reminder_monster.png", "failed_monster.png" };
+                monsterName = names[waveIndex];
+                targetAssetFileName = assets[waveIndex];
+            }
+            else if (stageNum == 5)
+            {
+                string[] names = { "Packet Minnow", "Open Port Buoy", "Request Crab", "Firewall Barnacle" };
+                string[] assets = { "packet_monster.png", "port_monster.png", "crab_monster.png", "firewall_monster.png" };
+                monsterName = names[waveIndex];
+                targetAssetFileName = assets[waveIndex];
+            }
+            else if (stageNum == 7)
+            {
+                string[] names = { "Broken Key", "Duplicate Value", "Orphan Entry", "Recent Trace" };
+                string[] assets = { "key_monster.png", "value_monster.png", "orphan_monster.png", "trace_monster.png" };
+                monsterName = names[waveIndex];
+                targetAssetFileName = assets[waveIndex];
+            }
+            else if (stageNum == 9)
+            {
+                string[] names = { "Temp Fragment", "Cache Leech", "Unsent Report", "Recent Ghost" };
+                string[] assets = { "temp_monster.png", "leech_monster.png", "report_monster.png", "ghost_monster.png" };
+                monsterName = names[waveIndex];
+                targetAssetFileName = assets[waveIndex];
+            }
+
+            int baseHp = 44 + stageNum * 16;
+            int baseAtk = 4 + stageNum;
+            int hp = baseHp + (waveIndex * 14);
+
+            // * [2. 정예 유닛 자동화 판정: 패턴과 무관하게 4번째 웨이브(index 3)라면 버프 적용]
+            int spawnCount = (waveIndex == 3) ? 2 : 4;
+            if (waveIndex == 3)
+            {
+                // * [피드백 반영: 4번째 웨이브 몬스터는 체력을 일반의 3배로 대폭 증폭]
+                hp = hp * 3;
+            }
+
+            for (int i = 0; i < spawnCount; i++)
+            {
+                list.Add(new GameEntity
                 {
-                    Name = names[i],
-                    DisplayName = names[i],
-                    Kind = StageEnemyExtension(names[i]),
-                    X = 380 + i * 245,
-                    Y = Math.Max(130, clientHeight - 260 + (i % 4) * 44),
-                    VX = (i % 2 == 0 ? 1 : -1) * (1.0f + st.Index * 0.075f),
-                    VY = (i % 3 == 0 ? 1 : -1) * (0.55f + st.Index * 0.035f),
-                    Hp = hp,
-                    MaxHp = hp,
-                    Attack = 5 + st.Index + i,
+                    Name = monsterName,
+                    DisplayName = monsterName,
+                    Kind = targetAssetFileName,
+                    X = 460 + (i * 245),
+                    Y = Math.Max(140, clientHeight - 270 + (i % 2) * 60),
+                    VX = (i % 2 == 0 ? 1.1f : -1.1f) * (1.0f + waveIndex * 0.06f),
+                    VY = (i % 2 == 0 ? 0.5f : -0.5f) * (1.0f + waveIndex * 0.03f),
+                    Hp = hp + (i * 3),
+                    MaxHp = hp + (i * 3),
+                    Attack = baseAtk + waveIndex,
                     IsBoss = false,
-                    Color = st.Accent,
-                    CoinReward = 12 + st.Index * 3 + i * 4
+                    RewardGiven = false
                 });
             }
-            return enemies;
+            return list;
         }
 
         public static GameEntity CreateBoss(StageInfo st, float x, int clientHeight, int totalStages)
         {
+            if (st == null) return null;
             int bossHp = 950 + st.Index * 280;
             int bossAttack = 10 + st.Index * 3;
-            int minimumHp = 950 + st.Index * 260;
-            int minimumAttack = 10 + st.Index * 2;
-            if (st.Index == 1 && st.BossName.IndexOf("Driver", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                minimumHp = 1850;
-                minimumAttack = 22;
-            }
-            if (st.Index >= 8)
-            {
-                minimumHp += 420;
-                bossHp += 520;
-                bossAttack += 4;
-            }
-            if (st.Index == totalStages)
-            {
-                minimumHp += 900;
-                bossHp += 900;
-                bossAttack += 6;
-            }
-            bossHp = Math.Max(bossHp, minimumHp);
-            bossAttack = Math.Max(bossAttack, minimumAttack);
             return new GameEntity
             {
                 Name = st.BossName,
@@ -72,9 +102,13 @@ namespace DebugHeroFileDungeonRPG
                 MaxHp = bossHp,
                 Attack = bossAttack,
                 IsBoss = true,
-                Color = st.Accent,
-                CoinReward = 90 + st.Index * 18
+                Color = st.Accent
             };
+        }
+
+        public static List<GameEntity> CreatePreBossEnemies(StageInfo st, int clientHeight, Random random)
+        {
+            return new List<GameEntity>();
         }
 
         private static string[] GetPreBossEnemyNames(StageInfo st)
@@ -121,3 +155,4 @@ namespace DebugHeroFileDungeonRPG
         }
     }
 }
+
