@@ -82,6 +82,19 @@ namespace DebugHeroFileDungeonRPG
         private int closeRightPadding = 16;
         private int closeTopPadding = 10;
 
+        // 시스템 알림창 이미지 공통 렌더링 기준값
+        private const int SourceSliceLeft = 34;
+        private const int SourceSliceTop = 114;
+        private const int SourceSliceRightNoClose = 34;
+        private const int SourceSliceRightWithClose = 104;
+        private const int SourceSliceBottom = 34;
+
+        // 실제 게임 화면에 보이는 기본 창 비율
+        private const int DefaultTitleBarHeight = 30;
+        private const int DefaultBorderSize = 34;
+        private const int DefaultRightSizeNoClose = 34;
+        private const int DefaultRightSizeWithClose = 80;
+
         private SystemWindowUI()
         {
             LoadImages();
@@ -366,12 +379,18 @@ namespace DebugHeroFileDungeonRPG
             Graphics g,
             Rectangle rect,
             string title,
-             List<UiButton> buttons,
+            List<UiButton> buttons,
             string closeButtonId)
         {
-            DrawBlueCancelFrameNineSlice(g, rect);
-            DrawTitleText(g, rect, title);
-            RegisterCloseButton(rect, buttons, closeButtonId);
+            DrawSystemPanelFrame(
+                g,
+                rect,
+                title,
+                SystemWindowStyle.Blue,
+                true,
+                buttons,
+                closeButtonId
+            );
         }
 
         private void DrawImageWindow(
@@ -396,124 +415,149 @@ namespace DebugHeroFileDungeonRPG
             DrawDialogButtons(g, rect, dialogButtons, buttons);
         }
 
-        public void DrawBlueCancelFrameNineSlice(Graphics g, Rectangle destRect)
+        public void DrawSystemPanelFrame(
+    Graphics g,
+    Rectangle rect,
+    string title,
+    SystemWindowStyle style,
+    bool hasClose,
+    List<UiButton> buttons,
+    string closeButtonId)
         {
-            Image img = blueWindowCloseImage;
-            Rectangle sourceRect = blueWindowCloseSource;
+            DrawSystemPanelFrame(g, rect, title, style, hasClose, buttons, closeButtonId, DefaultTitleBarHeight, DefaultBorderSize,
+                hasClose ? DefaultRightSizeWithClose : DefaultRightSizeNoClose);
+        }
 
-            if (img == null)
-            {
-                DrawFrameImage(g, destRect, SystemWindowStyle.Blue, true);
-                return;
-            }
-
-            if (sourceRect.IsEmpty)
-                sourceRect = new Rectangle(0, 0, img.Width, img.Height);
-
-            DrawNineSliceImage(
+        public void DrawSystemPanelFrame(
+            Graphics g,
+            Rectangle rect,
+            string title,
+            SystemWindowStyle style,
+            bool hasClose,
+            List<UiButton> buttons,
+            string closeButtonId,
+            int titleBarHeight,
+            int borderSize,
+            int rightBorderSize)
+        {
+            DrawFrameImage(
                 g,
-                img,
-                sourceRect,
-                destRect,
-                34,  // left
-                25,  // top
-                80,  // right: X 버튼 영역 포함
-                34   // bottom
+                rect,
+                style,
+                hasClose,
+                titleBarHeight,
+                borderSize,
+                rightBorderSize
+            );
+
+            DrawTitleText(g, rect, title);
+            RegisterCloseButton(rect, buttons, closeButtonId);
+        }
+
+        // 기존 코드 호환용.
+        // 다른 파일에서 DrawBlueHudFrame을 이미 호출하고 있으면 컴파일이 깨지지 않게 남긴다.
+        public void DrawBlueHudFrame(
+            Graphics g,
+            Rectangle rect,
+            string title)
+        {
+            DrawSystemPanelFrame(
+                g,
+                rect,
+                title,
+                SystemWindowStyle.Blue,
+                true,
+                null,
+                null
             );
         }
 
-        private void DrawNineSliceImage(
-    Graphics g,
-    Image img,
-    Rectangle source,
-    Rectangle dest,
-    int left,
-    int top,
-    int right,
-    int bottom)
+        // 기존 코드 호환용.
+        // 내부적으로는 이제 BlueCancel 전용 함수가 아니라 공통 프레임 렌더러를 사용한다.
+        public void DrawBlueCancelFrameNineSlice(Graphics g, Rectangle destRect)
         {
-            int centerW = source.Width - left - right;
-            int centerH = source.Height - top - bottom;
+            DrawFrameImage(
+                g,
+                destRect,
+                SystemWindowStyle.Blue,
+                true
+            );
+        }
 
-            int destCenterW = dest.Width - left - right;
-            int destCenterH = dest.Height - top - bottom;
+        private Image GetWindowFrameImage(SystemWindowStyle style, bool hasClose)
+        {
+            if (style == SystemWindowStyle.Red)
+                return hasClose ? redWindowCloseImage : redWindowImage;
 
-            if (centerW <= 0 || centerH <= 0 || destCenterW <= 0 || destCenterH <= 0)
-            {
-                g.DrawImage(img, dest, source, GraphicsUnit.Pixel);
-                return;
-            }
+            return hasClose ? blueWindowCloseImage : blueWindowImage;
+        }
 
-            Rectangle[] src =
-            {
-        new Rectangle(source.X, source.Y, left, top),
-        new Rectangle(source.X + left, source.Y, centerW, top),
-        new Rectangle(source.Right - right, source.Y, right, top),
+        private Rectangle GetWindowFrameSource(SystemWindowStyle style, bool hasClose)
+        {
+            if (style == SystemWindowStyle.Red)
+                return hasClose ? redWindowCloseSource : redWindowSource;
 
-        new Rectangle(source.X, source.Y + top, left, centerH),
-        new Rectangle(source.X + left, source.Y + top, centerW, centerH),
-        new Rectangle(source.Right - right, source.Y + top, right, centerH),
-
-        new Rectangle(source.X, source.Bottom - bottom, left, bottom),
-        new Rectangle(source.X + left, source.Bottom - bottom, centerW, bottom),
-        new Rectangle(source.Right - right, source.Bottom - bottom, right, bottom)
-    };
-
-            Rectangle[] dst =
-            {
-        new Rectangle(dest.X, dest.Y, left, top),
-        new Rectangle(dest.X + left, dest.Y, destCenterW, top),
-        new Rectangle(dest.Right - right, dest.Y, right, top),
-
-        new Rectangle(dest.X, dest.Y + top, left, destCenterH),
-        new Rectangle(dest.X + left, dest.Y + top, destCenterW, destCenterH),
-        new Rectangle(dest.Right - right, dest.Y + top, right, destCenterH),
-
-        new Rectangle(dest.X, dest.Bottom - bottom, left, bottom),
-        new Rectangle(dest.X + left, dest.Bottom - bottom, destCenterW, bottom),
-        new Rectangle(dest.Right - right, dest.Bottom - bottom, right, bottom)
-    };
-
-            System.Drawing.Drawing2D.InterpolationMode oldInterpolation = g.InterpolationMode;
-            System.Drawing.Drawing2D.PixelOffsetMode oldPixelOffset = g.PixelOffsetMode;
-
-            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-
-            for (int i = 0; i < 9; i++)
-            {
-                g.DrawImage(img, dst[i], src[i], GraphicsUnit.Pixel);
-            }
-
-            g.InterpolationMode = oldInterpolation;
-            g.PixelOffsetMode = oldPixelOffset;
+            return hasClose ? blueWindowCloseSource : blueWindowSource;
         }
 
         private void DrawFrameImage(Graphics g, Rectangle rect, SystemWindowStyle style, bool hasClose)
         {
-            Image frame;
-            Rectangle sourceRect;
+            DrawFrameImage(g,rect,style,hasClose,DefaultTitleBarHeight,
+                DefaultBorderSize,hasClose ? DefaultRightSizeWithClose : DefaultRightSizeNoClose);
+        }
 
-            if (style == SystemWindowStyle.Red)
-            {
-                frame = hasClose ? redWindowCloseImage : redWindowImage;
-                sourceRect = hasClose ? redWindowCloseSource : redWindowSource;
-            }
-            else
-            {
-                frame = hasClose ? blueWindowCloseImage : blueWindowImage;
-                sourceRect = hasClose ? blueWindowCloseSource : blueWindowSource;
-            }
+        private void DrawFrameImage(
+            Graphics g,
+            Rectangle rect,
+            SystemWindowStyle style,
+            bool hasClose,
+            int titleBarHeight,
+            int borderSize,
+            int rightBorderSize)
+        {
+            Image frame = GetWindowFrameImage(style, hasClose);
+            Rectangle sourceRect = GetWindowFrameSource(style, hasClose);
 
-            if (frame != null)
+            if (frame == null)
             {
-                if (sourceRect.IsEmpty)
-                    sourceRect = new Rectangle(0, 0, frame.Width, frame.Height);
-
-                g.DrawImage(frame, rect, sourceRect, GraphicsUnit.Pixel);
+                DrawFallbackFrame(g, rect, style);
                 return;
             }
 
+            if (sourceRect.IsEmpty)
+                sourceRect = new Rectangle(0, 0, frame.Width, frame.Height);
+
+            // 원본 PNG 기준값.
+            // 네 SystemAlarm 이미지의 상단바 원본 높이가 크게 잡혀 있어서,
+            // sourceTop은 원본에서 가져올 영역, titleBarHeight는 실제 화면에 보일 높이로 분리한다.
+            int sourceLeft = SourceSliceLeft;
+            int sourceTop = SourceSliceTop;
+            int sourceRight = hasClose ? SourceSliceRightWithClose : SourceSliceRightNoClose;
+            int sourceBottom = SourceSliceBottom;
+
+            int destLeft = borderSize;
+            int destTop = titleBarHeight;
+            int destRight = rightBorderSize;
+            int destBottom = borderSize;
+
+            DrawNineSliceImageScaledBorders(
+                g,
+                frame,
+                sourceRect,
+                rect,
+                sourceLeft,
+                sourceTop,
+                sourceRight,
+                sourceBottom,
+                destLeft,
+                destTop,
+                destRight,
+                destBottom
+            );
+        }
+
+        private void DrawFallbackFrame(Graphics g, Rectangle rect, SystemWindowStyle style)
+        {
             Color borderColor = style == SystemWindowStyle.Red
                 ? Color.FromArgb(180, 40, 40)
                 : Color.FromArgb(40, 100, 210);
@@ -524,12 +568,83 @@ namespace DebugHeroFileDungeonRPG
             using (Pen p = new Pen(borderColor, 3))
                 g.DrawRectangle(p, rect);
         }
+
+        private void DrawNineSliceImageScaledBorders(
+            Graphics g,
+            Image img,
+            Rectangle source,
+            Rectangle dest,
+            int sourceLeft,
+            int sourceTop,
+            int sourceRight,
+            int sourceBottom,
+            int destLeft,
+            int destTop,
+            int destRight,
+            int destBottom)
+        {
+            int sourceCenterW = source.Width - sourceLeft - sourceRight;
+            int sourceCenterH = source.Height - sourceTop - sourceBottom;
+
+            int destCenterW = dest.Width - destLeft - destRight;
+            int destCenterH = dest.Height - destTop - destBottom;
+
+            if (sourceCenterW <= 0 || sourceCenterH <= 0 || destCenterW <= 0 || destCenterH <= 0)
+            {
+                g.DrawImage(img, dest, source, GraphicsUnit.Pixel);
+                return;
+            }
+
+            Rectangle[] src =
+            {
+        new Rectangle(source.X, source.Y, sourceLeft, sourceTop),
+        new Rectangle(source.X + sourceLeft, source.Y, sourceCenterW, sourceTop),
+        new Rectangle(source.Right - sourceRight, source.Y, sourceRight, sourceTop),
+
+        new Rectangle(source.X, source.Y + sourceTop, sourceLeft, sourceCenterH),
+        new Rectangle(source.X + sourceLeft, source.Y + sourceTop, sourceCenterW, sourceCenterH),
+        new Rectangle(source.Right - sourceRight, source.Y + sourceTop, sourceRight, sourceCenterH),
+
+        new Rectangle(source.X, source.Bottom - sourceBottom, sourceLeft, sourceBottom),
+        new Rectangle(source.X + sourceLeft, source.Bottom - sourceBottom, sourceCenterW, sourceBottom),
+        new Rectangle(source.Right - sourceRight, source.Bottom - sourceBottom, sourceRight, sourceBottom)
+    };
+
+            Rectangle[] dst =
+            {
+        new Rectangle(dest.X, dest.Y, destLeft, destTop),
+        new Rectangle(dest.X + destLeft, dest.Y, destCenterW, destTop),
+        new Rectangle(dest.Right - destRight, dest.Y, destRight, destTop),
+
+        new Rectangle(dest.X, dest.Y + destTop, destLeft, destCenterH),
+        new Rectangle(dest.X + destLeft, dest.Y + destTop, destCenterW, destCenterH),
+        new Rectangle(dest.Right - destRight, dest.Y + destTop, destRight, destCenterH),
+
+        new Rectangle(dest.X, dest.Bottom - destBottom, destLeft, destBottom),
+        new Rectangle(dest.X + destLeft, dest.Bottom - destBottom, destCenterW, destBottom),
+        new Rectangle(dest.Right - destRight, dest.Bottom - destBottom, destRight, destBottom)
+    };
+
+            System.Drawing.Drawing2D.InterpolationMode oldInterpolation = g.InterpolationMode;
+            System.Drawing.Drawing2D.PixelOffsetMode oldPixelOffset = g.PixelOffsetMode;
+
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+
+            for (int i = 0; i < 9; i++)
+                g.DrawImage(img, dst[i], src[i], GraphicsUnit.Pixel);
+
+            g.InterpolationMode = oldInterpolation;
+            g.PixelOffsetMode = oldPixelOffset;
+        }
+
         
+
         private void DrawTitleText(Graphics g, Rectangle rect, string title)
         {
             Rectangle titleRect = new Rectangle(
-                rect.X + titleX,
-                rect.Y + titleY,
+                rect.X + 12,
+                rect.Y + 3,
                 rect.Width - 100,
                 titleHeight
             );
