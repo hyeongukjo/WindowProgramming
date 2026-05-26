@@ -193,44 +193,12 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
-        // [근본 해결 2]: 몬스터 이름을 다이렉트로 추적해 대소문자나 출력 디렉토리 유실을 방어하고 png 로딩
+        // * [교정형 자산 로더]: 낡은 이름 비교 명세를 청소하고 오직 e.Kind 파일 이름으로만 스캔 경로를 뚫습니다.
         private static Image LoadStrictMonsterAssetDirect(GameEntity e)
         {
-            if (e == null) return null;
+            if (e == null || string.IsNullOrEmpty(e.Kind)) return null;
 
-            string targetPngName = "moster.png"; // 리소스가 아직 없을 때의 백업 기본값
-            string monsterName = (e.Name ?? "").Trim();
-
-            // 기획안 전 스테이지 적 명칭 1:1 실시간 수동 배정 매핑 테이블
-            // STAGE 01
-            if (monsterName == "Broken_Document.txt") targetPngName = "file_monster.png";
-            else if (monsterName == "Empty_Folder") targetPngName = "folder_monster.png";
-            else if (monsterName == "Broken_Shortcut.lnk") targetPngName = "shortcut_monster.png";
-            else if (monsterName == "Unemptied_Trash.bak") targetPngName = "trash_monster.png";
-
-            // STAGE 03
-            else if (monsterName == "Update Patch 조각") targetPngName = "patch_monster.png";
-            else if (monsterName == "Loading Bar Slime") targetPngName = "slime_monster.png";
-            else if (monsterName == "Restart Reminder") targetPngName = "reminder_monster.png";
-            else if (monsterName == "Failed Update") targetPngName = "failed_monster.png";
-
-            // STAGE 05
-            else if (monsterName == "Packet Minnow") targetPngName = "packet_monster.png";
-            else if (monsterName == "Open Port Buoy") targetPngName = "port_monster.png";
-            else if (monsterName == "Request Crab") targetPngName = "crab_monster.png";
-            else if (monsterName == "Firewall Barnacle") targetPngName = "firewall_monster.png";
-
-            // STAGE 07
-            else if (monsterName == "Broken Key") targetPngName = "key_monster.png";
-            else if (monsterName == "Duplicate Value") targetPngName = "value_monster.png";
-            else if (monsterName == "Orphan Entry") targetPngName = "orphan_monster.png";
-            else if (monsterName == "Recent Trace") targetPngName = "trace_monster.png";
-
-            // STAGE 09
-            else if (monsterName == "Temp Fragment") targetPngName = "temp_monster.png";
-            else if (monsterName == "Cache Dust") targetPngName = "leech_monster.png";
-            else if (monsterName == "Unsent Report") targetPngName = "report_monster.png";
-            else if (monsterName == "Recent Ghost") targetPngName = "ghost_monster.png";
+            string targetPngName = e.Kind.Trim();
 
             lock (strictMonsterLock)
             {
@@ -238,21 +206,14 @@ namespace DebugHeroFileDungeonRPG
                     return cachedImg;
 
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-
-                // 디렉토리 오타나 대소문자 혼선을 완전히 차단하는 유연한 경로 탐색 시도
                 string[] folderNames = { "Assets/Characters/Enemies", "Assets/Characters/Enemise", "Assets/Monsters" };
                 string fullPath = "";
 
                 foreach (var folder in folderNames)
                 {
                     string checkPath = Path.Combine(baseDir, folder.Replace('/', Path.DirectorySeparatorChar), targetPngName);
-                    if (File.Exists(checkPath))
-                    {
-                        fullPath = checkPath;
-                        break;
-                    }
+                    if (File.Exists(checkPath)) { fullPath = checkPath; break; }
                 }
-
                 try
                 {
                     if (!string.IsNullOrEmpty(fullPath) && File.Exists(fullPath))
@@ -261,27 +222,13 @@ namespace DebugHeroFileDungeonRPG
                         strictMonsterCache[targetPngName] = img;
                         return img;
                     }
-                    else
-                    {
-                        // 만약 지정한 특수 파일이 복사 누락 등으로 없으면, 다운 방지를 위해 기본 moster.png를 자동 매핑합니다.
-                        foreach (var folder in folderNames)
-                        {
-                            string fbPath = Path.Combine(baseDir, folder.Replace('/', Path.DirectorySeparatorChar), "moster.png");
-                            if (File.Exists(fbPath))
-                            {
-                                Image img = Image.FromFile(fbPath);
-                                strictMonsterCache[targetPngName] = img;
-                                return img;
-                            }
-                        }
-                    }
                 }
                 catch { }
                 return null;
             }
         }
 
-        // [근본 해결 3]: 단일 통짜 PNG 파일 및 3x3 스프라이트 규격을 자동으로 하이브리드 판정하여 그리는 도트 렌더러
+        // * [정밀 크롭 드로우 라우터 연결 조율]
         private static void DrawFileMonster(Graphics g, Rectangle r, GameEntity e)
         {
             Image sheet = LoadStrictMonsterAssetDirect(e);
@@ -292,36 +239,6 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
 
-            // 💡 오판의 원인이 되던 비율 체크 조건문을 완전히 제거하고 3x3 분할을 강제 고정합니다.
-            int cols = 3;
-            int rows = 3;
-            int totalFrames = cols * rows;
-
-            // 각 몬스터 이름 해시코드를 활용해 고유하게 애니메이션 박자를 분산시킵니다.
-            int offset = Math.Abs(((e.Name ?? "").GetHashCode()) % totalFrames);
-            int frame = ((Environment.TickCount / 130) + offset) % totalFrames;
-
-            // 현재 프레임 번호가 몇 번째 열(col), 몇 번째 행(row)에 있는지 계산
-            int col = frame % cols;
-            int row = frame / cols;
-
-            // 이미지의 전체 해상도를 기반으로 정확히 3등분한 1칸의 순수 픽셀 크기 산출
-            int cellW = sheet.Width / cols;
-            int cellH = sheet.Height / rows;
-
-            int sx = col * cellW;
-            int sy = row * cellH;
-            int pad = 2; // 테두리 번짐 방지 패딩
-
-            // 💡 원본 이미지에서 전체가 아닌 '정확히 자른 1칸(src)'만 추출하도록 타겟 지정!
-            Rectangle src = new Rectangle(
-                sx + pad,
-                sy + pad,
-                Math.Max(1, cellW - pad * 2),
-                Math.Max(1, cellH - pad * 2)
-            );
-
-            // 145x120 크기로 스케일을 키우면서, DrawEnemy의 UI 중심선(r.X + 32)과 완벽 동기화
             int drawW = 145, drawH = 120;
             Rectangle dst = new Rectangle(
                 r.X + 32 - (drawW / 2),
@@ -333,13 +250,32 @@ namespace DebugHeroFileDungeonRPG
             var oldInterpolation = g.InterpolationMode;
             var oldPixelOffset = g.PixelOffsetMode;
             var oldSmoothing = g.SmoothingMode;
-
             g.InterpolationMode = InterpolationMode.NearestNeighbor;
             g.PixelOffsetMode = PixelOffsetMode.Half;
             g.SmoothingMode = SmoothingMode.None;
 
-            // 드디어 자른 단일 조각(src)만 화면 목적지(dst)에 출력합니다!
-            g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+            // 💡 [매칭 성공]: 파일명(e.Kind) 가이드에 따라 우리가 구축해 둔 1~4번 해석 연산 엔진을 안전하게 강제 기동합니다.
+            if (e.Kind == "Dash_1.png")
+            {
+                Draw_Image_Interpretation_1(g, sheet, dst, e);
+            }
+            else if (e.Kind == "Dash_2.png")
+            {
+                Draw_Image_Interpretation_2(g, sheet, dst, e);
+            }
+            else if (e.Kind == "Spread_1.png" || e.Kind == "Spread_2.png")
+            {
+                Draw_Image_Interpretation_3(g, sheet, dst, e);
+            }
+            else if (e.Kind == "Teleport_1.png" || e.Kind == "Teleport_2.png")
+            {
+                Draw_Image_Interpretation_4(g, sheet, dst, e);
+            }
+            else
+            {
+                Rectangle src = new Rectangle(0, 0, sheet.Width, sheet.Height);
+                g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+            }
 
             g.InterpolationMode = oldInterpolation;
             g.PixelOffsetMode = oldPixelOffset;
@@ -352,6 +288,160 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
+        // * [해석 방식 1]: 4x4 구조 (방패형 - Security_Firewall 전용)
+        private static void Draw_Image_Interpretation_1(Graphics g, Image sheet, Rectangle dst, GameEntity e)
+        {
+            int cols = 4; int rows = 4;
+            int cellW = sheet.Width / cols; int cellH = sheet.Height / rows;
+            int targetFrameIndex = 15; // 기본 대기 프레임
+
+            // * [돌진 상태(1)일 때 0~14번 프레임 루프 재생]
+            if (e.MonsterState == 1)
+            {
+                targetFrameIndex = (Environment.TickCount / 90) % 15;
+            }
+
+            int col = targetFrameIndex % cols; int row = targetFrameIndex / cols; int pad = 2;
+            Rectangle src = new Rectangle(col * cellW + pad, row * cellH + pad, Math.Max(1, cellW - pad * 2), Math.Max(1, cellH - pad * 2));
+            g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+        }
+
+        private static void Draw_Image_Interpretation_2(Graphics g, Image sheet, Rectangle dst, GameEntity e)
+        {
+            int cols = 4; int rows = 2;
+            int cellW = sheet.Width / cols; int cellH = sheet.Height / rows;
+            int targetFrameIndex = 2;
+
+            if (e.MonsterState == 1)
+            {
+                int[] dashSequence = { 0, 1, 3, 4, 5, 6, 7 };
+                int framesPerTick = 5;
+                int currentFramePointer = e.StateTimer / framesPerTick;
+
+                if (currentFramePointer >= dashSequence.Length)
+                {
+                    targetFrameIndex = dashSequence[dashSequence.Length - 1];
+                }
+                else
+                {
+                    targetFrameIndex = dashSequence[currentFramePointer];
+                }
+            }
+            else
+            {
+                targetFrameIndex = 2;
+            }
+
+            int col = targetFrameIndex % cols; int row = targetFrameIndex / cols;
+
+            // 💡 [버그 해결 1: 하얀 선 제거] 
+            // * [자르는 영역의 외곽 경계 찌꺼기가 번져서 아래에 하얀 선이 남지 않도록 내부로 1.5픽셀 마진 수축 연산]
+            int padX = 2;
+            int padY = 2;
+            Rectangle src = new Rectangle(
+                col * cellW + padX,
+                row * cellH + padY,
+                Math.Max(1, cellW - padX * 2),
+                Math.Max(1, cellH - padY * 2 - 1) // * [하단 경계 1픽셀 강제 컷오프 가드]
+            );
+            g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+        }
+        private static void Draw_Image_Interpretation_3(Graphics g, Image sheet, Rectangle dst, GameEntity e)
+        {
+            int cols = 4; int rows = 4;
+            int cellW = sheet.Width / cols; int cellH = sheet.Height / rows;
+
+            // * [기본 대기 시작점 고정: 1행을 완전히 배제하고 2행의 첫 번째인 4번 프레임 채택]
+            int targetFrameIndex = 4;
+
+            int localAiTick = (Environment.TickCount / 33) % 70;
+
+            // * [요청 반영: 1행 (1,1)~(1,4) 즉, 0~3번 프레임은 전 시퀀스에서 절대 사용하지 않음]
+            if (localAiTick >= 0 && localAiTick < 20) // A. 공격 준비 및 충전 (2행 적용: 4, 5, 6)
+            {
+                int[] prepare = { 4, 5, 6 };
+                int frameIdx = localAiTick / 7;
+                targetFrameIndex = prepare[Math.Min(frameIdx, prepare.Length - 1)];
+            }
+            else if (localAiTick >= 20 && localAiTick < 45) // B. 투사체 발사 (3행 적용: 7, 8, 9, 10, 11)
+            {
+                int[] fire = { 7, 8, 9, 10, 11 };
+                int frameIdx = (localAiTick - 20) / 5;
+                targetFrameIndex = fire[Math.Min(frameIdx, fire.Length - 1)];
+            }
+            else if (localAiTick >= 45 && localAiTick < 60) // C. 반동 복귀 (4행 적용: 12, 13, 14, 15)
+            {
+                int[] recovery = { 12, 13, 14, 15 };
+                int frameIdx = (localAiTick - 45) / 4;
+                targetFrameIndex = recovery[Math.Min(frameIdx, recovery.Length - 1)];
+            }
+            else // D. 기본 부표 대기 (4, 5번 프레임 안에서만 제자리 둥둥 서핑 모션 유지)
+            {
+                targetFrameIndex = 4 + ((localAiTick - 60) / 5) % 2;
+            }
+
+            int col = targetFrameIndex % cols; int row = targetFrameIndex / cols;
+
+            // 💡 [핵심 교정 구역]: 아래 칸 데이터가 절대 위로 튀어 오르지 못하도록 안심 가드 설정
+            int padX = 2;
+            int padY = 2;
+
+            // * [src 계산식 수정]: 다음 행(row + 1)의 안테나가 섞여 들어오지 못하도록 
+            // * [셀의 높이에서 패딩을 빼고 추가로 2픽셀을 더 바짝 잘라내어 경계선을 완전히 격리합니다]
+            int safetyCutHeight = cellH - (padY * 2) - 2;
+
+            Rectangle src = new Rectangle(
+                col * cellW + padX,
+                row * cellH + padY,
+                Math.Max(1, cellW - padX * 2),
+                Math.Max(1, safetyCutHeight)
+            );
+
+            g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+        }
+        // * [해석 방식 4]: 4x4 구조 (유령형 - Registry_Ghost_Key 전용)
+        // * [순간이동 타이머인 StateTimer(120틱 주기)와 동기화]
+        // * [해석 방식 4 최종 종결판]: 4x4 구조 (유령형 - Registry_Ghost_Key 발밑 하얀 선 완벽 차단)
+        // * [소수점 반올림 오차로 인해 아래 행의 이미지 조각이 딸려 올라오는 현상을 원천 가드합니다]
+        private static void Draw_Image_Interpretation_4(Graphics g, Image sheet, Rectangle dst, GameEntity e)
+        {
+            int cols = 4; int rows = 4;
+            int cellW = sheet.Width / cols; int cellH = sheet.Height / rows;
+            int targetFrameIndex = 0;
+
+            // * [EnemyLogicSystem.cs의 120틱 주기 순간이동 타이머와 정밀 동기화]
+            if (e.StateTimer >= 115) // A. 텔레포트 직전 (증발 흔적 프레임)
+            {
+                targetFrameIndex = 14;
+            }
+            else if (e.StateTimer >= 0 && e.StateTimer < 10) // B. 텔레포트 직후 (안착 프레임)
+            {
+                targetFrameIndex = 15;
+            }
+            else // C. 일반 대기 및 이동 애니메이션 (0~13번 프레임 순환)
+            {
+                targetFrameIndex = (Environment.TickCount / 120) % 14;
+            }
+
+            int col = targetFrameIndex % cols; int row = targetFrameIndex / cols;
+
+            // 💡 [핵심 버그 해결]: 상하좌우 내부 패딩 인셋 연산 고정
+            int padX = 2;
+            int padY = 2;
+
+            // * [정밀 타격 컷오프]: 다음 행(row + 1)의 머리 윗부분 픽셀이 섞여 들어오지 못하도록 
+            // * [셀 전체 높이에서 마진을 빼고 추가로 2픽셀을 더 타이트하게 깎아내어 경계선을 완전 분리합니다]
+            int safetyCutHeight = cellH - (padY * 2) - 2;
+
+            Rectangle src = new Rectangle(
+                col * cellW + padX,
+                row * cellH + padY,
+                Math.Max(1, cellW - padX * 2),
+                Math.Max(1, safetyCutHeight) // * [하단 찌꺼기 강제 침묵 가드 벨트]
+            );
+
+            g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+        }
         private static Image LoadStageBackgroundImage(int stageIndex, bool bossRoom)
         {
             int assetStage = stageIndex;

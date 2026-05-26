@@ -35,40 +35,24 @@ namespace DebugHeroFileDungeonRPG
                     // * [패턴 특징 명명 변수 선언 및 데이터 테이블 기반 몬스터별 패턴 할당 유도]
                     string allocatedPattern = "None";
 
-                    // * [Delay_Inertia_Dash 패턴 할당 대상 지정]
-                    if (m.Name == "Broken_Document.txt" || m.Name == "Broken Key" || m.Name == "Temp Fragment")
+                    // * [1. Security_Firewall 및 Alert_Popup_Spam은 기존 유예 관성 돌진 패턴 적용]
+                    if (m.Name == "Security_Firewall" || m.Name == "Alert_Popup_Spam")
                     {
                         allocatedPattern = "Delay_Inertia_Dash";
                     }
-                    // * [Periodic_Hardening_Guard 패턴 할당 대상 지정]
-                    else if (m.Name == "Empty_Folder" || m.Name == "Open Port Buoy")
-                    {
-                        allocatedPattern = "Periodic_Hardening_Guard";
-                    }
-                    // * [Random_Teleport_Barrage 패턴 할당 대상 지정]
-                    else if (m.Name == "Broken_Shortcut.lnk" || m.Name == "Request Crab" || m.Name == "Unsent Report")
-                    {
-                        allocatedPattern = "Random_Teleport_Barrage";
-                    }
-                    // * [Heavy_Projectile_Spread 패턴 할당 대상 지정]
-                    else if (m.Name == "Unemptied_Trash.bak" || m.Name == "Firewall Barnacle" || m.Name == "Recent Trace" || m.Name == "Recent Ghost" || m.Name == "Driver Cache Fragment")
+                    // * [2. Runtime_Clock_Buoy는 기존 부표형 원거리 파편 살포 패턴 적용]
+                    else if (m.Name == "Runtime_Clock_Buoy")
                     {
                         allocatedPattern = "Heavy_Projectile_Spread";
                     }
-                    // * [Slime_Bounce_Approach 패턴 할당 대상 지정]
-                    else if (m.Name == "Unknown Device" || m.Name == "Packet Minnow" || m.Name == "Orphan Entry")
+                    // * [3. Registry_Ghost_Key는 기존 레지스트리 유령 6방향 텔레포트 탄막 패턴 적용]
+                    else if (m.Name == "Registry_Ghost_Key")
                     {
-                        allocatedPattern = "Slime_Bounce_Approach";
+                        allocatedPattern = "Random_Teleport_Barrage";
                     }
-                    // * [Contamination_Zone_Leak 패턴 할당 대상 지정]
-                    else if (m.Name == "Broken Driver Icon" || m.Name == "Duplicate Value" || m.Name == "Cache Leech")
+                    else
                     {
-                        allocatedPattern = "Contamination_Zone_Leak";
-                    }
-                    // * [IRQ Conflict 전용 번개 기믹 임시 수용]
-                    else if (m.Name == "IRQ Conflict")
-                    {
-                        allocatedPattern = "IRQ_Lightning_Strike";
+                        allocatedPattern = "None";
                     }
 
                     // * [1. Delay_Inertia_Dash 패턴 구현 - 2초 유예 대기 후 관성 돌진]

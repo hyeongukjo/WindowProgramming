@@ -11,52 +11,18 @@ namespace DebugHeroFileDungeonRPG
             if (st == null || waveIndex < 0 || waveIndex > 3) return list;
 
             int stageNum = st.Index;
-            string monsterName = "Unknown_Enemy";
-            string targetAssetFileName = "moster.png";
 
-            // * [1. 순수 원본 기획서 데이터 명세 테이블 매핑 완벽 복구]
-            if (stageNum == 1)
-            {
-                string[] names = { "Broken_Document.txt", "Empty_Folder", "Broken_Shortcut.lnk", "Unemptied_Trash.bak" };
-                string[] assets = { "file_monster.png", "folder_monster.png", "shortcut_monster.png", "trash_monster.png" };
-                monsterName = names[waveIndex];
-                targetAssetFileName = assets[waveIndex];
-            }
-            else if (stageNum == 3)
-            {
-                string[] names = { "Unknown Device", "Broken Driver Icon", "IRQ Conflict", "Driver Cache Fragment" };
-                string[] assets = { "patch_monster.png", "slime_monster.png", "reminder_monster.png", "failed_monster.png" };
-                monsterName = names[waveIndex];
-                targetAssetFileName = assets[waveIndex];
-            }
-            else if (stageNum == 5)
-            {
-                string[] names = { "Packet Minnow", "Open Port Buoy", "Request Crab", "Firewall Barnacle" };
-                string[] assets = { "packet_monster.png", "port_monster.png", "crab_monster.png", "firewall_monster.png" };
-                monsterName = names[waveIndex];
-                targetAssetFileName = assets[waveIndex];
-            }
-            else if (stageNum == 7)
-            {
-                string[] names = { "Broken Key", "Duplicate Value", "Orphan Entry", "Recent Trace" };
-                string[] assets = { "key_monster.png", "value_monster.png", "orphan_monster.png", "trace_monster.png" };
-                monsterName = names[waveIndex];
-                targetAssetFileName = assets[waveIndex];
-            }
-            else if (stageNum == 9)
-            {
-                string[] names = { "Temp Fragment", "Cache Leech", "Unsent Report", "Recent Ghost" };
-                string[] assets = { "temp_monster.png", "leech_monster.png", "report_monster.png", "ghost_monster.png" };
-                monsterName = names[waveIndex];
-                targetAssetFileName = assets[waveIndex];
-            }
+            // * [1. 제미나이가 이미지 기반으로 명명한 순수 테스트 자산 및 이름 배정 풀 정의]
+            string[] testAssets = { "Dash_1.png", "Dash_2.png", "Spread_1.png", "Spread_2.png", "Teleport_1.png" };
+            string[] newNames = { "Security_Firewall", "Alert_Popup_Spam", "Runtime_Clock_Buoy", "Runtime_Clock_Buoy", "Registry_Ghost_Key" };
 
-            // -----------------------------------------------------------------
-            // * [2. 임시 주입 공간]: 향후 테스트나 비중 조절을 하실 때만 이 아래 공간을 사용하시면 됩니다.
-            // * [현재는 순수한 원본 복구를 위해 깨끗하게 비워둡니다]
-            // -----------------------------------------------------------------
+            // * [2. 랜덤 분배 연산 공식 가동: 스테이지 번호와 웨이브 인덱스를 조합하여 전 구역에 골고루 섞어 사출]
+            int monsterTypeIndex = (stageNum + waveIndex) % testAssets.Length;
 
-            // * [기본 능력치 밸런스 연산]
+            string monsterName = newNames[monsterTypeIndex];
+            string targetAssetFileName = testAssets[monsterTypeIndex];
+
+            // * [3. 능력치 밸런스 및 4웨이브 정예화 버프 연산]
             int baseHp = 44 + stageNum * 16;
             int baseAtk = 4 + stageNum;
             int hp = baseHp + (waveIndex * 14);
@@ -71,9 +37,9 @@ namespace DebugHeroFileDungeonRPG
             {
                 list.Add(new GameEntity
                 {
-                    Name = monsterName,
-                    DisplayName = monsterName,
-                    Kind = targetAssetFileName,
+                    Name = monsterName,               // * [식별 네임]: AI 엔진이 어떤 패턴을 가동할지 판정하는 근본 키
+                    DisplayName = monsterName,        // * [머리 위 이름표]: 새 이름 명세 출력
+                    Kind = targetAssetFileName,       // * [에셋 파일명]: Renderer가 크롭 드로우 방식을 선택하는 열쇠
                     X = 460 + (i * 245),
                     Y = Math.Max(140, clientHeight - 270 + (i % 2) * 60),
                     VX = (i % 2 == 0 ? 1.1f : -1.1f) * (1.0f + waveIndex * 0.06f),
