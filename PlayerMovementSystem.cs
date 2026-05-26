@@ -134,11 +134,16 @@ namespace DebugHeroFileDungeonRPG
             int frameDelay = 5;
             if (player.ActionTick % frameDelay == 0) player.ActionFrame++;
 
-            int maxFrame = 4;
-            if (player.SkillIndex == 0) maxFrame = 4;
-            else if (player.SkillIndex == 1) maxFrame = 5;
-            else if (player.SkillIndex == 2) maxFrame = 5;
-            else if (player.SkillIndex == 3) maxFrame = 5;
+            int maxFrame = 5;
+
+            if (player.SkillIndex == 0)
+                maxFrame = 5;
+            else if (player.SkillIndex == 1)
+                maxFrame = 5;
+            else if (player.SkillIndex == 2)
+                maxFrame = 5;
+            else if (player.SkillIndex == 3)
+                maxFrame = 5;
 
             if (player.ActionFrame >= maxFrame)
             {

@@ -32,6 +32,7 @@ namespace DebugHeroFileDungeonRPG
         private static readonly Dictionary<string, Image> playerSpriteSheets = new Dictionary<string, Image>();
         private static readonly Dictionary<string, Image> playerActionSheetCache = new Dictionary<string, Image>();
         private static readonly Dictionary<string, Image> playerMotionSheetCache = new Dictionary<string, Image>();
+        private static readonly Dictionary<string, Rectangle> playerActionTrimCache = new Dictionary<string, Rectangle>();
         private static Image playerStillSwordImage;
         private static Image normalMonsterSheet = null;
         // 몬스터 이미지 호출 관련 코드 //
@@ -886,13 +887,7 @@ namespace DebugHeroFileDungeonRPG
                 int w = Math.Max(1, (int)(img.Width * scale));
                 int h = Math.Max(1, (int)(img.Height * scale));
 
-                Rectangle dst = new Rectangle(
-                    r.X + (r.Width - w) / 2,
-                    r.Y + (r.Height - h) / 2 + NpcDrawYOffset,
-                    w,
-                    h
-                );
-
+                Rectangle dst = new Rectangle(r.X + (r.Width - w) / 2,r.Y + (r.Height - h) / 2 + NpcDrawYOffset,w,h);
                 g.DrawImage(img, dst);
 
                 g.InterpolationMode = oldInterpolation;
@@ -1168,8 +1163,6 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
 
-            // 공격 자세는 실제 공격 이펙트에서 캐릭터를 다시 그리지 않도록 했지만,
-            // 혹시 다른 화면에서 호출되면 원본 시트의 해당 자세를 사용합니다.
             Image sheet = GetPlayerAgentSheet();
             if (sheet == null)
             {
@@ -1241,43 +1234,131 @@ namespace DebugHeroFileDungeonRPG
 
         private static Rectangle GetPlayerActionSourceRect(Image sheet, int skillIndex, int frame)
         {
-            // 액션 시트 고정 구조:
-            // 3행 x 5열
-            // 1행: 4프레임 사용, 5번째 칸은 미사용
-            // 2행: 5프레임 사용
-            // 3행: 5프레임 사용
+           
             int totalRows = 3;
             int totalColumns = 5;
 
-            int row = 0;
-            int usableFrameCount = 4;
+            int row;
 
             if (skillIndex == 0)
-            {
                 row = 0;
-                usableFrameCount = 4;
-            }
             else if (skillIndex == 1)
-            {
                 row = 1;
-                usableFrameCount = 5;
-            }
             else
-            {
                 row = 2;
-                usableFrameCount = 5;
-            }
+
+            int usableFrameCount = 5;
 
             if (frame < 0) frame = 0;
             if (frame >= usableFrameCount) frame = usableFrameCount - 1;
 
-            int x1 = (int)Math.Round(frame * sheet.Width / (double)totalColumns);
-            int x2 = (int)Math.Round((frame + 1) * sheet.Width / (double)totalColumns);
+            int cellX1 = (int)Math.Round(frame * sheet.Width / (double)totalColumns);
+            int cellX2 = (int)Math.Round((frame + 1) * sheet.Width / (double)totalColumns);
 
-            int y1 = (int)Math.Round(row * sheet.Height / (double)totalRows);
-            int y2 = (int)Math.Round((row + 1) * sheet.Height / (double)totalRows);
+            int cellY1 = (int)Math.Round(row * sheet.Height / (double)totalRows);
+            int cellY2 = (int)Math.Round((row + 1) * sheet.Height / (double)totalRows);
 
-            return new Rectangle(x1, y1, x2 - x1, y2 - y1);
+            Rectangle cell = Rectangle.FromLTRB(cellX1, cellY1, cellX2, cellY2);
+
+            string cacheKey = sheet.GetHashCode() + "_" + skillIndex + "_" + frame + "_" + sheet.Width + "x" + sheet.Height;
+
+            if (playerActionTrimCache.TryGetValue(cacheKey, out Rectangle cached))
+                return cached;
+
+            Bitmap bmp = sheet as Bitmap;
+
+            if (bmp == null)
+            {
+                playerActionTrimCache[cacheKey] = cell;
+                return cell;
+            }
+
+            bool hasTransparentBackground = HasTransparentPixel(bmp, cell);
+
+            int minX = cell.Right - 1;
+            int maxX = cell.Left;
+            int minY = cell.Bottom - 1;
+            int maxY = cell.Top;
+            bool found = false;
+
+            for (int y = cell.Top; y < cell.Bottom; y++)
+            {
+                for (int x = cell.Left; x < cell.Right; x++)
+                {
+                    Color c = bmp.GetPixel(x, y);
+
+                    if (!IsVisibleActionPixel(c, hasTransparentBackground))
+                        continue;
+
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+
+                    found = true;
+                }
+            }
+
+            if (!found)
+            {
+                playerActionTrimCache[cacheKey] = cell;
+                return cell;
+            }
+
+            // 핵심 보정값
+            // 오른쪽과 위쪽만 더 보여주기.
+            int padLeft = 0;
+            int padRight = 16;
+            int padTop = 24;
+            int padBottom = 2;
+
+            int left = minX - padLeft;
+            int right = maxX + 1 + padRight;
+            int top = minY - padTop;
+            int bottom = maxY + 1 + padBottom;
+
+            // 옆 프레임이 섞이지 않도록 기본적으로 현재 칸 안에서만 제한
+            if (left < cell.Left) left = cell.Left;
+            if (right > cell.Right) right = cell.Right;
+            if (top < cell.Top) top = cell.Top;
+            if (bottom > cell.Bottom) bottom = cell.Bottom;
+
+            if (right <= left) right = left + 1;
+            if (bottom <= top) bottom = top + 1;
+
+            Rectangle trimmed = Rectangle.FromLTRB(left, top, right, bottom);
+
+            playerActionTrimCache[cacheKey] = trimmed;
+            return trimmed;
+        }
+
+        private static bool HasTransparentPixel(Bitmap bmp, Rectangle area)
+        {
+            for (int y = area.Top; y < area.Bottom; y++)
+            {
+                for (int x = area.Left; x < area.Right; x++)
+                {
+                    if (bmp.GetPixel(x, y).A < 250)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsVisibleActionPixel(Color c, bool hasTransparentBackground)
+        {
+            if (c.A <= 10)
+                return false;
+
+            // 투명 배경 PNG라면 검은 머리/검은 외곽선도 실제 캐릭터로 인정
+            if (hasTransparentBackground)
+                return true;
+
+            // 검은 배경 이미지라면 거의 검은색은 배경으로 취급
+            bool nearBlack = c.R <= 8 && c.G <= 8 && c.B <= 8;
+
+            return !nearBlack;
         }
         private static Image GetPlayerStillSwordImage()
         {
@@ -1392,9 +1473,11 @@ namespace DebugHeroFileDungeonRPG
             int drawW = (int)(src.Width * scale);
             int drawH = (int)(src.Height * scale);
 
+            float actionCenterY = baseY - 55f;
+
             Rectangle dst = new Rectangle(
                 (int)(drawX - drawW / 2),
-                (int)(baseY - drawH + 12),
+                (int)(actionCenterY - drawH / 2),
                 drawW,
                 drawH
             );
@@ -1437,9 +1520,11 @@ namespace DebugHeroFileDungeonRPG
             int drawW = (int)(src.Width * scale);
             int drawH = (int)(src.Height * scale);
 
+            float actionCenterY = baseY - 55f;
+
             Rectangle dst = new Rectangle(
                 (int)(drawX - drawW / 2),
-                (int)(baseY - drawH),
+                (int)(actionCenterY - drawH / 2),
                 drawW,
                 drawH
             );
