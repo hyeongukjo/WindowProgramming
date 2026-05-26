@@ -43,7 +43,7 @@ namespace DebugHeroFileDungeonRPG
             }
 
             // ==========================================================
-            // 💡 [무적 버그 완전 해결] 본체가 죽어 enemies 리스트에서 지워지더라도,
+            // 본체가 죽어 enemies 리스트에서 지워지더라도,
             // 분신 패턴이 실행 중이라면 이곳에서 강제로 제어권을 넘겨받아 3초 링크/타이머를 계속 연산시킵니다.
             // ==========================================================
             if (stageBossPhase && currentStage == 10 && bossRuntime.patternManager.IsIllusionActive)
@@ -53,7 +53,7 @@ namespace DebugHeroFileDungeonRPG
             }
 
             // ==========================================================
-            // 💡 [최종 정산 처리기] 본체(IsMainDead)와 분신(IsCloneDead)이 모두 죽고 패턴이 종료되었을 때만!
+            // 본체(IsMainDead)와 분신(IsCloneDead)이 모두 죽고 패턴이 종료되었을 때만
             // 정확히 단 한 번 정식 최종 보상을 드랍하고 스테이지를 클리어시킵니다.
             // ==========================================================
             if (stageBossPhase && currentStage == 10 && bossRuntime.patternManager.IsMainDead && bossRuntime.patternManager.IsCloneDead && !bossRuntime.patternManager.IsIllusionActive)
@@ -81,6 +81,37 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
 
+            if (currentStage != 10)
+            {
+                bool anyEnemyAlive = false;
+                for (int i = 0; i < enemies.Count; i++)
+                {
+                    if (enemies[i].Hp > 0)
+                    {
+                        anyEnemyAlive = true;
+                        break;
+                    }
+                }
+
+                // 맵에 소환된 적이 존재하고, 그중 살아있는 개체가 단 한 마리도 없을 때
+                if (enemies.Count > 0 && !anyEnemyAlive)
+                {
+                    // 정산 팝업창 레이아웃 활성화
+                    if (!showStageClearPopup)
+                    {
+                        showStageClearPopup = true;
+
+                        popupBonusCoins = currentStage * 450;
+                        player.Coins += popupBonusCoins;
+
+                        TryBeep(1050, 200); // 클리어 알림음
+                        return;
+                    }
+
+                    if (showStageClearPopup) return; // 확인 단추 클릭 전까지 프레임 잠금
+                }
+            }
+
             // 💡 10스테이지 최종보스전이 아닐 때 작동하는 기존 일반 몹 클리어 조건 분기
             if (enemyResult.AllEnemiesDefeated && enemies.Count > 0)
             {
@@ -98,59 +129,60 @@ namespace DebugHeroFileDungeonRPG
                     return;
                 }
 
-            // ---------------------------------------------------------------------------------
-            // [분기 제어]: 짝수층(보스 스테이지)일 때는 하단의 홀수 웨이브 제어 시스템을 완전히 스킵(Pass-through)
-            // ---------------------------------------------------------------------------------
-            if (currentStage % 2 == 0) return;
+                // ---------------------------------------------------------------------------------
+                // [분기 제어]: 짝수층(보스 스테이지)일 때는 하단의 홀수 웨이브 제어 시스템을 완전히 스킵(Pass-through)
+                // ---------------------------------------------------------------------------------
+                if (currentStage % 2 == 0) return;
 
-            // ---------------------------------------------------------------------------------
-            // [홀수층 전용 무리 시퀀스 및 즉시 보상 제어]
-            // ---------------------------------------------------------------------------------
-            // 필드에 살아있는 리스트가 완벽히 비었고, 대기 상태가 아니며, 보상 파일이 드롭되지 않았을 때 진입
-            if (enemies.Count == 0 && !isWaveWaiting && weaponDrops.Count == 0)
-            {
-                if (currentWaveIndex < 3) // a(0), b(1), c(2), d(3) 총 4개 무리 제한
+                // ---------------------------------------------------------------------------------
+                // [홀수층 전용 무리 시퀀스 및 즉시 보상 제어]
+                // ---------------------------------------------------------------------------------
+                // 필드에 살아있는 리스트가 완벽히 비었고, 대기 상태가 아니며, 보상 파일이 드롭되지 않았을 때 진입
+                if (enemies.Count == 0 && !isWaveWaiting && weaponDrops.Count == 0)
                 {
-                    // 다음 무리가 남아 있다면 즉시 5초 유예시간(150틱) 가동
-                    isWaveWaiting = true;
-                    waveDelayTicks = 150;
-
-                    char nextWaveChar = (char)('a' + currentWaveIndex + 1);
-                    effects.Add(new Effect("text", player.X + 150, player.Y - 120, player.X + 150, player.Y - 120, 120, Color.Yellow, $"무리 정화 완료. 5초 후 {nextWaveChar} 무리 진입..."));
-                }
-                else
-                {
-                    // 마지막 d 무리까지 정화 완료 시 그 자리에 무기 강화 파일 즉시 드롭!
-                    if (weaponDrops.Count == 0)
+                    if (currentWaveIndex < 3) // a(0), b(1), c(2), d(3) 총 4개 무리 제한
                     {
-                        WeaponUpgradeFile drop = new WeaponUpgradeFile
+                        // 다음 무리가 남아 있다면 즉시 5초 유예시간(150틱) 가동
+                        isWaveWaiting = true;
+                        waveDelayTicks = 150;
+
+                        char nextWaveChar = (char)('a' + currentWaveIndex + 1);
+                        effects.Add(new Effect("text", player.X + 150, player.Y - 120, player.X + 150, player.Y - 120, 120, Color.Yellow, $"무리 정화 완료. 5초 후 {nextWaveChar} 무리 진입..."));
+                    }
+                    else
+                    {
+                        // 마지막 d 무리까지 정화 완료 시 그 자리에 무기 강화 파일 즉시 드롭!
+                        if (weaponDrops.Count == 0)
                         {
-                            X = player.X + 250,
-                            Y = player.Y - 15,
-                            StageIndex = currentStage,
-                            UpgradeLevel = player.WeaponLevel + 1
-                        };
-                        weaponDrops.Add(drop);
-                        effects.Add(new Effect("text", drop.X, drop.Y - 70, drop.X, drop.Y - 70, 150, Color.Cyan, "모든 무리 정화! UPGRADE FILE DROP"));
+                            WeaponUpgradeFile drop = new WeaponUpgradeFile
+                            {
+                                X = player.X + 250,
+                                Y = player.Y - 15,
+                                StageIndex = currentStage,
+                                UpgradeLevel = player.WeaponLevel + 1
+                            };
+                            weaponDrops.Add(drop);
+                            effects.Add(new Effect("text", drop.X, drop.Y - 70, drop.X, drop.Y - 70, 150, Color.Cyan, "모든 무리 정화! UPGRADE FILE DROP"));
+                        }
                     }
                 }
-            }
 
-            // 5초 타이머 카운트다운 처리 및 다음 웨이브 호출
-            if (isWaveWaiting)
-            {
-                waveDelayTicks--;
-                if (waveDelayTicks <= 0)
+                // 5초 타이머 카운트다운 처리 및 다음 웨이브 호출
+                if (isWaveWaiting)
                 {
-                    isWaveWaiting = false;
-                    currentWaveIndex++;
+                    waveDelayTicks--;
+                    if (waveDelayTicks <= 0)
+                    {
+                        isWaveWaiting = false;
+                        currentWaveIndex++;
 
-                    // StageEnemyFactory에서 다음 순번의 무리 소환
-                    enemies.AddRange(StageEnemyFactory.CreateWaveEnemies(st, currentWaveIndex, ClientSize.Height));
+                        // StageEnemyFactory에서 다음 순번의 무리 소환
+                        enemies.AddRange(StageEnemyFactory.CreateWaveEnemies(st, currentWaveIndex, ClientSize.Height));
 
-                    char currentWaveChar = (char)('a' + currentWaveIndex);
-                    effects.Add(new Effect("text", player.X + 150, player.Y - 120, player.X + 150, player.Y - 120, 80, Color.Orange, $"{currentWaveChar} 무리 출현! 시스템을 정화하세요."));
-                    TryBeep(640, 70);
+                        char currentWaveChar = (char)('a' + currentWaveIndex);
+                        effects.Add(new Effect("text", player.X + 150, player.Y - 120, player.X + 150, player.Y - 120, 80, Color.Orange, $"{currentWaveChar} 무리 출현! 시스템을 정화하세요."));
+                        TryBeep(640, 70);
+                    }
                 }
             }
         }

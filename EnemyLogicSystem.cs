@@ -244,6 +244,19 @@ namespace DebugHeroFileDungeonRPG
                         }
                     }
 
+                    // ==========================================================
+                    // 이름 미스매치로 None에 빠진 몹들을 위한 기본 추적 무브먼트 엔진
+                    // ==========================================================
+                    if (allocatedPattern == "None")
+                    {
+                        m.VX += Math.Sign(player.X - m.X) * 0.15f;
+                        m.VY += Math.Sign(player.Y - m.Y) * 0.10f;
+                        float maxSpeed = 1.3f;
+                        float speed = (float)Math.Sqrt(m.VX * m.VX + m.VY * m.VY);
+                        if (speed > maxSpeed) { m.VX = m.VX / speed * maxSpeed; m.VY = m.VY / speed * maxSpeed; }
+                        m.X += m.VX; m.Y += m.VY;
+                    }
+
                     // * [공통 외곽 벽면 충돌 제동]
                     if (m.X < minX) { m.X = minX; m.VX = Math.Abs(m.VX); }
                     if (m.X > maxX) { m.X = maxX; m.VX = -Math.Abs(m.VX); }
