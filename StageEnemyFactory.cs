@@ -14,7 +14,7 @@ namespace DebugHeroFileDungeonRPG
             string monsterName = "Unknown_Enemy";
             string targetAssetFileName = "moster.png";
 
-            // * [각 스테이지별 기획서 데이터 명세 수동 테이블 매핑]
+            // * [1. 순수 원본 기획서 데이터 명세 테이블 매핑 완벽 복구]
             if (stageNum == 1)
             {
                 string[] names = { "Broken_Document.txt", "Empty_Folder", "Broken_Shortcut.lnk", "Unemptied_Trash.bak" };
@@ -51,15 +51,19 @@ namespace DebugHeroFileDungeonRPG
                 targetAssetFileName = assets[waveIndex];
             }
 
+            // -----------------------------------------------------------------
+            // * [2. 임시 주입 공간]: 향후 테스트나 비중 조절을 하실 때만 이 아래 공간을 사용하시면 됩니다.
+            // * [현재는 순수한 원본 복구를 위해 깨끗하게 비워둡니다]
+            // -----------------------------------------------------------------
+
+            // * [기본 능력치 밸런스 연산]
             int baseHp = 44 + stageNum * 16;
             int baseAtk = 4 + stageNum;
             int hp = baseHp + (waveIndex * 14);
 
-            // * [2. 정예 유닛 자동화 판정: 패턴과 무관하게 4번째 웨이브(index 3)라면 버프 적용]
             int spawnCount = (waveIndex == 3) ? 2 : 4;
             if (waveIndex == 3)
             {
-                // * [피드백 반영: 4번째 웨이브 몬스터는 체력을 일반의 3배로 대폭 증폭]
                 hp = hp * 3;
             }
 
@@ -110,49 +114,5 @@ namespace DebugHeroFileDungeonRPG
         {
             return new List<GameEntity>();
         }
-
-        private static string[] GetPreBossEnemyNames(StageInfo st)
-        {
-            List<string> result = new List<string>();
-            if (st.Enemies != null)
-            {
-                for (int i = 0; i < st.Enemies.Length; i++)
-                {
-                    string name = st.Enemies[i];
-                    if (string.IsNullOrWhiteSpace(name)) continue;
-                    if (!string.IsNullOrWhiteSpace(st.BossName) && name.Trim().Equals(st.BossName.Trim(), StringComparison.OrdinalIgnoreCase)) continue;
-                    result.Add(name);
-                }
-            }
-            if (result.Count >= 3) return result.ToArray();
-            string[] fallback;
-            switch (st.Index)
-            {
-                case 1: fallback = new string[] { "새 폴더 무리", "진짜최종 파일", "깨진 바로가기", "휴지통 과부하" }; break;
-                case 2: fallback = new string[] { "Unknown Device", "Broken Driver Icon", "IRQ Conflict", "Driver Cache Fragment" }; break;
-                case 3: fallback = new string[] { "Update Patch 조각", "Loading Bar Slime", "Restart Reminder", "Failed Update Fragment" }; break;
-                case 4: fallback = new string[] { "Access Denied Hound", "Kernel Fragment", "Protected File", "System Guard" }; break;
-                case 5: fallback = new string[] { "Packet Jelly", "Port Scanner", "Latency Ghost", "Broken Cable" }; break;
-                case 6: fallback = new string[] { "Crash Pixel", "STOP Code", "Blue Fragment", "Frozen Cursor" }; break;
-                case 7: fallback = new string[] { "Key Value Wraith", "Broken Hive", "Registry Lock", "Permission Node" }; break;
-                case 8: fallback = new string[] { "Popup Slime", "Warning Box", "Unhandled Exception", "Close Button Mimic" }; break;
-                case 9: fallback = new string[] { "Temp File", "Cache Dust", "Overload Crumb", "Memory Leak Spark" }; break;
-                default: fallback = new string[] { "Quarantine Guard", "Deleted Fragment", "Recycle Warden", "Trash Cache" }; break;
-            }
-            while (result.Count < 4) result.Add(fallback[result.Count % fallback.Length]);
-            return result.ToArray();
-        }
-
-        private static string StageEnemyExtension(string name)
-        {
-            if (name.Contains("폴더")) return ".folder";
-            if (name.Contains("바로가기")) return ".lnk";
-            if (name.Contains("Update") || name.Contains("Patch")) return ".patch";
-            if (name.Contains("Key") || name.Contains("Value")) return ".reg";
-            if (name.Contains("Report")) return ".tmp";
-            if (name.Contains("Port") || name.Contains("Packet")) return ".net";
-            return ".file";
-        }
     }
 }
-
