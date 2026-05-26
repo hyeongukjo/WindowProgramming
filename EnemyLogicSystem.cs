@@ -13,6 +13,7 @@ namespace DebugHeroFileDungeonRPG
     public static class EnemyLogicSystem
     {
         private static readonly Random rand = new Random();
+
         public static EnemyUpdateResult Update(List<GameEntity> enemies, PlayerState player, StageInfo st, int currentStage, bool bossPhase, int tick, int mapWidth, Rectangle client, BossRuntime bossRuntime, List<Effect> effects)
         {
             EnemyUpdateResult result = new EnemyUpdateResult();
@@ -229,9 +230,8 @@ namespace DebugHeroFileDungeonRPG
                         }
                     }
 
-<<<<<<< HEAD
                     // ==========================================================
-                    // �̸� �̽���ġ�� None�� ���� ������ ���� �⺻ ���� �����Ʈ ����
+                    // 💡 [유저 브랜치 복원] 패턴이 None일 때 작동하는 일반 잔몹 기본 물리 추적
                     // ==========================================================
                     if (allocatedPattern == "None")
                     {
@@ -243,10 +243,7 @@ namespace DebugHeroFileDungeonRPG
                         m.X += m.VX; m.Y += m.VY;
                     }
 
-                    // * [���� �ܰ� ���� �浹 ����]
-=======
                     // * [공통 외곽 벽면 충돌 제동]
->>>>>>> shop/monster
                     if (m.X < minX) { m.X = minX; m.VX = Math.Abs(m.VX); }
                     if (m.X > maxX) { m.X = maxX; m.VX = -Math.Abs(m.VX); }
                     if (m.Y < minY) { m.Y = minY; m.VY = Math.Abs(m.VY); }
@@ -269,37 +266,19 @@ namespace DebugHeroFileDungeonRPG
                 }
 
                 if (m.HitFlash > 0) m.HitFlash--;
-<<<<<<< HEAD
-                // �Ϲ� ���� �浹 �ֱ� ���� �� ��� ���� ����
-                if (m.Bounds.IntersectsWith(player.Bounds) && tick % 20 == 0)
-=======
 
-                // * [8. 통합 투사체 및 몸체 충돌 피해 연산 매개 모듈 가동]
+                // ==========================================================
+                // 💡 [통합 물리 충돌 엔진] 몸체 충돌 및 원거리 탄막 피격 모듈 복합 가동 (24틱 주기)
+                // ==========================================================
                 if (tick % 24 == 0)
->>>>>>> shop/monster
                 {
-                    //  ���� ���ݷ��� ���� 2.5�踦 ���̷�Ʈ�� ���� ������� ����!
-                    int damage = Math.Max(25, (int)(m.Attack * 2.5f));
-                    if (player.DefenseTicks > 0) damage = Math.Max(5, damage / 2); // ��� �� �氨�� ���
+                    bool isHit = false;
+                    double hitDamagePercent = 0.0;
 
-                    player.Hp -= damage;
-                    player.SystemStability = Math.Max(0, player.SystemStability - 3); // ������ �ı� ���� ����
-
-                    effects.Add(new Effect("text", player.X, player.Y - 70, player.X, player.Y - 70, 34, Color.OrangeRed, "CRITICAL -" + damage));
-                    effects.Add(new Effect("spark", player.X, player.Y - 32, player.X, player.Y - 32, 22, Color.Red, ""));
-
-                    if (player.Hp <= 0)
+                    if (m.Bounds.IntersectsWith(player.Bounds))
                     {
-<<<<<<< HEAD
-                        // player.Hp = player.MaxHp ���� �ڵ带 ������ �����Ͽ� ��� 0 ���� ���·� Ÿ�̸� ƽ�� ����, 
-                        // MainForm ���ϴ� ���� ���͸� ���� ����ȭ������ �ﰢ ���� ����(����)�ǰ� �����մϴ�.
-                        player.Hp = 0;
-                    }
-                }
-            }
-=======
                         isHit = true;
-                        hitDamagePercent = rand.Next(7, 16) / 100.0; // * [기본 최대 체력의 7% ~ 15% 랜덤 대미지 배정]
+                        hitDamagePercent = rand.Next(7, 16) / 100.0; // 기본 최대 체력의 7% ~ 15% 랜덤 대미지 배정
                     }
                     else
                     {
@@ -312,14 +291,12 @@ namespace DebugHeroFileDungeonRPG
                                 float effCurrX = eff.X + (eff.X2 - eff.X) * progress;
                                 float effCurrY = eff.Y + (eff.Y2 - eff.Y) * progress;
 
-                                // -----------------------------------------------------------------
-                                // 💡 질문하신 코드가 바로 이 자리에 위치해 있습니다!
-                                // -----------------------------------------------------------------
                                 if (player.Bounds.Contains(effCurrX, effCurrY))
                                 {
                                     if (eff.Text == "BULLET" || eff.Text == "TRASH" || eff.Text == "SPARK_LINE" || eff.Text == "TELEPORT_BULLET")
                                     {
-                                        isHit = true; eff.Ticks = 0;
+                                        isHit = true;
+                                        eff.Ticks = 0; // 피격된 탄막 즉시 소멸
                                         hitDamagePercent = rand.Next(7, 16) / 100.0;
                                         break;
                                     }
@@ -339,10 +316,11 @@ namespace DebugHeroFileDungeonRPG
                         effects.Add(new Effect("text", player.X, player.Y - 70, player.X, player.Y - 70, 34, Color.OrangeRed, "-" + damage));
                         effects.Add(new Effect("spark", player.X, player.Y - 32, player.X, player.Y - 32, 22, Color.Red, ""));
 
+                        // ⚠️ [유저 브랜치 핵심 스펙 철저 고수] 
+                        // 로컬 부활을 차단하고 HP를 즉시 0으로 강제 세팅하여 MainForm 하단의 퇴장 엔진을 직동시킵니다.
                         if (player.Hp <= 0)
                         {
-                            player.Hp = player.MaxHp;
-                            result.PlayerReturnedToStart = true;
+                            player.Hp = 0;
                         }
                     }
                 }
@@ -352,7 +330,6 @@ namespace DebugHeroFileDungeonRPG
             player.MoveVelocityX *= playerCurrentSpeedModifier;
             player.MoveVelocityY *= playerCurrentSpeedModifier;
 
->>>>>>> shop/monster
             result.AllEnemiesDefeated = enemies.Count > 0;
             for (int i = 0; i < enemies.Count; i++) if (enemies[i].Hp > 0) result.AllEnemiesDefeated = false;
             return result;
