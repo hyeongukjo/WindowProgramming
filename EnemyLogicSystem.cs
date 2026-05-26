@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Drawing;
 
@@ -13,12 +13,11 @@ namespace DebugHeroFileDungeonRPG
     public static class EnemyLogicSystem
     {
         private static readonly Random rand = new Random();
-
         public static EnemyUpdateResult Update(List<GameEntity> enemies, PlayerState player, StageInfo st, int currentStage, bool bossPhase, int tick, int mapWidth, Rectangle client, BossRuntime bossRuntime, List<Effect> effects)
         {
             EnemyUpdateResult result = new EnemyUpdateResult();
 
-            // * [ÇÃ·¹ÀÌ¾î µğ¹öÇÁ ÀÌµ¿¼Óµµ »óÅÂ°ª ¹èÀ² ÃÊ±âÈ­]
+            // * [í”Œë ˆì´ì–´ ë””ë²„í”„ ì´ë™ì†ë„ ìƒíƒœê°’ ë°°ìœ¨ ì´ˆê¸°í™”]
             float playerCurrentSpeedModifier = 1.0f;
 
             for (int i = 0; i < enemies.Count; i++)
@@ -33,54 +32,38 @@ namespace DebugHeroFileDungeonRPG
                     float minY = 124f;
                     float maxY = Math.Max(minY, client.Height - 82f);
 
-                    // * [ÆĞÅÏ Æ¯Â¡ ¸í¸í º¯¼ö ¼±¾ğ ¹× µ¥ÀÌÅÍ Å×ÀÌºí ±â¹İ ¸ó½ºÅÍº° ÆĞÅÏ ÇÒ´ç À¯µµ]
+                    // * [íŒ¨í„´ íŠ¹ì§• ëª…ëª… ë³€ìˆ˜ ì„ ì–¸ ë° ë°ì´í„° í…Œì´ë¸” ê¸°ë°˜ ëª¬ìŠ¤í„°ë³„ íŒ¨í„´ í• ë‹¹ ìœ ë„]
                     string allocatedPattern = "None";
 
-                    // * [Delay_Inertia_Dash ÆĞÅÏ ÇÒ´ç ´ë»ó ÁöÁ¤]
-                    if (m.Name == "Broken_Document.txt" || m.Name == "Broken Key" || m.Name == "Temp Fragment")
+                    // * [1. Security_Firewall ë° Alert_Popup_Spamì€ ê¸°ì¡´ ìœ ì˜ˆ ê´€ì„± ëŒì§„ íŒ¨í„´ ì ìš©]
+                    if (m.Name == "Security_Firewall" || m.Name == "Alert_Popup_Spam")
                     {
                         allocatedPattern = "Delay_Inertia_Dash";
                     }
-                    // * [Periodic_Hardening_Guard ÆĞÅÏ ÇÒ´ç ´ë»ó ÁöÁ¤]
-                    else if (m.Name == "Empty_Folder" || m.Name == "Open Port Buoy")
-                    {
-                        allocatedPattern = "Periodic_Hardening_Guard";
-                    }
-                    // * [Random_Teleport_Barrage ÆĞÅÏ ÇÒ´ç ´ë»ó ÁöÁ¤]
-                    else if (m.Name == "Broken_Shortcut.lnk" || m.Name == "Request Crab" || m.Name == "Unsent Report")
-                    {
-                        allocatedPattern = "Random_Teleport_Barrage";
-                    }
-                    // * [Heavy_Projectile_Spread ÆĞÅÏ ÇÒ´ç ´ë»ó ÁöÁ¤]
-                    else if (m.Name == "Unemptied_Trash.bak" || m.Name == "Firewall Barnacle" || m.Name == "Recent Trace" || m.Name == "Recent Ghost" || m.Name == "Driver Cache Fragment")
+                    // * [2. Runtime_Clock_BuoyëŠ” ê¸°ì¡´ ë¶€í‘œí˜• ì›ê±°ë¦¬ íŒŒí¸ ì‚´í¬ íŒ¨í„´ ì ìš©]
+                    else if (m.Name == "Runtime_Clock_Buoy")
                     {
                         allocatedPattern = "Heavy_Projectile_Spread";
                     }
-                    // * [Slime_Bounce_Approach ÆĞÅÏ ÇÒ´ç ´ë»ó ÁöÁ¤]
-                    else if (m.Name == "Unknown Device" || m.Name == "Packet Minnow" || m.Name == "Orphan Entry")
+                    // * [3. Registry_Ghost_KeyëŠ” ê¸°ì¡´ ë ˆì§€ìŠ¤íŠ¸ë¦¬ ìœ ë ¹ 6ë°©í–¥ í…”ë ˆí¬íŠ¸ íƒ„ë§‰ íŒ¨í„´ ì ìš©]
+                    else if (m.Name == "Registry_Ghost_Key")
                     {
-                        allocatedPattern = "Slime_Bounce_Approach";
+                        allocatedPattern = "Random_Teleport_Barrage";
                     }
-                    // * [Contamination_Zone_Leak ÆĞÅÏ ÇÒ´ç ´ë»ó ÁöÁ¤]
-                    else if (m.Name == "Broken Driver Icon" || m.Name == "Duplicate Value" || m.Name == "Cache Leech")
+                    else
                     {
-                        allocatedPattern = "Contamination_Zone_Leak";
-                    }
-                    // * [IRQ Conflict Àü¿ë ¹ø°³ ±â¹Í ÀÓ½Ã ¼ö¿ë]
-                    else if (m.Name == "IRQ Conflict")
-                    {
-                        allocatedPattern = "IRQ_Lightning_Strike";
+                        allocatedPattern = "None";
                     }
 
-                    // * [1. Delay_Inertia_Dash ÆĞÅÏ ±¸Çö - 2ÃÊ À¯¿¹ ´ë±â ÈÄ °ü¼º µ¹Áø]
+                    // * [1. Delay_Inertia_Dash íŒ¨í„´ êµ¬í˜„ - 2ì´ˆ ìœ ì˜ˆ ëŒ€ê¸° í›„ ê´€ì„± ëŒì§„]
                     if (allocatedPattern == "Delay_Inertia_Dash")
                     {
                         m.StateTimer++;
-                        if (m.MonsterState == 0) // * [0: ´ë±â Æû]
+                        if (m.MonsterState == 0) // * [0: ëŒ€ê¸° í¼]
                         {
                             m.VX *= 0.8f; m.VY *= 0.8f;
 
-                            if (m.StateTimer >= 60) // * [2ÃÊ ´ë±â ¸¸·á]
+                            if (m.StateTimer >= 60) // * [2ì´ˆ ëŒ€ê¸° ë§Œë£Œ]
                             {
                                 m.MonsterState = 1; m.StateTimer = 0;
                                 float dx = player.X - m.X; float dy = player.Y - m.Y;
@@ -94,7 +77,7 @@ namespace DebugHeroFileDungeonRPG
                                 effects.Add(new Effect("spark", m.X, m.Y, m.X, m.Y, 20, Color.White, ""));
                             }
                         }
-                        else // * [1: °ü¼º ¹Ì²ô·¯Áü Æû]
+                        else // * [1: ê´€ì„± ë¯¸ë„ëŸ¬ì§ í¼]
                         {
                             m.VX *= 0.94f; m.VY *= 0.94f;
                             m.X += m.VX; m.Y += m.VY;
@@ -106,11 +89,11 @@ namespace DebugHeroFileDungeonRPG
                         }
                     }
 
-                    // * [2. Periodic_Hardening_Guard ÆĞÅÏ ±¸Çö - ÁÖ±âÀû Á¤Áö °æÈ­ ¹æ¾î]
+                    // * [2. Periodic_Hardening_Guard íŒ¨í„´ êµ¬í˜„ - ì£¼ê¸°ì  ì •ì§€ ê²½í™” ë°©ì–´]
                     else if (allocatedPattern == "Periodic_Hardening_Guard")
                     {
                         m.StateTimer++;
-                        if (m.MonsterState == 0) // * [0: ±âº» ÃßÀû ¼Ó¼º]
+                        if (m.MonsterState == 0) // * [0: ê¸°ë³¸ ì¶”ì  ì†ì„±]
                         {
                             m.VX += Math.Sign(player.X - m.X) * 0.15f;
                             m.VY += Math.Sign(player.Y - m.Y) * 0.10f;
@@ -118,29 +101,29 @@ namespace DebugHeroFileDungeonRPG
                             if (speed > maxSpeed) { m.VX = m.VX / speed * maxSpeed; m.VY = m.VY / speed * maxSpeed; }
                             m.X += m.VX; m.Y += m.VY;
 
-                            if (m.StateTimer >= 90) // * [3ÃÊ È°¼ºÈ­ ÈÄ ¹æ¾î]
+                            if (m.StateTimer >= 90) // * [3ì´ˆ í™œì„±í™” í›„ ë°©ì–´]
                             {
                                 m.MonsterState = 1; m.StateTimer = 0; m.HitFlash = 30;
                             }
                         }
-                        else // * [1: GUARD Á¤Áö »óÅÂ]
+                        else // * [1: GUARD ì •ì§€ ìƒíƒœ]
                         {
                             m.VX = 0; m.VY = 0;
                             if (m.HitFlash < 5) m.HitFlash = 5;
-                            if (m.StateTimer >= 30) // * [1ÃÊ ÈÄ ÇØÁ¦]
+                            if (m.StateTimer >= 30) // * [1ì´ˆ í›„ í•´ì œ]
                             {
                                 m.MonsterState = 0; m.StateTimer = 0;
                             }
                         }
                     }
 
-                    // * [3. Random_Teleport_Barrage ÆĞÅÏ ±¸Çö - ¹«ÀÛÀ§ ÅÚ·¹Æ÷Æ® Åº¸· »çÃâ]
+                    // * [3. Random_Teleport_Barrage íŒ¨í„´ êµ¬í˜„ - ë¬´ì‘ìœ„ í…”ë ˆí¬íŠ¸ íƒ„ë§‰ ì‚¬ì¶œ]
                     else if (allocatedPattern == "Random_Teleport_Barrage")
                     {
                         m.StateTimer++;
                         m.X += m.VX * 0.4f; m.Y += m.VY * 0.4f;
 
-                        if (m.StateTimer >= 120) // * [4ÃÊ ÁÖ±â ¹ßµ¿]
+                        if (m.StateTimer >= 120) // * [4ì´ˆ ì£¼ê¸° ë°œë™ ì™„ë£Œ ì‹œì ]
                         {
                             m.StateTimer = 0;
                             m.X = (float)(rand.NextDouble() * (maxX - minX) + minX);
@@ -152,15 +135,17 @@ namespace DebugHeroFileDungeonRPG
                             {
                                 float angle = baseAngle + (float)(k * Math.PI * 2 / 6);
                                 float speedX = (float)Math.Cos(angle) * 3.5f; float speedY = (float)Math.Sin(angle) * 3.5f;
-                                effects.Add(new Effect("projectile", m.X, m.Y, m.X + speedX * 100, m.Y + speedY * 100, 50, Color.Cyan, "BULLET"));
+
+                                // * [ë³´ì •]: íˆ¬ì‚¬ì²´ ì‹ë³„ ì´ë¦„ì„ TELEPORT_BULLETìœ¼ë¡œ ë³€ê²½í•˜ì—¬ 6ë°œ ì •í™•íˆ ì „ë°©ìœ„ ì‚¬ì¶œ
+                                effects.Add(new Effect("projectile", m.X, m.Y, m.X + speedX * 100, m.Y + speedY * 100, 50, Color.Cyan, "TELEPORT_BULLET"));
                             }
                         }
                     }
 
-                    // * [4. Heavy_Projectile_Spread ÆĞÅÏ ±¸Çö - Á¤¿¹ ¹¬Á÷ ÀÌµ¿ ¹× ÆÄÆí »ìÆ÷]
+                    // * [4. Heavy_Projectile_Spread íŒ¨í„´ êµ¬í˜„ - ì •ì˜ˆ ë¬µì§ ì´ë™ ë° íŒŒí¸ ì‚´í¬]
                     else if (allocatedPattern == "Heavy_Projectile_Spread")
                     {
-                        // * [¹°¸®: ¹¬Á÷ÇÑ °¡¼Ó ¹× ´À¸° ÃÖ´ë ¼Óµµ À¯Áö]
+                        // * [ë¬¼ë¦¬: ë¬µì§í•œ ê°€ì† ë° ëŠë¦° ìµœëŒ€ ì†ë„ ìœ ì§€]
                         if (tick % (110 + i * 15) == 0)
                         {
                             m.VX += Math.Sign(player.X - m.X) * 0.12f;
@@ -171,23 +156,23 @@ namespace DebugHeroFileDungeonRPG
                         if (speed > maxSpeed) { m.VX = m.VX / speed * maxSpeed; m.VY = m.VY / speed * maxSpeed; }
                         m.X += m.VX; m.Y += m.VY;
 
-                        // * [°ø°İ: ÁÖ±âÀûÀ¸·Î TRASH Åõ»çÃ¼ Á¶ÁØ ¹ß»ç]
+                        // * [ê³µê²©: ì£¼ê¸°ì ìœ¼ë¡œ TRASH íˆ¬ì‚¬ì²´ ì¡°ì¤€ ë°œì‚¬]
                         if (tick % 70 == 0)
                         {
                             effects.Add(new Effect("projectile", m.X, m.Y, player.X, player.Y, 40, Color.OrangeRed, "TRASH"));
                         }
                     }
 
-                    // * [5. Slime_Bounce_Approach ÆĞÅÏ ±¸Çö - ½½¶óÀÓ Á¡ÇÁ µµ¾à½Ä ´À¸° ÃßÀû]
+                    // * [5. Slime_Bounce_Approach íŒ¨í„´ êµ¬í˜„ - ìŠ¬ë¼ì„ ì í”„ ë„ì•½ì‹ ëŠë¦° ì¶”ì ]
                     else if (allocatedPattern == "Slime_Bounce_Approach")
                     {
                         m.StateTimer++;
-                        if (m.StateTimer % 40 < 18) // * [µµ¾à »óÅÂ]
+                        if (m.StateTimer % 40 < 18) // * [ë„ì•½ ìƒíƒœ]
                         {
                             m.VX += Math.Sign(player.X - m.X) * 0.18f;
                             m.VY += Math.Sign(player.Y - m.Y) * 0.12f;
                         }
-                        else // * [ÂøÁö ºê·¹ÀÌÅ© »óÅÂ]
+                        else // * [ì°©ì§€ ë¸Œë ˆì´í¬ ìƒíƒœ]
                         {
                             m.VX *= 0.75f; m.VY *= 0.75f;
                         }
@@ -196,7 +181,7 @@ namespace DebugHeroFileDungeonRPG
                         m.X += m.VX; m.Y += m.VY;
                     }
 
-                    // * [6. Contamination_Zone_Leak ÆĞÅÏ ±¸Çö - µğ¹öÇÁ ¿À¿°ÀåÆÇ ÈçÀû Àü°³]
+                    // * [6. Contamination_Zone_Leak íŒ¨í„´ êµ¬í˜„ - ë””ë²„í”„ ì˜¤ì—¼ì¥íŒ í”ì  ì „ê°œ]
                     else if (allocatedPattern == "Contamination_Zone_Leak")
                     {
                         m.VX += Math.Sign(player.X - m.X) * 0.14f;
@@ -214,8 +199,8 @@ namespace DebugHeroFileDungeonRPG
                         float distance = (float)Math.Sqrt(dx * dx + dy * dy);
                         if (distance <= 130f)
                         {
-                            playerCurrentSpeedModifier = 0.6f; // * [ÀÌµ¿¼Óµµ 40% ÀúÇÏ]
-                            if (tick % 30 == 0) // * [¸ÅÃÊ 2%¾¿ µ¶ ¿¬»ê Ã³¸®]
+                            playerCurrentSpeedModifier = 0.6f; // * [ì´ë™ì†ë„ 40% ì €í•˜]
+                            if (tick % 30 == 0) // * [ë§¤ì´ˆ 2%ì”© ë… ì—°ì‚° ì²˜ë¦¬]
                             {
                                 int poisonDamage = (int)(player.MaxHp * 0.02);
                                 player.Hp -= poisonDamage;
@@ -224,7 +209,7 @@ namespace DebugHeroFileDungeonRPG
                         }
                     }
 
-                    // * [7. IRQ Conflict Àü¿ë º¸Á¶ Àü°İ ½ºÆÄÅ© ÄÚµå ÆĞÅÏ]
+                    // * [7. IRQ Conflict ì „ìš© ë³´ì¡° ì „ê²© ìŠ¤íŒŒí¬ ì½”ë“œ íŒ¨í„´]
                     else if (allocatedPattern == "IRQ_Lightning_Strike")
                     {
                         m.StateTimer++;
@@ -245,7 +230,7 @@ namespace DebugHeroFileDungeonRPG
                     }
 
                     // ==========================================================
-                    // ÀÌ¸§ ¹Ì½º¸ÅÄ¡·Î None¿¡ ºüÁø ¸÷µéÀ» À§ÇÑ ±âº» ÃßÀû ¹«ºê¸ÕÆ® ¿£Áø
+                    // ì´ë¦„ ë¯¸ìŠ¤ë§¤ì¹˜ë¡œ Noneì— ë¹ ì§„ ëª¹ë“¤ì„ ìœ„í•œ ê¸°ë³¸ ì¶”ì  ë¬´ë¸Œë¨¼íŠ¸ ì—”ì§„
                     // ==========================================================
                     if (allocatedPattern == "None")
                     {
@@ -257,7 +242,7 @@ namespace DebugHeroFileDungeonRPG
                         m.X += m.VX; m.Y += m.VY;
                     }
 
-                    // * [°øÅë ¿Ü°û º®¸é Ãæµ¹ Á¦µ¿]
+                    // * [ê³µí†µ ì™¸ê³½ ë²½ë©´ ì¶©ëŒ ì œë™]
                     if (m.X < minX) { m.X = minX; m.VX = Math.Abs(m.VX); }
                     if (m.X > maxX) { m.X = maxX; m.VX = -Math.Abs(m.VX); }
                     if (m.Y < minY) { m.Y = minY; m.VY = Math.Abs(m.VY); }
@@ -265,7 +250,7 @@ namespace DebugHeroFileDungeonRPG
                 }
                 else
                 {
-                    // * [º¸½º ¿À¸®Áö³Î ÆĞÅÏ ¸µÅ© ÀÛµ¿ º¸Á¸ ±¸¿ª]
+                    // * [ë³´ìŠ¤ ì˜¤ë¦¬ì§€ë„ íŒ¨í„´ ë§í¬ ì‘ë™ ë³´ì¡´ êµ¬ì—­]
                     float towardX = player.X - m.X;
                     float towardY = player.Y - m.Y;
                     float distance = (float)Math.Sqrt(towardX * towardX + towardY * towardY);
@@ -280,23 +265,59 @@ namespace DebugHeroFileDungeonRPG
                 }
 
                 if (m.HitFlash > 0) m.HitFlash--;
-                // ÀÏ¹İ ¸ö»§ Ãæµ¹ ÁÖ±â Á¶Á¤ ¹× °è¼ö ´ëÆø »óÇâ
+                // ì¼ë°˜ ëª¸ë¹µ ì¶©ëŒ ì£¼ê¸° ì¡°ì • ë° ê³„ìˆ˜ ëŒ€í­ ìƒí–¥
                 if (m.Bounds.IntersectsWith(player.Bounds) && tick % 20 == 0)
                 {
-                    //  ¸ó½ºÅÍ °ø°İ·ÂÀÇ ¹«·Á 2.5¹è¸¦ ´ÙÀÌ·ºÆ®·Î °üÅë ´ë¹ÌÁö·Î ÁÖÀÔ!
-                    int damage = Math.Max(25, (int)(m.Attack * 2.5f));
-                    if (player.DefenseTicks > 0) damage = Math.Max(5, damage / 2); // ¹æ¾î ½Ã °æ°¨À² Ãà¼Ò
+                    bool isHit = false;
+                    double hitDamagePercent = 0.0;
+
+                    if (m.Bounds.IntersectsWith(player.Bounds))
+                    {
+                        isHit = true;
+                        hitDamagePercent = rand.Next(7, 16) / 100.0; // * [ê¸°ë³¸ ìµœëŒ€ ì²´ë ¥ì˜ 7% ~ 15% ëœë¤ ëŒ€ë¯¸ì§€ ë°°ì •]
+                    }
+                    else
+                    {
+                        for (int k = 0; k < effects.Count; k++)
+                        {
+                            Effect eff = effects[k];
+                            if (eff.Kind == "projectile")
+                            {
+                                float progress = 1f - eff.Ticks / (float)Math.Max(1, eff.MaxTicks);
+                                float effCurrX = eff.X + (eff.X2 - eff.X) * progress;
+                                float effCurrY = eff.Y + (eff.Y2 - eff.Y) * progress;
+
+                                // -----------------------------------------------------------------
+                                // ğŸ’¡ ì§ˆë¬¸í•˜ì‹  ì½”ë“œê°€ ë°”ë¡œ ì´ ìë¦¬ì— ìœ„ì¹˜í•´ ìˆìŠµë‹ˆë‹¤!
+                                // -----------------------------------------------------------------
+                                if (player.Bounds.Contains(effCurrX, effCurrY))
+                                {
+                                    if (eff.Text == "BULLET" || eff.Text == "TRASH" || eff.Text == "SPARK_LINE" || eff.Text == "TELEPORT_BULLET")
+                                    {
+                                        isHit = true; eff.Ticks = 0;
+                                        hitDamagePercent = rand.Next(7, 16) / 100.0;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (isHit)
+                    {
+                        int damage = (int)(player.MaxHp * hitDamagePercent);
+                        if (player.DefenseTicks > 0) damage = Math.Max(1, damage / 3);
 
                     player.Hp -= damage;
-                    player.SystemStability = Math.Max(0, player.SystemStability - 3); // ¾ÈÁ¤¼º ÆÄ±« Áö¼ö »óÇâ
+                    player.SystemStability = Math.Max(0, player.SystemStability - 3); // ì•ˆì •ì„± íŒŒê´´ ì§€ìˆ˜ ìƒí–¥
 
                     effects.Add(new Effect("text", player.X, player.Y - 70, player.X, player.Y - 70, 34, Color.OrangeRed, "CRITICAL -" + damage));
                     effects.Add(new Effect("spark", player.X, player.Y - 32, player.X, player.Y - 32, 22, Color.Red, ""));
 
                     if (player.Hp <= 0)
                     {
-                        // player.Hp = player.MaxHp º¹±¸ ÄÚµå¸¦ ¿ÏÀüÈ÷ Á¦°ÅÇÏ¿© Áï½Ã 0 ÀÌÇÏ »óÅÂ·Î Å¸ÀÌ¸Ó Æ½¿¡ Àü´Ş, 
-                        // MainForm ÃÖÇÏ´Ü ¿¹¿Ü ÇÊÅÍ¸¦ ÅëÇØ ¹ÙÅÁÈ­¸éÀ¸·Î Áï°¢ ¿µ±¸ »çÃâ(ÅğÀå)µÇ°Ô ¿¬µ¿ÇÕ´Ï´Ù.
+                        // player.Hp = player.MaxHp ë³µêµ¬ ì½”ë“œë¥¼ ì™„ì „íˆ ì œê±°í•˜ì—¬ ì¦‰ì‹œ 0 ì´í•˜ ìƒíƒœë¡œ íƒ€ì´ë¨¸ í‹±ì— ì „ë‹¬, 
+                        // MainForm ìµœí•˜ë‹¨ ì˜ˆì™¸ í•„í„°ë¥¼ í†µí•´ ë°”íƒ•í™”ë©´ìœ¼ë¡œ ì¦‰ê° ì˜êµ¬ ì‚¬ì¶œ(í‡´ì¥)ë˜ê²Œ ì—°ë™í•©ë‹ˆë‹¤.
                         player.Hp = 0;
                     }
                 }

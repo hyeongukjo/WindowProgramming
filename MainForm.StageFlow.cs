@@ -329,7 +329,11 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
             player.HpPotions--;
-            int heal = Math.Min(player.MaxHp - player.Hp, 45 + player.Level * 10);
+
+            // * [수정 보정: 고정 수치 회복을 폐기하고 플레이어 최대 체력의 정확히 25% 비율로 연산]
+            int heal = (int)(player.MaxHp * 0.25);
+            if (player.Hp + heal > player.MaxHp) heal = player.MaxHp - player.Hp;
+
             player.Hp += heal;
             effects.Add(new Effect("spark", player.X, player.Y - 42, player.X, player.Y - 42, 34, Color.LimeGreen, ""));
             effects.Add(new Effect("text", player.X, player.Y - 92, player.X, player.Y - 92, 42, Color.LimeGreen, "HP +" + heal));
@@ -351,7 +355,11 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
             player.MpPotions--;
-            int restore = Math.Min(player.MaxMp - player.Mp, 36 + player.Level * 8);
+
+            // * [수정 보정: 고정 수치 회복을 폐기하고 플레이어 최대 마나의 정확히 25% 비율로 연산]
+            int restore = (int)(player.MaxMp * 0.25);
+            if (player.Mp + restore > player.MaxMp) restore = player.MaxMp - player.Mp;
+
             player.Mp += restore;
             effects.Add(new Effect("spark", player.X, player.Y - 42, player.X, player.Y - 42, 34, Color.DeepSkyBlue, ""));
             effects.Add(new Effect("text", player.X, player.Y - 92, player.X, player.Y - 92, 42, Color.DeepSkyBlue, "MP +" + restore));
