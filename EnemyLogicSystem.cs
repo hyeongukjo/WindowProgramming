@@ -229,8 +229,9 @@ namespace DebugHeroFileDungeonRPG
                         }
                     }
 
+<<<<<<< HEAD
                     // ==========================================================
-                    // 이름 미스매치로 None에 빠진 몹들을 위한 기본 추적 무브먼트 엔진
+                    // �̸� �̽���ġ�� None�� ���� ������ ���� �⺻ ���� �����Ʈ ����
                     // ==========================================================
                     if (allocatedPattern == "None")
                     {
@@ -242,7 +243,10 @@ namespace DebugHeroFileDungeonRPG
                         m.X += m.VX; m.Y += m.VY;
                     }
 
+                    // * [���� �ܰ� ���� �浹 ����]
+=======
                     // * [공통 외곽 벽면 충돌 제동]
+>>>>>>> shop/monster
                     if (m.X < minX) { m.X = minX; m.VX = Math.Abs(m.VX); }
                     if (m.X > maxX) { m.X = maxX; m.VX = -Math.Abs(m.VX); }
                     if (m.Y < minY) { m.Y = minY; m.VY = Math.Abs(m.VY); }
@@ -265,14 +269,35 @@ namespace DebugHeroFileDungeonRPG
                 }
 
                 if (m.HitFlash > 0) m.HitFlash--;
-                // 일반 몸빵 충돌 주기 조정 및 계수 대폭 상향
+<<<<<<< HEAD
+                // �Ϲ� ���� �浹 �ֱ� ���� �� ��� ���� ����
                 if (m.Bounds.IntersectsWith(player.Bounds) && tick % 20 == 0)
-                {
-                    bool isHit = false;
-                    double hitDamagePercent = 0.0;
+=======
 
-                    if (m.Bounds.IntersectsWith(player.Bounds))
+                // * [8. 통합 투사체 및 몸체 충돌 피해 연산 매개 모듈 가동]
+                if (tick % 24 == 0)
+>>>>>>> shop/monster
+                {
+                    //  ���� ���ݷ��� ���� 2.5�踦 ���̷�Ʈ�� ���� ������� ����!
+                    int damage = Math.Max(25, (int)(m.Attack * 2.5f));
+                    if (player.DefenseTicks > 0) damage = Math.Max(5, damage / 2); // ��� �� �氨�� ���
+
+                    player.Hp -= damage;
+                    player.SystemStability = Math.Max(0, player.SystemStability - 3); // ������ �ı� ���� ����
+
+                    effects.Add(new Effect("text", player.X, player.Y - 70, player.X, player.Y - 70, 34, Color.OrangeRed, "CRITICAL -" + damage));
+                    effects.Add(new Effect("spark", player.X, player.Y - 32, player.X, player.Y - 32, 22, Color.Red, ""));
+
+                    if (player.Hp <= 0)
                     {
+<<<<<<< HEAD
+                        // player.Hp = player.MaxHp ���� �ڵ带 ������ �����Ͽ� ��� 0 ���� ���·� Ÿ�̸� ƽ�� ����, 
+                        // MainForm ���ϴ� ���� ���͸� ���� ����ȭ������ �ﰢ ���� ����(����)�ǰ� �����մϴ�.
+                        player.Hp = 0;
+                    }
+                }
+            }
+=======
                         isHit = true;
                         hitDamagePercent = rand.Next(7, 16) / 100.0; // * [기본 최대 체력의 7% ~ 15% 랜덤 대미지 배정]
                     }
@@ -308,20 +333,26 @@ namespace DebugHeroFileDungeonRPG
                         int damage = (int)(player.MaxHp * hitDamagePercent);
                         if (player.DefenseTicks > 0) damage = Math.Max(1, damage / 3);
 
-                    player.Hp -= damage;
-                    player.SystemStability = Math.Max(0, player.SystemStability - 3); // 안정성 파괴 지수 상향
+                        player.Hp -= damage;
+                        player.SystemStability = Math.Max(0, player.SystemStability - 1);
 
-                    effects.Add(new Effect("text", player.X, player.Y - 70, player.X, player.Y - 70, 34, Color.OrangeRed, "CRITICAL -" + damage));
-                    effects.Add(new Effect("spark", player.X, player.Y - 32, player.X, player.Y - 32, 22, Color.Red, ""));
+                        effects.Add(new Effect("text", player.X, player.Y - 70, player.X, player.Y - 70, 34, Color.OrangeRed, "-" + damage));
+                        effects.Add(new Effect("spark", player.X, player.Y - 32, player.X, player.Y - 32, 22, Color.Red, ""));
 
-                    if (player.Hp <= 0)
-                    {
-                        // player.Hp = player.MaxHp 복구 코드를 완전히 제거하여 즉시 0 이하 상태로 타이머 틱에 전달, 
-                        // MainForm 최하단 예외 필터를 통해 바탕화면으로 즉각 영구 사출(퇴장)되게 연동합니다.
-                        player.Hp = 0;
+                        if (player.Hp <= 0)
+                        {
+                            player.Hp = player.MaxHp;
+                            result.PlayerReturnedToStart = true;
+                        }
                     }
                 }
             }
+
+            // * [9. 장판 디버프 최종 적용 수치를 플레이어 물리 속도 모듈에 주입 동기화]
+            player.MoveVelocityX *= playerCurrentSpeedModifier;
+            player.MoveVelocityY *= playerCurrentSpeedModifier;
+
+>>>>>>> shop/monster
             result.AllEnemiesDefeated = enemies.Count > 0;
             for (int i = 0; i < enemies.Count; i++) if (enemies[i].Hp > 0) result.AllEnemiesDefeated = false;
             return result;
