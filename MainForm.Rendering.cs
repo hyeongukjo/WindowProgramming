@@ -251,7 +251,7 @@ namespace DebugHeroFileDungeonRPG
             }
             // ==========================================================
 
-            // 💡 배경 그리기 시작 (이 아래로는 기존에 완성해두신 코드와 100% 동일합니다)
+            // 배경 그리기 시작 (이 아래로는 기존에 완성해두신 코드와 100% 동일합니다)
             Renderer.DrawStageBackground(g, ClientRectangle, st, cameraX, stageBossPhase, mapWidth);
 
             if (!stageBossPhase)
@@ -293,7 +293,7 @@ namespace DebugHeroFileDungeonRPG
                     Renderer.DrawBossGlobalUI(g, currentBoss, ClientSize);
 
                     // ==========================================================
-                    // 💡 [3번 수정] 1% 최종 페이즈 진입 시 보스바 하단에 분신 전용 보라색 체력바 및 타이머 연동
+                    // 1% 최종 페이즈 진입 시 보스바 하단에 분신 전용 보라색 체력바 및 타이머 연동
                     // ==========================================================
                     if (currentBoss.Name.Contains("Binny") && bossManager.IsIllusionActive && bossManager.BinnyClone != null)
                     {
@@ -399,6 +399,106 @@ namespace DebugHeroFileDungeonRPG
                 g.Restore(playerScaleState);
             }
 
+            // ----------------------------------------------------------
+            // 🛡️ [신설] E 보호막 아우라 그리기 (캐릭터 주변 네온 서클 및 수치 출력)
+            // ----------------------------------------------------------
+            if (playerShield > 0)
+            {
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+                if (Renderer.Img_SkillBarrier != null)
+                {
+                    // 📐 플레이어 스프라이트 중심점(Y-40)을 기준으로 방어막이 이쁘게 감싸도록 좌표 계산
+                    int shieldSize = 120; // 배리어 해상도 크기 세팅
+                    float shieldX = (player.X - cameraX) - (shieldSize / 2);
+                    float shieldY = (player.Y - 40) - (shieldSize / 2);
+
+                    // 🎨 [투명도 제어 인젝션] 이미지의 알파 채널 계수를 실시간 제어합니다.
+                    using (var imageAttributes = new System.Drawing.Imaging.ImageAttributes())
+                    {
+                        // 💡 불투명도(Opacity) 설정: 0.0f(완전 투명) ~ 1.0f(완전 불투명)
+                        // 기존 에셋이 너무 진하다면 이 값을 0.3f ~ 0.4f 정도로 세팅하면 은은하고 이쁘게 투명해집니다.
+                        float opacity = 0.35f;
+
+                        // 5x5 색상 변환 행렬 매핑 (4번째 행/열이 알파 채널 배율입니다)
+                        float[][] colorMatrixElements = {
+                            new float[] {1,  0,  0,  0, 0},        // R
+                            new float[] {0,  1,  0,  0, 0},        // G
+                            new float[] {0,  0,  1,  0, 0},        // B
+                            new float[] {0,  0,  0,  opacity, 0},  // A (Alpha 배율 반영)
+                            new float[] {0,  0,  0,  0, 1}
+                        };
+
+                        var colorMatrix = new System.Drawing.Imaging.ColorMatrix(colorMatrixElements);
+                        imageAttributes.SetColorMatrix(colorMatrix, System.Drawing.Imaging.ColorMatrixFlag.Default, System.Drawing.Imaging.ColorAdjustType.Bitmap);
+
+                        // 계산된 알파 배율 속성을 바인딩하여 고화질 렌더링 영역에 드로우
+                        Rectangle destRect = new Rectangle((int)shieldX, (int)shieldY, shieldSize, shieldSize);
+                        g.DrawImage(
+                            Renderer.Img_SkillBarrier,
+                            destRect,
+                            0, 0, Renderer.Img_SkillBarrier.Width, Renderer.Img_SkillBarrier.Height,
+                            GraphicsUnit.Pixel,
+                            imageAttributes
+                        );
+                    }
+                }
+                else
+                {
+                    // [방어 코드] 에셋 로드 실패 시 구형 네온 점선 원형 백업선 가동
+                    using (Pen shieldPen = new Pen(Color.FromArgb(140, 0, 210, 255), 3f))
+                    {
+                        shieldPen.DashStyle = DashStyle.Dash;
+                        g.DrawEllipse(shieldPen, (player.X - cameraX) - 45, player.Y - 75, 90, 90);
+                    }
+                }
+
+                // 보호막 현재 스펙 정보 텍스트 마킹
+                using (Font sF = Renderer.F(9f, FontStyle.Bold))
+                {
+                    g.DrawString($"SHIELD: {playerShield}", sF, Brushes.Cyan, (player.X - cameraX) - 40, player.Y - 95);
+                }
+            }
+
+            // ----------------------------------------------------------
+            // ❄️ [신설] R 궁극기 낙하 비주얼 렌더러 (Cold 장검 수직 하강 파이프라인)
+            // ----------------------------------------------------------
+            foreach (var sword in playerSkySwords)
+            {
+                g.DrawEllipse(Pens.DodgerBlue, (sword.X - cameraX) - 110, sword.Y - 15, 220, 30);
+
+                float progress = 1.0f - ((float)sword.Timer / sword.MaxTimer);
+                float startY = sword.Y - 600;
+                float currentSwordY = startY + (600f * progress);
+
+                Image swordImg = Renderer.Img_SwordCold;
+
+                if (swordImg != null)
+                {
+                    // 검의 개별 좌표 공간을 분리하여 고정밀 변환 가동
+                    System.Drawing.Drawing2D.GraphicsState swordState = g.Save();
+
+                    // 1. 칼의 중심 위치로 도화지 축 이동
+                    g.TranslateTransform(sword.X - cameraX, currentSwordY);
+
+                    // 2. 무기 에셋 스케일 배율
+                    g.ScaleTransform(2.0f, 2.0f);
+
+                    // 3. 검 끝을 6시 방향(지면 정남향)으로 꽂히게 135도 시계방향 강제 회전
+                    g.RotateTransform(135f);
+
+                    // 4. 회전 중심축 기준 중앙 정렬 드로우
+                    g.DrawImage(swordImg, -swordImg.Width / 2, -swordImg.Height / 2);
+
+                    // 도화지 상태 복원
+                    g.Restore(swordState);
+                }
+                else
+                {
+                    g.FillRectangle(Brushes.LightSkyBlue, (sword.X - cameraX) - 12, currentSwordY - 100, 24, 100);
+                }
+            }
+
             for (int i = 0; i < effects.Count; i++) Renderer.DrawEffect(g, effects[i], cameraX);
             if (!stageNpcHintClosed) DrawStageNpcHint(g, st);
         }
@@ -459,8 +559,31 @@ namespace DebugHeroFileDungeonRPG
                     Renderer.LeftMiddle()
                 );
 
+                int rightColumnX = h.X + 195; // 👈 오른쪽 빈 공간 시작 픽셀 위치
+                using (Font skillFont = Renderer.F(8.0f, FontStyle.Bold))
+                {
+                    // 1. W 스킬 상태 (Profile: 이름 옆에 배치)
+                    string wText = wCooldownTicks > 0 ? $"{(wCooldownTicks / 60.0f):0.0}초" : "READY";
+                    Brush wBrush = wCooldownTicks > 0 ? Brushes.Tomato : Brushes.DarkGreen;
+                    g.DrawString($"[W 오버클럭] {wText}", skillFont, wBrush, rightColumnX, h.Y + 52);
+
+                    // 2. E 스킬 상태 (Program: Recovery 옆에 배치)
+                    string eText = eCooldownTicks > 0 ? $"{(eCooldownTicks / 60.0f):0.0}초" : "READY";
+                    if (eShieldDurationTicks > 0) eText = $"ACT ({(eShieldDurationTicks / 60.0f):0.0}s)"; // 공간 확보를 위해 글자 축약
+                    Brush eBrush = eShieldDurationTicks > 0 ? Brushes.DeepSkyBlue : (eCooldownTicks > 0 ? Brushes.Tomato : Brushes.DarkGreen);
+                    g.DrawString($"[E 데이터실] {eText}", skillFont, eBrush, rightColumnX, h.Y + 72);
+
+                    // 3. R 스킬 상태 (Level / Coin 옆에 배치)
+                    string rText = rCooldownTicks > 0 ? $"{(rCooldownTicks / 60.0f):0.0}초" : "READY";
+                    Brush rBrush = rCooldownTicks > 0 ? Brushes.Tomato : Brushes.DarkViolet;
+                    g.DrawString($"[R 시스템콜] {rText}", skillFont, rBrush, rightColumnX, h.Y + 92);
+                }
+                string coolMeter = $"W 쿨: {(wCooldownTicks > 0 ? (wCooldownTicks / 60.0f).ToString("0.0") + "초" : "READY")} | " +
+                                   $"E 쿨: {(eCooldownTicks > 0 ? (eCooldownTicks / 60.0f).ToString("0.0") + "초" : "READY")} | " +
+                                   $"R 쿨: {(rCooldownTicks > 0 ? (rCooldownTicks / 60.0f).ToString("0.0") + "초" : "READY")}";
+
                 g.DrawString(
-                    "마우스 클릭 이동 / 부드러운 추적 / Q W E R",
+                    coolMeter,
                     f,
                     b,
                     new Rectangle(h.X + 22, h.Y + 206, h.Width - 44, 18),

@@ -47,9 +47,32 @@ namespace DebugHeroFileDungeonRPG
         private bool showStageClearPopup = false;
         private int popupBonusCoins = 0;
         private Rectangle popupConfirmBtnBounds;
+       
+        private int wBuffTicks = 0;       // W 버프 남은 시간 (60틱 = 1초)
+        private int playerShield = 0;     // E 보호막 현재 내구도
+        private int eShieldDurationTicks = 0;
+        private readonly List<PlayerSkySword> playerSkySwords = new List<PlayerSkySword>();
 
 
 
+        // 스킬별 독립 쿨타임 카운터 변수
+        private int wCooldownTicks = 0;   // W 쿨타임 (15초 = 900틱)
+        private int eCooldownTicks = 0;   // E 쿨타임 (15초 = 900틱)
+        private int rCooldownTicks = 0;   // R 쿨타임 (25초 = 1500틱)
+
+        // R 궁극기 투하 연산을 위한 내부 클래스 정의
+        public class PlayerSkySword
+        {
+            public float X, Y;
+            public int Timer;
+            public int MaxTimer;
+            public string SwordType; // "dark" 또는 "cold"
+        }
+
+        [System.Runtime.InteropServices.DllImport("winmm.dll")]
+        private static extern int mciSendString(string strCommand, System.Text.StringBuilder strReturn, int iReturnLength, IntPtr hwndCallback);
+
+        private int cutsceneTicks = 0; // 컷씬이 상영될 총 프레임 시간 (60틱 = 1초)
 
         public MainForm()
         {
@@ -62,7 +85,7 @@ namespace DebugHeroFileDungeonRPG
             KeyPreview = true;
             BackColor = Color.Black;
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
-
+            this.UpdateStyles();
             stages = GameData.CreateStages();
             timer = new Timer();
             timer.Interval = 16;
@@ -151,12 +174,32 @@ namespace DebugHeroFileDungeonRPG
                 bootTicks++;
                 if (bootTicks > 170) screen = ScreenMode.AssistantIntro;
             }
+            else if (screen == ScreenMode.Cutscene)
+            {
+                if (cutsceneTicks > 0)
+                {
+                    cutsceneTicks--;
+                    if (cutsceneTicks <= 0)
+                    {
+                        EndStage10Cutscene(); // 영상 시간이 끝나면 자동으로 보스전 이관
+                    }
+                }
+                // ==========================================================
+                // 💡 [여기에 주입] 컷씬 상영 중일 때는 아래의 무한 Invalidate()를 스킵!
+                // 이 return; 한 줄이 없어서 C# 도화지가 비디오 오버레이 창을 계속 덮어썼던 것입니다.
+                // ==========================================================
+                return;
+                // ==========================================================
+            }
             else if (screen == ScreenMode.Stage)
             {
                 if (tick % 45 == 0 && player.Mp < player.MaxMp) player.Mp = Math.Min(player.MaxMp, player.Mp + 1);
                 UpdateStage();
             }
+
+            // 일반 인게임 상태에서만 도화지를 새로 고침 (컷씬 모드일 땐 위에서 return되어 실행 안 됨)
             Invalidate();
+
             if (bossRuntime.patternManager.PlayerSlowTicks > 0)
             {
                 bossRuntime.patternManager.PlayerSlowTicks--;

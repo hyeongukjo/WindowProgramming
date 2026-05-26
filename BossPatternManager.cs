@@ -1340,8 +1340,8 @@ namespace DebugHeroFileDungeonRPG
                 boss.Pattern50Used = true;
                 IsResourcePatternActive = true;
 
-                // 💡 [수정] 제한시간을 정확히 3초(30 FPS * 3 = 90틱)로 대폭 단축!
-                ResourceTimer = 90;
+                // 5초 150틱
+                ResourceTimer = 150;
 
                 DebugButtons.Clear();
                 for (int i = 0; i < 13; i++)

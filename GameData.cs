@@ -17,7 +17,8 @@ namespace DebugHeroFileDungeonRPG
         StageClearDialog,
         FinalInput,
         Ending,
-        Help
+        Help,
+        Cutscene
     }
 
     public enum StageKind

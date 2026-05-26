@@ -48,6 +48,10 @@ namespace DebugHeroFileDungeonRPG
         public static Image Img_IceSword;
         public static Image Img_FireSword;
         public static Image Img_LightningSword;
+        // 플레이어 스킬 이펙트
+        public static Image Img_SwordDark = null;
+        public static Image Img_SwordCold = null;
+        public static Image Img_SkillBarrier = null;
 
         static Renderer()
         {
@@ -64,6 +68,15 @@ namespace DebugHeroFileDungeonRPG
                 if (File.Exists(btnPath)) Img_PopupBtn = Image.FromFile(btnPath);
 
                 string fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "custom_font.ttf");
+
+                string darkPath = Path.Combine(baseDir, "Assets", "UI", "w_longsword_dark.png");
+                if (File.Exists(darkPath)) Img_SwordDark = Image.FromFile(darkPath);
+
+                string coldPath = Path.Combine(baseDir, "Assets", "UI", "w_longsword_cold.png");
+                if (File.Exists(coldPath)) Img_SwordCold = Image.FromFile(coldPath);
+
+                string barrierPath = Path.Combine(baseDir, "Assets", "UI", "skill_barrier.png");
+                if (File.Exists(barrierPath)) Img_SkillBarrier = Image.FromFile(barrierPath);
 
                 if (File.Exists(fontPath))
                 {

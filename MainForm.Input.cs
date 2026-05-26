@@ -74,30 +74,36 @@ namespace DebugHeroFileDungeonRPG
                 else if (e.KeyCode == Keys.Right) MovePlayerBy(160, 0);
                 else if (e.KeyCode == Keys.Up) MovePlayerBy(0, -120);
                 else if (e.KeyCode == Keys.Down) MovePlayerBy(0, 120);
-                else if (e.KeyCode == Keys.Q)
-                {
-                    PlayerMovementSystem.StartSkillAnimation(player, 0);
-                    CastSkill(0);
-                }
-                else if (e.KeyCode == Keys.W)
-                {
-                    PlayerMovementSystem.StartSkillAnimation(player, 1);
-                    CastSkill(1);
-                }
-                else if (e.KeyCode == Keys.E)
-                {
-                    PlayerMovementSystem.StartSkillAnimation(player, 2);
-                    CastSkill(2);
-                }
-                else if (e.KeyCode == Keys.R)
-                {
-                    PlayerMovementSystem.StartSkillAnimation(player, 3);
-                    CastSkill(3);
-                }
+
+
+                // 💡 [단축키 매핑] QWER 스킬 라우터 배치
+                if (e.KeyCode == Keys.Q) CastSkill(0); // Q: 기본 공격 (기존 평타 슬롯 0번 가동 및 현상유지)
+                if (e.KeyCode == Keys.W) CastPlayerSkillW();
+                if (e.KeyCode == Keys.E) CastPlayerSkillE();
+                if (e.KeyCode == Keys.R) CastPlayerSkillR();
+
+
                 else if (e.KeyCode == Keys.D) UseHpPotion();
                 else if (e.KeyCode == Keys.F) UseMpPotion();
                 else if (e.KeyCode == Keys.Space) { effects.Add(new Effect("spark", player.X, player.Y - 44, player.X, player.Y - 44, 28, Color.FromArgb(120, 200, 255), "")); TryBeep(420, 40); }
-                else if (e.KeyCode == Keys.Escape) screen = ScreenMode.Desktop;
+                else if (e.KeyCode == Keys.Escape)
+                {
+                    currentStage = 0;
+                    enemies.Clear();       // 활성화된 몬스터 객체 풀 즉시 해제
+                    effects.Clear();       // 화면에 남아돌던 공격/글자 이펙트 풀 청소
+                    weaponDrops.Clear();   // 드롭된 잔여 아이템 데이터 소멸
+                    stageBossPhase = false;
+                    stage1BossPhase = false;
+
+                    // 10스테이지 최종보스 분신 기믹 상태값 완전 초기화
+                    if (bossRuntime?.patternManager != null)
+                    {
+                        bossRuntime.patternManager.IsIllusionActive = false;
+                        bossRuntime.patternManager.BinnyClone = null;
+                    }
+
+                    screen = ScreenMode.Desktop; // 깨끗해진 상태로 바탕화면 복귀
+                }
                 return;
             }
             if (screen == ScreenMode.StageClearDialog)
@@ -360,6 +366,69 @@ namespace DebugHeroFileDungeonRPG
                 endingBody = "존재하지 않는 프로세스 이름입니다. 휴지통은 다시 닫히고 복구 절차는 보류됩니다.";
             }
             screen = ScreenMode.Ending;
+        }
+
+        // ==========================================================
+        // [W 스킬] 오버클럭 버프 가동 (5초간 가속 및 데미지 증가)
+        // ==========================================================
+        private void CastPlayerSkillW()
+        {
+            if (wCooldownTicks > 0) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 30, Color.Red, $"W 쿨타임 대기 중 ({(wCooldownTicks / 60.0f):0.0}초)")); TryBeep(320, 50); return; }
+            if (player.Mp < 15) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.DeepSkyBlue, "MP 부족")); return; }
+
+            player.Mp -= 15;
+            wBuffTicks = 300;      // 5초 지속
+            wCooldownTicks = 900;  // 15초 쿨타임 인젝션 (15 * 60 = 900틱)
+
+            effects.Add(new Effect("spark", player.X, player.Y - 40, player.X, player.Y - 40, 40, Color.Orange, ""));
+            effects.Add(new Effect("text", player.X, player.Y - 100, player.X, player.Y - 100, 50, Color.Orange, "OVERCLOCK (SPEED & DAMAGE UP)"));
+            TryBeep(650, 100);
+        }
+
+        // ==========================================================
+        // [E 스킬] 방화벽 보증막 가동 (최대 체력의 50% 실드 부여)
+        // ==========================================================
+        private void CastPlayerSkillE()
+        {
+            if (eCooldownTicks > 0) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 30, Color.Red, $"E 쿨타임 대기 중 ({(eCooldownTicks / 60.0f):0.0}초)")); TryBeep(320, 50); return; }
+            if (player.Mp < 25) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.DeepSkyBlue, "MP 부족")); return; }
+
+            player.Mp -= 25;
+
+            // 밸런스 조정: 최대 체력의 정확히 20% 가산
+            playerShield = (int)(player.MaxHp * 0.20f);
+            eShieldDurationTicks = 300; //  5초 지속시간 타이머 주입 (60fps * 5 = 300틱)
+            eCooldownTicks = 1200;      // 총 쿨타임 20초 주입 (20 * 60 = 1200틱)
+
+            effects.Add(new Effect("spark", player.X, player.Y - 40, player.X, player.Y - 40, 45, Color.Cyan, ""));
+            effects.Add(new Effect("text", player.X, player.Y - 100, player.X, player.Y - 100, 50, Color.Cyan, $"FIREWALL SHIELD (+{playerShield})"));
+            TryBeep(800, 120);
+        }
+
+        // ==========================================================
+        // [R 스킬] 시스템 콜: 1단계 빙결 장검 소환 (전방 낙하 폭격)
+        // ==========================================================
+        private void CastPlayerSkillR()
+        {
+            if (rCooldownTicks > 0) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 30, Color.Red, $"R 궁극기 쿨타임 대기 중 ({(rCooldownTicks / 60.0f):0.0}초)")); TryBeep(320, 50); return; }
+            if (player.Mp < 45) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.DeepSkyBlue, "MP 부족")); return; }
+
+            player.Mp -= 45;
+            rCooldownTicks = 1500; // 25초 쿨타임 인젝션 (25 * 60 = 1500틱)
+
+            float targetX = player.X + (player.Facing == 0 ? 250f : player.Facing * 250f);
+
+            playerSkySwords.Add(new PlayerSkySword
+            {
+                X = targetX,
+                Y = player.Y,
+                Timer = 23,        // ⚡ [속도 가속] 기존 35틱에서 23틱으로 단축 (1.5배 고속 하강 연산)
+                MaxTimer = 23,
+                SwordType = "cold"
+            });
+
+            effects.Add(new Effect("text", player.X, player.Y - 120, player.X, player.Y - 120, 60, Color.DodgerBlue, "SYSTEM_CALL: COLD_LONGSWORD"));
+            TryBeep(350, 200);
         }
 
     }

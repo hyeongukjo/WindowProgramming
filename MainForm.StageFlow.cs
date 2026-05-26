@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 using System.Text;
 using System.Windows.Forms;
 
@@ -28,12 +29,96 @@ namespace DebugHeroFileDungeonRPG
             StageInfo st = stages[currentStage - 1];
             int mapWidth = GetStageMapWidth(st);
 
+            // 매 프레임마다 스킬 Cooldown 실시간 연산 차감 스케줄러
+            if (wCooldownTicks > 0) wCooldownTicks--;
+            if (eCooldownTicks > 0) eCooldownTicks--;
+            if (rCooldownTicks > 0) rCooldownTicks--;
+
+            if (eShieldDurationTicks > 0)
+            {
+                eShieldDurationTicks--;
+                if (eShieldDurationTicks <= 0)
+                {
+                    // 5초가 지나면 쉴드량이 남아있어도 강제로 0으로 만들어 증발시킵니다.
+                    if (playerShield > 0)
+                    {
+                        playerShield = 0;
+                        effects.Add(new Effect("text", player.X, player.Y - 75, player.X, player.Y - 75, 30, Color.LightGray, "⏳ 실드 유지시간 만료"));
+                    }
+                }
+            }
+
+            if (wBuffTicks > 0)
+            {
+                wBuffTicks--;
+                player.X += (player.MoveVelocityX * 0.5f);
+            }
+
+            // 실시간 체력 피해 가로채기를 위한 이전 HP 백업선 세팅
+            int preUpdateHp = player.Hp;
+
             PlayerMovementSystem.Update(player, st, stageBossPhase, ClientSize.Width, ClientSize.Height, mapWidth, ref cameraX, tick);
 
             PlayerMovementSystem.UpdateActionAnimation(player);
 
             // 몬스터 AI 및 물리 충돌 업데이트
             EnemyUpdateResult enemyResult = EnemyLogicSystem.Update(enemies, player, st, currentStage, stageBossPhase, tick, mapWidth, ClientRectangle, bossRuntime, effects);
+
+
+            // ==========================================================
+            // 💡 [E 보호막 데미지 상쇄 엔진] 내 체력이 깎였을 때 실드가신 가로채기 연산
+            // ==========================================================
+            if (player.Hp < preUpdateHp && playerShield > 0)
+            {
+                int damageTaken = preUpdateHp - player.Hp; // 적이 입힌 원본 피해량
+                if (playerShield >= damageTaken)
+                {
+                    playerShield -= damageTaken;
+                    player.Hp = preUpdateHp; // 플레이어 본체 체력 원상복구 방어
+                    effects.Add(new Effect("text", player.X, player.Y - 75, player.X, player.Y - 75, 30, Color.DeepSkyBlue, $"🛡️ 실드 데이터 상쇄 (-{damageTaken})"));
+                }
+                else
+                {
+                    int remainder = damageTaken - playerShield;
+                    playerShield = 0;
+                    player.Hp = preUpdateHp - remainder; // 남은 관통 대미지만 본체에 적중
+                    effects.Add(new Effect("text", player.X, player.Y - 75, player.X, player.Y - 75, 35, Color.Cyan, "💥 방화벽 실드 파괴!"));
+                }
+            }
+
+            // ==========================================================
+            // [R 궁극기 낙하 물리 폭발 스케줄러] 땅에 닿는 순간 광역 타격
+            // ==========================================================
+            for (int i = playerSkySwords.Count - 1; i >= 0; i--)
+            {
+                var sword = playerSkySwords[i];
+                sword.Timer--;
+
+                if (sword.Timer <= 0)
+                {
+                    float explosionRadius = 240f; // 폭발 감지 사거리
+                    int finalUltDamage = 450 + player.Level * 40; // 궁극기 기본 누킹 데미지
+                    if (wBuffTicks > 0) finalUltDamage = (int)(finalUltDamage * 1.5f); // W버프 시 궁극기 분쇄딜 증폭
+
+                    // 맵 전체 적 탐색 후 범위 내 일괄 대미지 및 힛플래시 주입
+                    for (int k = 0; k < enemies.Count; k++)
+                    {
+                        var em = enemies[k];
+                        if (em.Hp > 0 && Math.Abs(em.X - sword.X) <= explosionRadius)
+                        {
+                            em.Hp -= finalUltDamage;
+                            em.HitFlash = 12;
+                            effects.Add(new Effect("text", em.X, em.Y - 85, em.X, em.Y - 85, 45, Color.DodgerBlue, $"❄️ COLD BURST {finalUltDamage}"));
+                            effects.Add(new Effect("spark", em.X, em.Y - 40, em.X, em.Y - 40, 25, Color.LightBlue, ""));
+                        }
+                    }
+
+                    effects.Add(new Effect("spark", sword.X, sword.Y - 30, sword.X, sword.Y - 30, 75, Color.LightCyan, ""));
+                    TryBeep(220, 250); // 중저음의 묵직한 폭발음 피드백
+                    playerSkySwords.RemoveAt(i);
+                }
+            }
+
 
             if (enemyResult.PlayerReturnedToStart)
             {
@@ -190,6 +275,11 @@ namespace DebugHeroFileDungeonRPG
         private void StartStage(int stageIndex)
         {
             if (stageIndex < 1 || stageIndex > unlockedStage) return;
+            if (stageIndex == 10)
+            {
+                StartStage10Cutscene();
+                return;
+            }
             currentStage = stageIndex;
             StageInfo st = stages[stageIndex - 1];
 
@@ -202,6 +292,14 @@ namespace DebugHeroFileDungeonRPG
             player.Hp = player.MaxHp;
             player.Mp = player.MaxMp;
             player.SystemStability = 100;
+            wCooldownTicks = 0;         // W 쿨타임 제로화
+            eCooldownTicks = 0;         // E 쿨타임 제로화
+            rCooldownTicks = 0;         // R 쿨타임 제로화
+
+            wBuffTicks = 0;             // W 지속 버프 강제 종료
+            playerShield = 0;           // E 보호막 내구도 리셋
+            eShieldDurationTicks = 0;   // E 보호막 유지시간 타이머 리셋
+            playerSkySwords.Clear();    // 하늘에 남아있던 R 궁극기 검 객체 리스트 완전 소멸
             player.X = 180;
             player.Y = ClientSize.Height - 118;
             player.TargetX = player.X;
@@ -415,6 +513,8 @@ namespace DebugHeroFileDungeonRPG
             }
             player.Mp -= mpCost;
 
+            PlayerMovementSystem.StartSkillAnimation(player, slot);
+
             if (slot == 3)
             {
                 player.DefenseTicks = 100;
@@ -435,6 +535,13 @@ namespace DebugHeroFileDungeonRPG
             float originX = GetMovingAttackOriginX(dir);
             int damage = slot == 0 ? 30 + player.Level * 8 : slot == 1 ? 22 + player.Level * 6 : 74 + player.Level * 14;
             damage += (player.WeaponLevel - 1) * (slot == 2 ? 18 : slot == 1 ? 9 : 7);
+            // ==========================================================
+            // [W 버프 공격력 연동] 평타(Q) 및 스킬 공격 대미지 1.5배 증폭 인젝션
+            // ==========================================================
+            if (wBuffTicks > 0)
+            {
+                damage = (int)(damage * 1.5f);
+            }
             Color color = slot == 0 ? Color.FromArgb(80, 190, 255) : slot == 1 ? Color.FromArgb(80, 255, 130) : Color.FromArgb(255, 210, 60);
             float startX = originX + dir * 34;
             float endX = originX + dir * range;
@@ -519,6 +626,100 @@ namespace DebugHeroFileDungeonRPG
             }
 
             TryBeep(520 + slot * 130, 45);
+        }
+
+        private void StartStage10Cutscene()
+        {
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+            // 1. 추천 포맷인 .wmv 경로를 1순위로 탐색합니다.
+            string videoPath = Path.Combine(baseDir, "Assets", "UI", "Illegal_cutscene.wmv");
+
+            // 2. 만약 아직 .mp4 파일만 있다면 mp4라도 서치하도록 예비 경로 보정
+            if (!File.Exists(videoPath))
+            {
+                videoPath = Path.Combine(baseDir, "Assets", "UI", "Illegal_cutscene.mp4");
+            }
+
+            // 파일이 폴더에 실제로 존재할 때 진입
+            if (File.Exists(videoPath))
+            {
+                // 💡 [핵심] mciSendString 명령은 장치를 여는 데 성공하면 정확히 '0'을 반환합니다.
+                int openResult = mciSendString($"open \"{videoPath}\" type mpegvideo alias Stage10Video style child parent {this.Handle}", null, 0, IntPtr.Zero);
+
+                // 코덱이 정상적으로 존재하여 영상을 여는 데 완벽히 성공했을 때만 컷씬 모드를 가동합니다.
+                if (openResult == 0)
+                {
+                    mciSendString($"put Stage10Video window at 0 0 {ClientSize.Width} {ClientSize.Height}", null, 0, IntPtr.Zero);
+                    mciSendString("play Stage10Video", null, 0, IntPtr.Zero);
+
+                    cutsceneTicks = 480; // 8초 상영 타이머 가동
+                    screen = ScreenMode.Cutscene;
+                    return; // 정상 흐름 종료
+                }
+            }
+
+            // ==========================================================
+            // 파일이 없거나, 코덱이 미설치되어 비디오 오픈에 실패(openResult != 0)했다면
+            // 화면을 굳기 만들지 않고 즉시 최종 보스 결전장으로 바로 강제 워프시킵니다
+            // ==========================================================
+            InitializeStage10BossFight();
+        }
+
+        // ==========================================================
+        // 컷씬 종료 시 장치 디얼로케이션 마감 처리기
+        // ==========================================================
+        private void EndStage10Cutscene()
+        {
+            mciSendString("stop Stage10Video", null, 0, IntPtr.Zero);
+            mciSendString("close Stage10Video", null, 0, IntPtr.Zero);
+
+            // 비디오 하드웨어가 꺼졌으므로 실제 10스테이지 전투 필드를 엽니다.
+            InitializeStage10BossFight();
+        }
+
+        // ==========================================================
+        // 컷씬 이후 최종 보스전 정식 빌더
+        // ==========================================================
+        private void InitializeStage10BossFight()
+        {
+            currentStage = 10;
+            StageInfo st = stages[9];
+
+            enemies.Clear();
+            effects.Clear();
+            weaponDrops.Clear();
+            draggedWeaponDrop = null;
+            bossRuntime.Reset(currentStage);
+            stage1BossPhase = false;
+
+            player.Hp = player.MaxHp;
+            player.Mp = player.MaxMp;
+            player.SystemStability = 100;
+
+            wCooldownTicks = 0; eCooldownTicks = 0; rCooldownTicks = 0;
+            wBuffTicks = 0; playerShield = 0; eShieldDurationTicks = 0;
+            playerSkySwords.Clear();
+
+            player.X = 180;
+            player.Y = ClientSize.Height - 118;
+            player.TargetX = player.X;
+            player.TargetY = player.Y;
+            player.MoveVelocityX = 0f;
+            player.MoveVelocityY = 0f;
+            stageTime = 0;
+            cameraX = 0;
+            stageNpcHintClosed = true; // 최종전 몰입을 위해 도우미 대화 상자는 가려줍니다.
+            firstDesktopNotice = false;
+
+            stageBossPhase = true;
+            screen = ScreenMode.Stage;
+
+            enemies.Add(StageEnemyFactory.CreateBoss(st, Math.Max(760, ClientSize.Width - 360), ClientSize.Height, stages.Count));
+            string bossText = $"STAGE 10 최종 결전 개시: {st.BossName}";
+            effects.Add(new Effect("text", player.X + 290, player.Y - 120, player.X + 290, player.Y - 120, 100, Color.Red, bossText));
+
+            TryBeep(760, 120);
         }
 
     }
