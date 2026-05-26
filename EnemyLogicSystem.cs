@@ -62,18 +62,24 @@ namespace DebugHeroFileDungeonRPG
                     if (bossPhase) bossRuntime.Update(currentStage, m, player, effects, client, mapWidth);
                 }
                 if (m.HitFlash > 0) m.HitFlash--;
-                if (m.Bounds.IntersectsWith(player.Bounds) && tick % 28 == 0)
+                // 일반 몸빵 충돌 주기 조정 및 계수 대폭 상향
+                if (m.Bounds.IntersectsWith(player.Bounds) && tick % 20 == 0)
                 {
-                    int damage = Math.Max(2, m.Attack - 2);
-                    if (player.DefenseTicks > 0) damage = Math.Max(1, damage / 3);
+                    //  몬스터 공격력의 무려 2.5배를 다이렉트로 관통 대미지로 주입!
+                    int damage = Math.Max(25, (int)(m.Attack * 2.5f));
+                    if (player.DefenseTicks > 0) damage = Math.Max(5, damage / 2); // 방어 시 경감율 축소
+
                     player.Hp -= damage;
-                    player.SystemStability = Math.Max(0, player.SystemStability - 1);
-                    effects.Add(new Effect("text", player.X, player.Y - 70, player.X, player.Y - 70, 34, Color.OrangeRed, "-" + damage));
+                    player.SystemStability = Math.Max(0, player.SystemStability - 3); // 안정성 파괴 지수 상향
+
+                    effects.Add(new Effect("text", player.X, player.Y - 70, player.X, player.Y - 70, 34, Color.OrangeRed, "CRITICAL -" + damage));
                     effects.Add(new Effect("spark", player.X, player.Y - 32, player.X, player.Y - 32, 22, Color.Red, ""));
+
                     if (player.Hp <= 0)
                     {
-                        player.Hp = player.MaxHp;
-                        result.PlayerReturnedToStart = true;
+                        // player.Hp = player.MaxHp 복구 코드를 완전히 제거하여 즉시 0 이하 상태로 타이머 틱에 전달, 
+                        // MainForm 최하단 예외 필터를 통해 바탕화면으로 즉각 영구 사출(퇴장)되게 연동합니다.
+                        player.Hp = 0;
                     }
                 }
             }

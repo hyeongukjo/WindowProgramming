@@ -21,6 +21,14 @@ namespace DebugHeroFileDungeonRPG
 
         private void MainForm_KeyDown(object sender, KeyEventArgs e)
         {
+            if (screen == ScreenMode.StartMenu)
+            {
+                if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Space) StartNewGameFromAdminMenu();
+                else if (e.KeyCode == Keys.C) ContinueFromAdminMenu();
+                else if (e.KeyCode == Keys.Escape) Close();
+                return;
+            }
+
             if (screen == ScreenMode.Boot)
             {
                 if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Space) screen = ScreenMode.AssistantIntro;
@@ -126,6 +134,48 @@ namespace DebugHeroFileDungeonRPG
                     finalInput += e.KeyChar;
                     e.Handled = true;
                 }
+            }
+        }
+
+        protected override void OnMouseClick(MouseEventArgs e)
+        {
+            base.OnMouseClick(e);
+            Point mousePos = e.Location;
+
+            // ==========================================================
+            //  첫 화면(Admin 시작 메뉴) 투명 버튼 좌표 클릭 판정 
+            // ==========================================================
+            if (screen == ScreenMode.StartMenu)
+            {
+                for (int i = 0; i < buttons.Count; i++)
+                {
+                    var btn = buttons[i];
+                    if (btn.Bounds.Contains(mousePos))
+                    {
+                        if (btn.Action == "adminStart") StartNewGameFromAdminMenu();
+                        else if (btn.Action == "adminContinue") ContinueFromAdminMenu();
+                        else if (btn.Action == "adminExit") Close();
+                        return;
+                    }
+                }
+            }
+
+            // ==========================================================
+            // 스테이지 클리어 정산 팝업창 '확인' 버튼 클릭 제어 필터
+            // ==========================================================
+            if (screen == ScreenMode.Stage && showStageClearPopup)
+            {
+                // 화면에 뜬 팝업창 확인 버튼 영역을 마우스로 정확히 눌렀다면
+                if (popupConfirmBtnBounds.Contains(mousePos))
+                {
+                    showStageClearPopup = false; // 팝업창을 닫고 장벽 해제
+                    ClearCurrentStage();         // 안전하게 정식 NPC 대화 시퀀스로 이관
+                    TryBeep(880, 70);            // 딸깍 클릭음 피드백
+                    return;
+                }
+
+                // 팝업창이 활성화되어 있는 동안에는 다른 빈 땅을 눌러도 무반응 처리 
+                return;
             }
         }
 

@@ -22,6 +22,9 @@ namespace DebugHeroFileDungeonRPG
 
             buttons.Clear();
 
+            if (screen == ScreenMode.StartMenu) DrawAdminStartMenu(g);
+          
+
             if (screen == ScreenMode.Boot) DrawBoot(g);
             else if (screen == ScreenMode.AssistantIntro) DrawAssistantIntro(g);
             else if (screen == ScreenMode.ProfileSetup) DrawProfileSetup(g);
@@ -220,21 +223,70 @@ namespace DebugHeroFileDungeonRPG
         {
             StageInfo st = stages[currentStage - 1];
             int mapWidth = GetStageMapWidth(st);
-            Renderer.DrawStageBackground(g, ClientRectangle, st, cameraX, stageBossPhase, mapWidth);
-            using (Font f = Renderer.F(10f, FontStyle.Bold))
-            using (SolidBrush b = new SolidBrush(Color.White))
-            using (SolidBrush bg = new SolidBrush(Color.FromArgb(130, 0, 0, 0)))
+
+          
+            if (stageBossPhase)
             {
-                Rectangle top = new Rectangle(250, 14, ClientSize.Width - 500, 48);
-                g.FillRectangle(bg, top);
-                string stageTitle = "STAGE " + st.Index.ToString("00") + "  " + st.Name + "  |  " + st.Objective;
-                if (stageBossPhase) stageTitle = "STAGE " + st.Index.ToString("00") + "  보스방  |  " + st.BossName + " 격리 작전";
-                g.DrawString(stageTitle, f, b, top, Renderer.Center());
+                bool shouldShake = false;
+
+                // 현재 맵에 활성화되어 살아있는 보스 객체를 탐색
+                GameEntity currentBoss = enemies.Find(e => e.IsBoss && e.Hp > 0);
+
+                if (currentBoss != null)
+                {
+                    // 1. 1번 보스 (Driver-K): 50% 리소스 부족 디버그 팝업 패턴이 켜져 있을 때
+                    if (currentBoss.Name.Contains("Driver-K") && bossManager.IsResourcePatternActive)
+                    {
+                        shouldShake = true;
+                    }
+
+                    // 2. 2번 보스 (High-Kernel): 75%/25%(AccessDenied), 50%(SystemWipe), 10%(Enrage) 모든 특수기믹일 때
+                    if (currentBoss.Name.Contains("High-Kernel") &&
+                       (bossManager.IsAccessDeniedActive ||  bossManager.IsEnrageActive))
+                    {
+                        shouldShake = true;
+                    }
+
+                    // 3. 4번 보스 (Exception Queen): 75%/25%(NullRef), 10%(StackOverflow) 패턴일 때 
+                    // (※ 지시사항에 따라 50% 패턴인 IsTryCatchActive일 때는 흔들리지 않도록 원천 제외)
+                    if ((currentBoss.Name.Contains("Exception Queen") || currentBoss.Name.Contains("Exception_Queen")) &&
+                       (bossManager.IsNullRefActive || bossManager.IsStackOverflowActive))
+                    {
+                        shouldShake = true;
+                    }
+                }
+
+                // 흔들림 조건 충족 시 Graphics 도화지 자체를 무작위로 뒤흔듦 (-5 ~ +5 픽셀 강도)
+                if (shouldShake)
+                {
+                    int shakeX = random.Next(-5, 6);
+                    int shakeY = random.Next(-5, 6);
+                    g.TranslateTransform(shakeX, shakeY);
+                }
             }
+            // ==========================================================
+
+            // 💡 배경 그리기 시작 (이 아래로는 기존에 완성해두신 코드와 100% 동일합니다)
+            Renderer.DrawStageBackground(g, ClientRectangle, st, cameraX, stageBossPhase, mapWidth);
+
+            if (!stageBossPhase)
+            {
+                using (Font f = Renderer.F(10f, FontStyle.Bold))
+                using (SolidBrush b = new SolidBrush(Color.White))
+                using (SolidBrush bg = new SolidBrush(Color.FromArgb(130, 0, 0, 0)))
+                {
+                    Rectangle top = new Rectangle(250, 14, ClientSize.Width - 500, 48);
+                    g.FillRectangle(bg, top);
+                    string stageTitle = "STAGE " + st.Index.ToString("00") + "  " + st.Name + "  |  " + st.Objective;
+                    g.DrawString(stageTitle, f, b, top, Renderer.Center());
+                }
+            }
+
             DrawHud(g, st);
             foreach (GameEntity m in enemies) if (m.Hp > 0) Renderer.DrawEnemy(g, m, cameraX);
             for (int i = 0; i < weaponDrops.Count; i++) Renderer.DrawWeaponUpgradeFile(g, weaponDrops[i], cameraX);
             bossRuntime.DrawOverlay(g, currentStage, stageBossPhase, cameraX, ClientSize);
+
             if (stageBossPhase)
             {
                 DrawCustomBossGimmicks(g);
@@ -244,9 +296,124 @@ namespace DebugHeroFileDungeonRPG
                     Renderer.DrawBossGlobalUI(g, currentBoss, ClientSize);
                 }
             }
+
+            bossRuntime.DrawOverlay(g, currentStage, stageBossPhase, cameraX, ClientSize);
+            if (stageBossPhase)
+            {
+                DrawCustomBossGimmicks(g);
+                GameEntity currentBoss = enemies.Find(e => e.IsBoss);
+                if (currentBoss != null)
+                {
+                    // 1. 진짜 보스 본체의 레이드 스타일 상단 대형 바 출력
+                    Renderer.DrawBossGlobalUI(g, currentBoss, ClientSize);
+
+                    // ==========================================================
+                    // 💡 [3번 수정] 1% 최종 페이즈 진입 시 보스바 하단에 분신 전용 보라색 체력바 및 타이머 연동
+                    // ==========================================================
+                    if (currentBoss.Name.Contains("Binny") && bossManager.IsIllusionActive && bossManager.BinnyClone != null)
+                    {
+                        // 본체 체력바(Y: 45, H: 24) 바로 아랫단 지점(Y: 74)에 정확히 밀착 정렬
+                        Rectangle cloneBarRect = new Rectangle(ClientSize.Width / 2 - 350, 74, 700, 16);
+
+                        // [요구사항 원칙 준수] 진짜 보스(빨간색)와 완벽히 분리되도록 보라색(Color.Purple) HP 바 출력
+                        Renderer.DrawBar(g, cloneBarRect, bossManager.BinnyClone.Hp, bossManager.BinnyClone.MaxHp, Color.Purple);
+
+                        // 외곽 화이트 테두리 선 마감
+                        using (Pen borderPen = new Pen(Color.White, 1.5f))
+                            g.DrawRectangle(borderPen, cloneBarRect);
+
+                        using (Font f = Renderer.F(10f, FontStyle.Bold))
+                        {
+                            string cloneHpText = $"Illegal_Binny 분신 개체 (0번 인덱스)  [ HP : {bossManager.BinnyClone.Hp} / {bossManager.BinnyClone.MaxHp} ]";
+                            g.DrawString(cloneHpText, f, Brushes.White, cloneBarRect, Renderer.Center());
+
+                            // 12초 타임어택 제한시간 역산 엔진 디스플레이 (30 FPS 기준 초 단위 환산)
+                            float secLeft = bossManager.IllusionTimer / 30f;
+                            if (secLeft < 0f) secLeft = 0f;
+                            string timerDisplay = $"⏳ 가비지 컬렉션 동기화 파쇄 제한시간: {secLeft:0.0}초";
+
+                            // 멀티 사살 룰: 보스나 분신 중 한쪽 격파 시 발동되는 3초 카운트다운 실시간 텍스트 결합
+                            if (bossManager.DualDeathTimer > 0)
+                            {
+                                float syncLeft = bossManager.DualDeathTimer / 30f;
+                                if (syncLeft < 0f) syncLeft = 0f;
+                                timerDisplay += $"  |  🚨 양방향 소거 메모리 링크 마감: {syncLeft:0.0}초 경고!!";
+                            }
+
+                            g.DrawString(timerDisplay, f, Brushes.Magenta, ClientSize.Width / 2, cloneBarRect.Bottom + 12, Renderer.Center());
+                        }
+                    }
+                }
+                for (int i = 0; i < effects.Count; i++) Renderer.DrawEffect(g, effects[i], cameraX);
+                if (!stageNpcHintClosed) DrawStageNpcHint(g, st);
+
+                if (showStageClearPopup)
+                {
+                    int winW = 500; int winH = 280;
+                    int winX = (ClientSize.Width - winW) / 2;
+                    int winY = (ClientSize.Height - winH) / 2;
+
+                    // 1. 배경 이미지 드로우 (기존 코드 유지)
+                    if (Renderer.Img_AlarmBg != null) g.DrawImage(Renderer.Img_AlarmBg, winX, winY, winW, winH);
+
+                    // ----------------------------------------------------------
+                    // 🔥 [보정 모듈 주입] 글자가 번지고 흐려지는 현상 원천 차단!
+                    // GDI+의 텍스트 렌더링 힌트를 'ClearTypeGridFit'으로 격상시킵니다.
+                    // ----------------------------------------------------------
+                    g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                    // ----------------------------------------------------------
+
+                    // 2. 텍스트 정보 매핑 (이제 번짐 없이 완벽하게 칼출력됩니다)
+                    using (Font mainFont = Renderer.F(16f, FontStyle.Bold))
+                    using (Font subFont = Renderer.F(11.5f, FontStyle.Regular))
+                    {
+                        // 타이틀바 텍스트
+                        g.DrawString("STAGE CLEAN 리포트 전송 완료", subFont, Brushes.White, winX + 12, winY + 8);
+
+                        // 본문 메시지
+                        g.DrawString($"STAGE {currentStage} SYSTEM COMPLETED!", mainFont, Brushes.MidnightBlue, winX + winW / 2, winY + 50, Renderer.Center());
+
+                        string reportText = $"▶ 이진 가비지 데이터 소멸 완료\r\n" +
+                                            $"▶ 업그레이드 인덱스 파일 : [CORE_UPGRADE.bin]\r\n" +
+                                            $"▶ 복구 공헌도 추가 보상 : +{popupBonusCoins} COINS";
+                        g.DrawString(reportText, subFont, Brushes.Black, winX + 55, winY + 115);
+                    }
+
+                    // 3. 확인 버튼 드로우 및 문자열 배치 (기존 코드 유지)
+                    int btnW = 120; int btnH = 36;
+                    popupConfirmBtnBounds = new Rectangle((winX + winW / 2) - btnW / 2, winY + winH - 60, btnW, btnH);
+                    if (Renderer.Img_PopupBtn != null) g.DrawImage(Renderer.Img_PopupBtn, popupConfirmBtnBounds);
+
+                    using (Font btnFont = Renderer.F(11f, FontStyle.Bold))
+                    {
+                        g.DrawString("확인 (OK)", btnFont, Brushes.Black, popupConfirmBtnBounds, Renderer.Center());
+                    }
+                }
+            }
+
+
             bool playerMovingNow = Math.Abs(player.TargetX - player.X) > 3.5f || Math.Abs(player.TargetY - player.Y) > 3.5f ||
                                    Math.Abs(player.MoveVelocityX) > 0.25f || Math.Abs(player.MoveVelocityY) > 0.25f;
+            System.Drawing.Drawing2D.GraphicsState playerScaleState = g.Save();
+
+            // 화면 기준 플레이어의 발바닥 좌표를 축(Pivot)으로 잡습니다.
+            float pivotX = player.X - cameraX;
+            float pivotY = player.Y;
+
+            // 1. 발바닥 위치로 중심 이동 -> 2. 항상 크기 0.8배(20% 축소) -> 3. 다시 중심 복귀
+            g.TranslateTransform(pivotX, pivotY);
+            g.ScaleTransform(0.8f, 0.8f);
+            g.TranslateTransform(-pivotX, -pivotY);
+
+            // 축소 배율이 적용된 도화지에 대기/이동 스프라이트를 렌더링합니다.
             Renderer.DrawRecoveryProgram(g, player, true, cameraX, playerMovingNow);
+
+            // 플레이어 렌더링이 완료되었으므로 축소 배율을 해제하고 원래 배율(1.0배)로 복원합니다.
+            if (playerScaleState != null)
+            {
+                g.Restore(playerScaleState);
+            }
+
             for (int i = 0; i < effects.Count; i++) Renderer.DrawEffect(g, effects[i], cameraX);
             if (!stageNpcHintClosed) DrawStageNpcHint(g, st);
         }
@@ -494,6 +661,13 @@ namespace DebugHeroFileDungeonRPG
                     }
                 }
             }
+
+        }
+       
+        private void DrawAdminStartMenu(Graphics g)
+        {
+            
+            StartMenuScreen.Draw(g, ClientRectangle, buttons, GameSaveSystem.HasSave());
         }
 
     }
