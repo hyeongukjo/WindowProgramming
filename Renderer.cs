@@ -23,6 +23,7 @@ namespace DebugHeroFileDungeonRPG
         private static readonly Dictionary<string, Image> playerMotionSheetCache = new Dictionary<string, Image>();
         private static readonly Dictionary<string, Rectangle> playerActionTrimCache = new Dictionary<string, Rectangle>();
         private static Image playerStillSwordImage;
+        private static Image playerShieldImage;
         private static Image normalMonsterSheet = null;
 
 
@@ -1140,7 +1141,92 @@ namespace DebugHeroFileDungeonRPG
 
             return playerStillSwordImage;
         }
+        private static Rectangle GetPlayerShieldSourceRect(Image sheet, int frame)
+        {
+            int columns = 3;
+            int rows = 3;
+            int totalFrames = columns * rows;
 
+            frame %= totalFrames;
+            if (frame < 0) frame = 0;
+
+            int col = frame % columns;
+            int row = frame / columns;
+
+            int x1 = (int)Math.Round(col * sheet.Width / (double)columns);
+            int x2 = (int)Math.Round((col + 1) * sheet.Width / (double)columns);
+            int y1 = (int)Math.Round(row * sheet.Height / (double)rows);
+            int y2 = (int)Math.Round((row + 1) * sheet.Height / (double)rows);
+
+            // 칸 구분선이 같이 잘리는 것 방지
+            int padding = 3;
+
+            return Rectangle.FromLTRB(
+                x1 + padding,
+                y1 + padding,
+                x2 - padding,
+                y2 - padding
+            );
+        }
+        private static Image GetPlayerShieldImage()
+        {
+            if (playerShieldImage != null)
+                return playerShieldImage;
+
+            string path = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "Assets",
+                "Caracters",
+                "Player",
+                "player_shield.png"
+            );
+
+            if (File.Exists(path))
+                playerShieldImage = Image.FromFile(path);
+
+            return playerShieldImage;
+        }
+        private static bool DrawPlayerShieldOverlay(Graphics g, PlayerState p, float drawX, float baseY)
+        {
+            Image shield = GetPlayerShieldImage();
+
+            if (shield == null)
+                return false;
+
+            // DefenseTicks = 100에서 시작한다고 가정
+            // 시간이 지날수록 0~8번 프레임 순서대로 재생
+            int elapsed = Math.Max(0, 100 - p.DefenseTicks);
+            int frame = (elapsed / 4) % 9;
+
+            Rectangle src = GetPlayerShieldSourceRect(shield, frame);
+
+            // 크기 조절
+            float scale = 0.60f;
+
+            int drawW = (int)(src.Width * scale);
+            int drawH = (int)(src.Height * scale);
+
+            // 캐릭터 중심보다 살짝 위에 방어막 중심 배치
+            float shieldCenterY = baseY - 62f;
+
+            Rectangle dst = new Rectangle(
+                (int)(drawX - drawW / 2),
+                (int)(shieldCenterY - drawH / 2),
+                drawW,
+                drawH
+            );
+
+            GraphicsState state = g.Save();
+
+            g.InterpolationMode = InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode = PixelOffsetMode.Half;
+
+            g.DrawImage(shield, dst, src, GraphicsUnit.Pixel);
+
+            g.Restore(state);
+
+            return true;
+        }
         private static void DrawPlayerStillSprite(Graphics g, PlayerState p, float drawX, float baseY, int facing)
         {
             Image img = GetPlayerStillSwordImage();
@@ -1332,11 +1418,11 @@ namespace DebugHeroFileDungeonRPG
                 using (SolidBrush aura = new SolidBrush(Color.FromArgb(walking ? 24 : 18, 70, 180, 255)))
                     g.FillEllipse(aura, (int)drawX - 54, (int)baseY - 112, 108, 120);
             }
-            if (p.DefenseTicks > 0)
+            /*if (p.DefenseTicks > 0)
             {
                 using (Pen shield = new Pen(Color.FromArgb(150, 120, 210, 255), 3f))
                     g.DrawEllipse(shield, drawX - 58, baseY - 120, 116, 130);
-            }
+            }*/
             if (p.ActionState == PlayerActionState.Die)
             {
                 DrawPlayerMotionFrame(g, p, drawX, baseY, facing, "player_gameover.png");
@@ -1357,7 +1443,10 @@ namespace DebugHeroFileDungeonRPG
             {
                 DrawPlayerStillSprite(g, p, drawX, baseY + bob, facing);
             }
-
+            if (p.DefenseTicks > 0)
+            {
+                DrawPlayerShieldOverlay(g, p, drawX, baseY);
+            }
             using (Font f = F(7.5f, FontStyle.Bold))
             using (SolidBrush b = new SolidBrush(Color.White))
             using (SolidBrush back = new SolidBrush(Color.FromArgb(150, 0, 0, 0)))
