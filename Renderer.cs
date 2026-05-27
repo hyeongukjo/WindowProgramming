@@ -18,7 +18,11 @@ namespace DebugHeroFileDungeonRPG
         private static Image playerAgentSheet = null;
         private static Image playerAgentIdleFrame = null;
         private static readonly Image[] playerAgentWalkFrames = new Image[8];
-       
+        private static System.Drawing.Text.PrivateFontCollection fontCollection;
+        private static FontFamily customFontFamily;
+        public static Image Img_AlarmBg = null;
+        public static Image Img_PopupBtn = null;
+
         // 보스 이미지
         public static Image ImgBoss_DriverK;
         public static Image ImgBoss_BSOD;
@@ -28,6 +32,7 @@ namespace DebugHeroFileDungeonRPG
         private static readonly Dictionary<string, Image> playerSpriteSheets = new Dictionary<string, Image>();
         private static readonly Dictionary<string, Image> playerActionSheetCache = new Dictionary<string, Image>();
         private static readonly Dictionary<string, Image> playerMotionSheetCache = new Dictionary<string, Image>();
+        private static readonly Dictionary<string, Rectangle> playerActionTrimCache = new Dictionary<string, Rectangle>();
         private static Image playerStillSwordImage;
         private static Image normalMonsterSheet = null;
         // 몬스터 이미지 호출 관련 코드 //
@@ -40,12 +45,48 @@ namespace DebugHeroFileDungeonRPG
         public static Image Img_Meteor;
         public static Image Img_Meteor2;
         public static Image Img_Safezone;
+        public static Image Img_IceSword;
+        public static Image Img_FireSword;
+        public static Image Img_LightningSword;
+
+        static Renderer()
+        {
+            try
+            {
+                fontCollection = new System.Drawing.Text.PrivateFontCollection();
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+           
+                string alarmPath = Path.Combine(baseDir, "Assets", "UI", "SystemAlarmBlueCancel.png");
+                if (File.Exists(alarmPath)) Img_AlarmBg = Image.FromFile(alarmPath);
+
+                string btnPath = Path.Combine(baseDir, "Assets", "UI", "button.png");
+                if (File.Exists(btnPath)) Img_PopupBtn = Image.FromFile(btnPath);
+
+                string fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "custom_font.ttf");
+
+                if (File.Exists(fontPath))
+                {
+                    fontCollection.AddFontFile(fontPath);
+                    customFontFamily = fontCollection.Families[0]; // 로드된 BM JUA 패밀리 선점
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("폰트 로드 실패: " + ex.Message);
+            }
+        }
 
 
 
         public static Font F(float size, FontStyle style)
         {
-            return new Font("Malgun Gothic", size, style, GraphicsUnit.Point);
+            if (customFontFamily != null)
+            {
+                return new Font(customFontFamily, size, style);
+            }
+            // 폰트 파일 유실 시 시스템 기본 맑은 고딕으로 안전 무대 백업
+            return new Font("Malgun Gothic", size, style);
         }
 
         public static StringFormat Center()
@@ -929,13 +970,7 @@ namespace DebugHeroFileDungeonRPG
                 int w = Math.Max(1, (int)(img.Width * scale));
                 int h = Math.Max(1, (int)(img.Height * scale));
 
-                Rectangle dst = new Rectangle(
-                    r.X + (r.Width - w) / 2,
-                    r.Y + (r.Height - h) / 2 + NpcDrawYOffset,
-                    w,
-                    h
-                );
-
+                Rectangle dst = new Rectangle(r.X + (r.Width - w) / 2,r.Y + (r.Height - h) / 2 + NpcDrawYOffset,w,h);
                 g.DrawImage(img, dst);
 
                 g.InterpolationMode = oldInterpolation;
@@ -1211,8 +1246,6 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
 
-            // 공격 자세는 실제 공격 이펙트에서 캐릭터를 다시 그리지 않도록 했지만,
-            // 혹시 다른 화면에서 호출되면 원본 시트의 해당 자세를 사용합니다.
             Image sheet = GetPlayerAgentSheet();
             if (sheet == null)
             {
@@ -1284,43 +1317,131 @@ namespace DebugHeroFileDungeonRPG
 
         private static Rectangle GetPlayerActionSourceRect(Image sheet, int skillIndex, int frame)
         {
-            // 액션 시트 고정 구조:
-            // 3행 x 5열
-            // 1행: 4프레임 사용, 5번째 칸은 미사용
-            // 2행: 5프레임 사용
-            // 3행: 5프레임 사용
+           
             int totalRows = 3;
             int totalColumns = 5;
 
-            int row = 0;
-            int usableFrameCount = 4;
+            int row;
 
             if (skillIndex == 0)
-            {
                 row = 0;
-                usableFrameCount = 4;
-            }
             else if (skillIndex == 1)
-            {
                 row = 1;
-                usableFrameCount = 5;
-            }
             else
-            {
                 row = 2;
-                usableFrameCount = 5;
-            }
+
+            int usableFrameCount = 5;
 
             if (frame < 0) frame = 0;
             if (frame >= usableFrameCount) frame = usableFrameCount - 1;
 
-            int x1 = (int)Math.Round(frame * sheet.Width / (double)totalColumns);
-            int x2 = (int)Math.Round((frame + 1) * sheet.Width / (double)totalColumns);
+            int cellX1 = (int)Math.Round(frame * sheet.Width / (double)totalColumns);
+            int cellX2 = (int)Math.Round((frame + 1) * sheet.Width / (double)totalColumns);
 
-            int y1 = (int)Math.Round(row * sheet.Height / (double)totalRows);
-            int y2 = (int)Math.Round((row + 1) * sheet.Height / (double)totalRows);
+            int cellY1 = (int)Math.Round(row * sheet.Height / (double)totalRows);
+            int cellY2 = (int)Math.Round((row + 1) * sheet.Height / (double)totalRows);
 
-            return new Rectangle(x1, y1, x2 - x1, y2 - y1);
+            Rectangle cell = Rectangle.FromLTRB(cellX1, cellY1, cellX2, cellY2);
+
+            string cacheKey = sheet.GetHashCode() + "_" + skillIndex + "_" + frame + "_" + sheet.Width + "x" + sheet.Height;
+
+            if (playerActionTrimCache.TryGetValue(cacheKey, out Rectangle cached))
+                return cached;
+
+            Bitmap bmp = sheet as Bitmap;
+
+            if (bmp == null)
+            {
+                playerActionTrimCache[cacheKey] = cell;
+                return cell;
+            }
+
+            bool hasTransparentBackground = HasTransparentPixel(bmp, cell);
+
+            int minX = cell.Right - 1;
+            int maxX = cell.Left;
+            int minY = cell.Bottom - 1;
+            int maxY = cell.Top;
+            bool found = false;
+
+            for (int y = cell.Top; y < cell.Bottom; y++)
+            {
+                for (int x = cell.Left; x < cell.Right; x++)
+                {
+                    Color c = bmp.GetPixel(x, y);
+
+                    if (!IsVisibleActionPixel(c, hasTransparentBackground))
+                        continue;
+
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+
+                    found = true;
+                }
+            }
+
+            if (!found)
+            {
+                playerActionTrimCache[cacheKey] = cell;
+                return cell;
+            }
+
+            // 핵심 보정값
+            // 오른쪽과 위쪽만 더 보여주기.
+            int padLeft = 0;
+            int padRight = 16;
+            int padTop = 24;
+            int padBottom = 2;
+
+            int left = minX - padLeft;
+            int right = maxX + 1 + padRight;
+            int top = minY - padTop;
+            int bottom = maxY + 1 + padBottom;
+
+            // 옆 프레임이 섞이지 않도록 기본적으로 현재 칸 안에서만 제한
+            if (left < cell.Left) left = cell.Left;
+            if (right > cell.Right) right = cell.Right;
+            if (top < cell.Top) top = cell.Top;
+            if (bottom > cell.Bottom) bottom = cell.Bottom;
+
+            if (right <= left) right = left + 1;
+            if (bottom <= top) bottom = top + 1;
+
+            Rectangle trimmed = Rectangle.FromLTRB(left, top, right, bottom);
+
+            playerActionTrimCache[cacheKey] = trimmed;
+            return trimmed;
+        }
+
+        private static bool HasTransparentPixel(Bitmap bmp, Rectangle area)
+        {
+            for (int y = area.Top; y < area.Bottom; y++)
+            {
+                for (int x = area.Left; x < area.Right; x++)
+                {
+                    if (bmp.GetPixel(x, y).A < 250)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsVisibleActionPixel(Color c, bool hasTransparentBackground)
+        {
+            if (c.A <= 10)
+                return false;
+
+            // 투명 배경 PNG라면 검은 머리/검은 외곽선도 실제 캐릭터로 인정
+            if (hasTransparentBackground)
+                return true;
+
+            // 검은 배경 이미지라면 거의 검은색은 배경으로 취급
+            bool nearBlack = c.R <= 8 && c.G <= 8 && c.B <= 8;
+
+            return !nearBlack;
         }
         private static Image GetPlayerStillSwordImage()
         {
@@ -1435,9 +1556,11 @@ namespace DebugHeroFileDungeonRPG
             int drawW = (int)(src.Width * scale);
             int drawH = (int)(src.Height * scale);
 
+            float actionCenterY = baseY - 55f;
+
             Rectangle dst = new Rectangle(
                 (int)(drawX - drawW / 2),
-                (int)(baseY - drawH + 12),
+                (int)(actionCenterY - drawH / 2),
                 drawW,
                 drawH
             );
@@ -1480,9 +1603,11 @@ namespace DebugHeroFileDungeonRPG
             int drawW = (int)(src.Width * scale);
             int drawH = (int)(src.Height * scale);
 
+            float actionCenterY = baseY - 55f;
+
             Rectangle dst = new Rectangle(
                 (int)(drawX - drawW / 2),
-                (int)(baseY - drawH),
+                (int)(actionCenterY - drawH / 2),
                 drawW,
                 drawH
             );
@@ -2325,7 +2450,7 @@ namespace DebugHeroFileDungeonRPG
                     int srcW = frameW;
                     int srcH = totalH;
 
-                    // 💡 [조절 포인트] 모션 인덱스별 정밀 슬라이싱
+                    // [조절 포인트] 모션 인덱스별 정밀 슬라이싱 (유저 제공 코드 유지)
                     if (e.MotionIndex == 0) // 오른쪽 바라봄
                     {
                         srcX = 0;      // 시작 위치
@@ -2333,7 +2458,6 @@ namespace DebugHeroFileDungeonRPG
                     }
                     else if (e.MotionIndex == 1) // 왼쪽 바라봄
                     {
-                        // 👈 왼쪽 바라볼 때의 좌표 조정 (예: 10px 밀고 10px 줄이기)
                         srcX = frameW - 50;
                         srcW = 511;
                     }
@@ -2346,15 +2470,43 @@ namespace DebugHeroFileDungeonRPG
                     Rectangle srcRect = new Rectangle(srcX, srcY, srcW, srcH);
                     int centerX = r.X + r.Width / 2;
 
-                    int destW = 347;
-                    int destH = 360;
+                    // ==========================================================
+                    // 💡 [수정 포인트 1] 보스 크기 30% 축소 연산
+                    // 기존: W 347, H 360 -> 수정: 기존값 * 0.7
+                    // ==========================================================
+                    int destW = 243; // (int)(347 * 0.7f)
+                    int destH = 252; // (int)(360 * 0.7f)
 
+                    // 축소된 크기에 맞춰 바닥 정렬 좌표 재계산
                     Rectangle destRect = new Rectangle(centerX - (destW / 2), r.Bottom - destH - 40, destW, destH);
 
+                    // 1. 축소된 보스 본체 그리기
                     g.DrawImage(Renderer.ImgBoss_IllegalBinny, destRect, srcRect, GraphicsUnit.Pixel);
+
+                    // ==========================================================
+                    // 💡 [수정 포인트 2] 검 크기 변경 (보스 키의 절반) 및 재배치
+                    // ==========================================================
+                    if (Renderer.Img_IceSword != null && Renderer.Img_FireSword != null && Renderer.Img_LightningSword != null)
+                    {
+                        // 보스 현재 키(destH=252)의 절반(0.5)으로 검의 키를 설정
+                        int swordH = 252; // 252 / 2
+
+                        // 원본 PNG 비율(408x1419)을 유지하기 위한 가로폭 역산 (126 * 408 / 1419)
+                        int swordW = 72;
+
+                        // 검이 커진 만큼 머리 위 공중 정렬 좌표(Y) 세밀 조정
+                        int swordY = destRect.Y - swordH - 2; // 간격을 20px로 약간 넓힘
+
+                        // [얼음 - 화염 - 번개] 순으로 배치 (간격 55px로 확정)
+                        g.DrawImage(Renderer.Img_IceSword, centerX - 95 - swordW / 2, swordY, swordW, swordH);       // 왼쪽
+                        g.DrawImage(Renderer.Img_FireSword, centerX - swordW / 2, swordY, swordW, swordH);            // 중앙
+                        g.DrawImage(Renderer.Img_LightningSword, centerX + 95 - swordW / 2, swordY, swordW, swordH);  // 오른쪽
+                    }
+                    // ==========================================================
                 }
                 else
                 {
+                    // (유저 제공 에러 예외 처리 코드 유지)
                     using (Font f = F(11f, FontStyle.Bold))
                     using (SolidBrush sb = new SolidBrush(Color.Red))
                     {
@@ -2634,8 +2786,49 @@ namespace DebugHeroFileDungeonRPG
             float x2 = e.X2 - cameraX;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
+            if (e.Kind == "binnyIce" || e.Kind == "binnyFire" || e.Kind == "binnyLight")
+            {
+                Image swordImg = null;
+                if (e.Kind == "binnyIce") swordImg = Renderer.Img_IceSword;
+                else if (e.Kind == "binnyFire") swordImg = Renderer.Img_FireSword;
+                else if (e.Kind == "binnyLight") swordImg = Renderer.Img_LightningSword;
 
-            
+                if (swordImg != null)
+                {
+                    System.Drawing.Drawing2D.GraphicsState state = g.Save();
+
+                    // 2번 보스 메테오처럼 하늘에서 쾅 내려찍는 종적 가속 낙하 수식
+                    float targetY = e.Y;
+                    float currentY = targetY;
+                    if (progress < 0.25f) // 효과 시작 후 25% 시간동안 하늘 위(-400)에서 지면까지 초고속 하강
+                    {
+                        float dropRatio = progress / 0.25f;
+                        currentY = (targetY - 400f) + (400f * dropRatio);
+                    }
+
+                    // 칼날 끝이 바닥을 향하도록 무기 타겟 좌표 이동 후 180도 대반전 회전 매트릭스 가동
+                    g.TranslateTransform(x1, currentY);
+                    g.RotateTransform(180f);
+
+                    // 단일 해상도 원본 비례(408x1419)를 무너뜨리지 않는 축소 크기 할당 (가로 45, 세로 150)
+                    int sw = 45;
+                    int sh = 150;
+
+                    // 스킬 소멸 틱 타임(alpha 계수)에 맞춰 잔상이 부드럽게 투명 블렌딩 아웃되도록 세팅
+                    using (System.Drawing.Imaging.ImageAttributes ia = new System.Drawing.Imaging.ImageAttributes())
+                    {
+                        System.Drawing.Imaging.ColorMatrix cm = new System.Drawing.Imaging.ColorMatrix { Matrix33 = alpha / 255f };
+                        ia.SetColorMatrix(cm);
+
+                        // 회전 중심 정렬 좌표를 보정하기 위해 중심 오프셋 반감 매핑 드로우
+                        g.DrawImage(swordImg, new Rectangle(-sw / 2, 0, sw, sh), 0, 0, swordImg.Width, swordImg.Height, GraphicsUnit.Pixel, ia);
+                    }
+
+                    g.Restore(state);
+                }
+                return; // 기본 공격 드로우 처리가 끝났으므로 즉시 종료
+            }
+
             if (e.Kind == "driveShard")
             {
                 if (Renderer.Img_DiskSprite != null)
@@ -2682,35 +2875,39 @@ namespace DebugHeroFileDungeonRPG
 
 
 
+
+          
             if (e.Kind == "playerSlash")
             {
-                DrawSwordSlash(g, x1, e.Y, x2, e.Y2, e.Color, alpha, progress, e.Text);
+                //// 플레이어 고유의 슬래시 검기 연출 가동
+                //DrawSwordSlash(g, x1, e.Y, x2, e.Y2, e.Color, alpha, progress, e.Text);
                 return;
             }
 
             if (e.Kind == "playerClean" || e.Kind == "playerScan" || e.Kind == "playerDelete")
             {
-                int dir = e.X2 >= e.X ? 1 : -1;
-                bool deleteBeam = e.Kind == "playerDelete";
+                //int dir = e.X2 >= e.X ? 1 : -1;
+                //bool deleteBeam = e.Kind == "playerDelete";
 
-                // 캐릭터는 DrawRecoveryProgram에서 한 번만 그립니다.
-                // 여기서 캐릭터 공격 자세를 또 그리면 화면에 분신처럼 보이므로, 손 위치에서 이펙트만 분사합니다.
-                Color beamColor = deleteBeam ? Color.FromArgb(255, 70, 60) : e.Kind == "playerClean" ? Color.FromArgb(110, 255, 95) : Color.FromArgb(85, 230, 255);
-                float handX = x1 + dir * 42;
-                float handY = e.Y - 64;
-                DrawShimmerBeam(g, handX, handY, x2, e.Y2 - 42, beamColor, alpha, progress, deleteBeam);
+                //// 스킬 종류별 순수 백신 안개 및 지우기 레이저 빔 컬러 추출
+                //Color beamColor = deleteBeam ? Color.FromArgb(255, 70, 60) : e.Kind == "playerClean" ? Color.FromArgb(110, 255, 95) : Color.FromArgb(85, 230, 255);
+                //float handX = x1 + dir * 42;
+                //float handY = e.Y - 64;
 
-                if (!string.IsNullOrEmpty(e.Text))
-                {
-                    using (Font f = F(10f, FontStyle.Bold))
-                    using (SolidBrush shadow = new SolidBrush(Color.FromArgb(ClampAlpha(alpha - 40), 0, 0, 0)))
-                    using (SolidBrush b = new SolidBrush(Color.FromArgb(alpha, beamColor)))
-                    {
-                        RectangleF rr = new RectangleF(handX + dir * 30 - 42, handY - 44, 84, 26);
-                        g.DrawString(e.Text, f, shadow, new RectangleF(rr.X + 1, rr.Y + 1, rr.Width, rr.Height), Center());
-                        g.DrawString(e.Text, f, b, rr, Center());
-                    }
-                }
+                //// 캐릭터의 손끝 포지션에서 오리지널 안개/광선 발사 연산 수행
+                //DrawShimmerBeam(g, handX, handY, x2, e.Y2 - 42, beamColor, alpha, progress, deleteBeam);
+
+                //if (!string.IsNullOrEmpty(e.Text))
+                //{
+                //    using (Font f = F(10f, FontStyle.Bold))
+                //    using (SolidBrush shadow = new SolidBrush(Color.FromArgb(ClampAlpha(alpha - 40), 0, 0, 0)))
+                //    using (SolidBrush b = new SolidBrush(Color.FromArgb(alpha, beamColor)))
+                //    {
+                //        RectangleF rr = new RectangleF(handX + dir * 30 - 42, handY - 44, 84, 26);
+                //        g.DrawString(e.Text, f, shadow, new RectangleF(rr.X + 1, rr.Y + 1, rr.Width, rr.Height), Center());
+                //        g.DrawString(e.Text, f, b, rr, Center());
+                //    }
+                //}
                 return;
             }
 
@@ -2805,19 +3002,19 @@ namespace DebugHeroFileDungeonRPG
             // --------------------------------------------------
             // 현재 MainForm.cs에서 timer.Interval = 33(30 FPS)으로 리미트가 걸려 있으므로,
             // 1초는 정확히 30틱입니다. 30.0f로 나누어 리얼타임 초 단위 소수점 디스플레이를 가동합니다.
-            if (boss.AttackCooldown > 0)
-            {
-                float cooldownSeconds = boss.AttackCooldown / 30.0f;
-                string coolText = $"⚡ 시스템 브레이크 특수 패턴 재충전 중: {cooldownSeconds:0.0}초";
-                Rectangle coolRect = new Rectangle(clientSize.Width / 2 - 220, clientSize.Height - 88, 440, 26);
+            //if (boss.AttackCooldown > 0)
+            //{
+            //    float cooldownSeconds = boss.AttackCooldown / 30.0f;
+            //    string coolText = $"⚡ 시스템 브레이크 특수 패턴 재충전 중: {cooldownSeconds:0.0}초";
+            //    Rectangle coolRect = new Rectangle(clientSize.Width / 2 - 220, clientSize.Height - 88, 440, 26);
 
-                using (SolidBrush bg = new SolidBrush(Color.FromArgb(170, 10, 15, 25))) g.FillRectangle(bg, coolRect);
-                using (Pen p = new Pen(Color.FromArgb(240, 180, 40), 1.5f)) g.DrawRectangle(p, coolRect);
-                using (Font f = F(9.5f, FontStyle.Bold))
-                {
-                    g.DrawString(coolText, f, Brushes.Gold, coolRect, Center());
-                }
-            }
+            //    using (SolidBrush bg = new SolidBrush(Color.FromArgb(170, 10, 15, 25))) g.FillRectangle(bg, coolRect);
+            //    using (Pen p = new Pen(Color.FromArgb(240, 180, 40), 1.5f)) g.DrawRectangle(p, coolRect);
+            //    using (Font f = F(9.5f, FontStyle.Bold))
+            //    {
+            //        g.DrawString(coolText, f, Brushes.Gold, coolRect, Center());
+            //    }
+            //}
         }
     }
    

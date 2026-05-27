@@ -37,45 +37,128 @@ namespace DebugHeroFileDungeonRPG
 
             // 💡 [핵심 추가] 눈에 보이지 않던 BSOD 드래곤의 기믹 요소들을 화면에 직접 드로우합니다.
             DrawBSODGimmicks(g, cameraX, clientSize);
-
+            DrawHighKernelGimmicks(g, cameraX, clientSize);
             DrawExceptionQueenGimmicks(g, cameraX, clientSize);
             DrawIllegalBinnyGimmicks(g, cameraX, clientSize);
 
             DrawNotice(g, clientSize);
         }
 
+
+        private void DrawHighKernelGimmicks(Graphics g, float cameraX, Size clientSize)
+        {
+            if (patternManager.IsSystemWipeActive && patternManager.SystemWipeTimer > 0)
+            {
+                float szX = patternManager.SafeZoneCenter.X - cameraX;
+                float szY = patternManager.SafeZoneCenter.Y;
+                float radius = patternManager.SafeZoneRadius; // 80f
+
+                // 1. 바닥 세이프존 영역 시각화 레이아웃 (기존 코드 유지)
+                using (SolidBrush safeBg = new SolidBrush(Color.FromArgb(40, Color.Lime)))
+                using (Pen safePen = new Pen(Color.Lime, 3f))
+                {
+                    safePen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+                    g.FillEllipse(safeBg, szX - radius, szY - radius, radius * 2, radius * 2);
+                    g.DrawEllipse(safePen, szX - radius, szY - radius, radius * 2, radius * 2);
+                }
+
+                using (Font labelFont = Renderer.F(9.5f, FontStyle.Bold))
+                {
+                    g.DrawString("CRITICAL SAFE ZONE", labelFont, Brushes.Lime, szX, szY, Renderer.Center());
+                }
+
+                // ==========================================================
+                // 2. 윈도우 화면 최상단 중앙 정렬 실시간 타임아웃 붉은 게이지 바 드로우
+                // ==========================================================
+                // 상단 중앙 부근 (Y: 160) 위치에 가로 300px, 세로 14px 윈도우 프로그레스 박스 빌드
+                Rectangle timerBarRect = new Rectangle(clientSize.Width / 2 - 150, 160, 300, 14);
+
+                // 타이머 뒷배경 칠하기 (반투명 블랙)
+                using (SolidBrush barBg = new SolidBrush(Color.FromArgb(160, Color.Black)))
+                    g.FillRectangle(barBg, timerBarRect);
+
+                // 남은 시간 비율 연산 (현재 타이머 / 3초(90틱) 비례 환산)
+                float timeRatio = Math.Max(0f, Math.Min(1f, (float)patternManager.SystemWipeTimer / 90f));
+                Rectangle timerFill = new Rectangle(timerBarRect.X, timerBarRect.Y, (int)(timerBarRect.Width * timeRatio), timerBarRect.Height);
+
+                // 실시간으로 깎여나가는 강렬한 위협용 레드 레이저 크리스탈 바 드로우
+                using (SolidBrush barFg = new SolidBrush(Color.Red))
+                    g.FillRectangle(barFg, timerFill);
+                using (Pen borderPen = new Pen(Color.White, 1.2f))
+                    g.DrawRectangle(borderPen, timerBarRect);
+
+                // 3. 게이지 바 바로 위에 소수점 첫째 자리까지 깎이는 '3.0s -> 0.0s' 실시간 초시계 얹기
+                using (Font textFont = Renderer.F(11f, FontStyle.Bold))
+                {
+                    float remainSeconds = Math.Max(0f, patternManager.SystemWipeTimer / 30f); // 30틱 = 1초 환산
+                    g.DrawString($"시스템 전역 포맷까지 : {remainSeconds:0.0}s [{patternManager.SystemWipeCount} / 3]", textFont, Brushes.White, clientSize.Width / 2, timerBarRect.Y - 20, Renderer.Center());
+                }
+            }
+        }
+
+
         // ==========================================
         // 5번 보스 (Illegal_Binny) 기믹 시각화 드로우
         // ==========================================
         private void DrawIllegalBinnyGimmicks(Graphics g, float cameraX, Size clientSize)
         {
-            // 1. 75%, 25% 패턴: 영구 소거 소용돌이 블랙홀 시각화
+            // 1. 75%, 25% 패턴: 영구 소거 소용돌이 블랙홀 및 해킹 장판 시각화
             if (patternManager.IsBlackholeActive)
             {
                 float bx = patternManager.AnchorPos.X - cameraX;
                 float by = patternManager.AnchorPos.Y;
 
-                // 중력장이 왜곡되는 듯한 3중 동심원 네온 오라 효과 연출
-                int pulse = (Environment.TickCount / 4) % 360;
-                using (Pen p1 = new Pen(Color.FromArgb(120, Color.DarkRed), 4f))
-                using (Pen p2 = new Pen(Color.FromArgb(200, Color.Red), 1.5f))
+                // 원본 PNG 아이스 소드 초고속 자전 회전 연출
+                if (Renderer.Img_IceSword != null)
                 {
-                    p2.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
-                    g.DrawEllipse(p1, bx - 150, by - 150, 300, 300);
-                    g.DrawEllipse(p2, bx - (100 + (float)Math.Sin(pulse * Math.PI / 180) * 15), by - (100 + (float)Math.Sin(pulse * Math.PI / 180) * 15), 200, 200);
+                    GraphicsState state = g.Save();
+                    g.TranslateTransform(bx, by);
+                    float angle = (Environment.TickCount / 3f) % 360;
+                    g.RotateTransform(angle);
+                    g.DrawImage(Renderer.Img_IceSword, -22, -77, 44, 154);
+                    g.Restore(state);
                 }
 
-                // 블랙홀의 소거 코어 핵 드로우
-                using (SolidBrush coreBr = new SolidBrush(Color.FromArgb(230, 15, 15, 15)))
+                // ==========================================================
+                // 디버그 패치파일 단일 홀로그램 장판 영역 드로우
+                // ==========================================================
+                float px = patternManager.CurrentPatchPos.X - cameraX;
+                float py = patternManager.CurrentPatchPos.Y;
+                float patchRadius = 65f;
+
+                using (SolidBrush patchBg = new SolidBrush(Color.FromArgb(35, Color.DeepSkyBlue)))
+                using (Pen patchPen = new Pen(Color.DeepSkyBlue, 2.5f))
                 {
-                    g.FillEllipse(coreBr, bx - 45, by - 45, 90, 90);
+                    patchPen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+                    g.FillEllipse(patchBg, px - patchRadius, py - patchRadius, patchRadius * 2, patchRadius * 2);
+                    g.DrawEllipse(patchPen, px - patchRadius, py - patchRadius, patchRadius * 2, patchRadius * 2);
                 }
-                g.DrawEllipse(Pens.Red, bx - 45, by - 45, 90, 90);
+
+                using (Font f = Renderer.F(9f, FontStyle.Bold))
+                {
+                    g.DrawString("PATCH_CORE.bin", f, Brushes.DeepSkyBlue, px, py, Renderer.Center());
+                }
+
+                // ==========================================================
+                // 장판 머리 위에 연동되는 실시간 해킹 로딩 게이지 바 구현
+                // ==========================================================
+                Rectangle patchBarRect = new Rectangle((int)px - 60, (int)py - (int)patchRadius - 25, 120, 12);
+
+                // 쉴드 바 프레임 백그라운드 드로우
+                using (SolidBrush bg = new SolidBrush(Color.FromArgb(160, Color.Black))) g.FillRectangle(bg, patchBarRect);
+
+                // StandTicks(0~90)의 현재 충전 스택 비율 실시간 연산 반영
+                float fillRatio = Math.Min(1f, (float)patternManager.StandTicks / 90f);
+                Rectangle barFill = new Rectangle(patchBarRect.X, patchBarRect.Y, (int)(patchBarRect.Width * fillRatio), patchBarRect.Height);
+
+                // 실시간으로 차오르는 하늘색 게이지 이식 드로우
+                using (SolidBrush barFg = new SolidBrush(Color.DeepSkyBlue)) g.FillRectangle(barFg, barFill);
+                using (Pen borderPen = new Pen(Color.White, 1f)) g.DrawRectangle(borderPen, patchBarRect);
 
                 // 상단 보스 상태 알림 오버레이
                 using (Font font = Renderer.F(11f, FontStyle.Bold))
                 {
-                    g.DrawString($"⚠️ 치명적 중력 데이터 동기화 감지 (제한시간: {patternManager.BlackholeTimer / 60}초)", font, Brushes.Red, clientSize.Width / 2, 105, Renderer.Center());
+                    g.DrawString($"⚠️ 시스템 중력 동기화 해킹 중 (제한시간: {patternManager.BlackholeTimer / 30}초)", font, Brushes.Red, clientSize.Width / 2, 105, Renderer.Center());
                 }
             }
 
@@ -110,14 +193,13 @@ namespace DebugHeroFileDungeonRPG
                 }
             }
 
-            // 3. 10% 패턴: 타임어택 DPS 체크 변조 배리어 시각화
+            // 3. 10% 패턴: 타임어택 DPS 체크 배리어 시각화
             if (patternManager.IsDPSCheckActive)
             {
-                // 보스의 임시 월드 위치를 복구하여 오버레이 추적
-                float bossScreenX = (clientSize.Width / 2) - cameraX; // 기믹 도중 중앙 고정 연산 반영
+                float bossScreenX = (clientSize.Width / 2) - cameraX;
                 float bossScreenY = 330;
 
-                // 보스 몸 주위를 철통방어하는 데이터 철벽 쉴드 구체 시각화
+                // 안전구역 같은 불필요한 박스 렌더링은 철저히 배제하고, 순수 철벽 보호막 구체만 렌더링
                 using (Pen shieldPen = new Pen(Color.FromArgb(200, Color.DeepSkyBlue), 4f))
                 using (SolidBrush shieldBg = new SolidBrush(Color.FromArgb(35, Color.DodgerBlue)))
                 {
@@ -125,39 +207,46 @@ namespace DebugHeroFileDungeonRPG
                     g.DrawEllipse(shieldPen, bossScreenX - 120, bossScreenY - 120, 240, 240);
                 }
 
-                // 보스 머리 위에 장엄하게 표기되는 실시간 쉴드 체력 및 시간 미터기 오버레이
                 Rectangle bar = new Rectangle(clientSize.Width / 2 - 150, 100, 300, 16);
                 using (SolidBrush bg = new SolidBrush(Color.FromArgb(140, Color.Black))) g.FillRectangle(bg, bar);
-                int fillW = (int)(bar.Width * (patternManager.DPSCheckTimer / 600f));
+
+                // ==========================================================
+                // 💡 [수정] 타이머 비례 감소 오류 완벽 수정: 보호막 실제 잔량(BinnyShield / 1500) 게이지 연동!
+                // ==========================================================
+                float shieldRatio = Math.Max(0f, Math.Min(1f, patternManager.BinnyShield / 1500f));
+                int fillW = (int)(bar.Width * shieldRatio);
+
                 using (SolidBrush fg = new SolidBrush(Color.DeepSkyBlue)) g.FillRectangle(fg, bar.X, bar.Y, fillW, bar.Height);
                 using (Pen border = new Pen(Color.White, 1.5f)) g.DrawRectangle(border, bar);
 
                 using (Font font = Renderer.F(11f, FontStyle.Bold))
                 {
-                    g.DrawString($"SYSTEM REBOOT BARRIER: {patternManager.BinnyShield} SHIELD", font, Brushes.White, clientSize.Width / 2, bar.Y - 18, Renderer.Center());
+                    g.DrawString($"REBOOT BARRIER STATUS: {patternManager.BinnyShield} / 1500 SHIELD", font, Brushes.White, clientSize.Width / 2, bar.Y - 18, Renderer.Center());
                 }
             }
 
-            // 4. 1% 패턴: 가비지 컬렉터 메모리 누수 분신 가시화
-            if (patternManager.IsIllusionActive && patternManager.BinnyClone != null)
+            // 4. 1% 패턴: 가비지 컬렉터 메모리 누수 분신 가시화 렌더링 교정
+            if (patternManager.IsIllusionActive && patternManager.BinnyClone != null && !patternManager.IsCloneDead)
             {
                 float cx = patternManager.BinnyClone.X - cameraX;
                 float cy = patternManager.BinnyClone.Y;
 
-                // 💡 [도형 임시 렌더링] 나중에 이 구역에 클론 전용 UI를 입히기 쉽도록, 네온 퍼플 네모 박스로 영역 박멸 표기
-                using (SolidBrush cloneBr = new SolidBrush(Color.FromArgb(160, Color.Purple)))
-                using (Pen clonePen = new Pen(Color.Magenta, 3f))
+                if (Renderer.ImgBoss_IllegalBinny != null)
                 {
-                    g.FillRectangle(cloneBr, cx - 45, cy - 90, 90, 120);
-                    g.DrawRectangle(clonePen, cx - 45, cy - 90, 90, 120);
-                }
+                    int totalH = Renderer.ImgBoss_IllegalBinny.Height; // 543
+                    int frameW = 521; // 1563 / 3
 
-                // 분신용 임시 미니 체력바 오버레이 상단 표기
-                Rectangle cloneHp = new Rectangle((int)cx - 45, (int)cy - 110, 90, 7);
-                using (SolidBrush bg = new SolidBrush(Color.Black)) g.FillRectangle(bg, cloneHp);
-                int fillW = (int)(cloneHp.Width * ((float)patternManager.BinnyClone.Hp / patternManager.BinnyClone.MaxHp));
-                using (SolidBrush fg = new SolidBrush(Color.Purple)) g.FillRectangle(fg, cloneHp.X, cloneHp.Y, fillW, cloneHp.Height);
-                g.DrawRectangle(Pens.White, cloneHp);
+                    Rectangle srcRect = new Rectangle(0, 0, 450, totalH);
+
+                    int destW = 243;
+                    int destH = 252;
+
+                 
+                   
+                    Rectangle destRect = new Rectangle((int)cx - destW / 2, (int)cy - destH - 40, destW, destH);
+
+                    g.DrawImage(Renderer.ImgBoss_IllegalBinny, destRect, srcRect, GraphicsUnit.Pixel);
+                }
             }
         }
 

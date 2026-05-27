@@ -7,6 +7,7 @@ namespace DebugHeroFileDungeonRPG
 {
     public enum ScreenMode
     {
+        StartMenu,
         Boot,
         AssistantIntro,
         ProfileSetup,

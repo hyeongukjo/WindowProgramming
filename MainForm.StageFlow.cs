@@ -29,6 +29,7 @@ namespace DebugHeroFileDungeonRPG
             int mapWidth = GetStageMapWidth(st);
 
             PlayerMovementSystem.Update(player, st, stageBossPhase, ClientSize.Width, ClientSize.Height, mapWidth, ref cameraX, tick);
+
             PlayerMovementSystem.UpdateActionAnimation(player);
 
             // 몬스터 AI 및 물리 충돌 업데이트
@@ -41,61 +42,147 @@ namespace DebugHeroFileDungeonRPG
                 effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 70, Color.Red, "복구 지점으로 반환"));
             }
 
-            // [Bug 1 해결 핵심]: 죽은 몬스터(Hp <= 0)를 리스트에서 실시간으로 완벽하게 제거하여 Count를 0으로 만듭니다.
-            for (int i = enemies.Count - 1; i >= 0; i--)
+            // ==========================================================
+            // 본체가 죽어 enemies 리스트에서 지워지더라도,
+            // 분신 패턴이 실행 중이라면 이곳에서 강제로 제어권을 넘겨받아 3초 링크/타이머를 계속 연산시킵니다.
+            // ==========================================================
+            if (stageBossPhase && currentStage == 10 && bossRuntime.patternManager.IsIllusionActive)
             {
-                if (enemies[i].Hp <= 0)
-                {
-                    enemies.RemoveAt(i); // 완전히 리스트에서 소거
-                }
+                GameEntity mainBoss = enemies.Find(e => e.IsBoss); // 없으면 null이 전달되며 안전 가드가 작동함
+                bossRuntime.patternManager.Update(mainBoss, player, effects, mapWidth);
             }
 
-            // [분기 제어]: 짝수층(보스 스테이지)일 때는 하단의 홀수 웨이브 제어 시스템을 완전히 스킵(Pass-through)
-            if (currentStage % 2 == 0) return;
-
-            // [홀수층 전용 무리 시퀀스 및 즉시 보상 제어]
-            if (enemies.Count == 0 && !isWaveWaiting && weaponDrops.Count == 0)
+            // ==========================================================
+            // 본체(IsMainDead)와 분신(IsCloneDead)이 모두 죽고 패턴이 종료되었을 때만
+            // 정확히 단 한 번 정식 최종 보상을 드랍하고 스테이지를 클리어시킵니다.
+            // ==========================================================
+            if (stageBossPhase && currentStage == 10 && bossRuntime.patternManager.IsMainDead && bossRuntime.patternManager.IsCloneDead && !bossRuntime.patternManager.IsIllusionActive)
             {
-                if (currentWaveIndex < 3) // a(0), b(1), c(2), d(3) 총 4개 무리 제한
+                if (weaponDrops.Count == 0) // 보상 파일 중복 생성 방지
                 {
-                    // 다음 무리가 남아 있다면 즉시 5초 유예시간(150틱) 가동
-                    isWaveWaiting = true;
-                    waveDelayTicks = 150;
+                    // 정식 보상 레이아웃 및 큐 관리 가동
+                    GameEntity rewardDummy = new GameEntity { X = player.X + 150, Y = player.Y - 50, IsBoss = true };
+                    RewardSystem.AwardDefeatReward(rewardDummy, player, currentStage, effects, random);
 
-                    // 💡 [삭제 완료]: 일반 무리 정화 완료 안내 텍스트 라인 제거
-                }
-                else
-                {
-                    // 마지막 d 무리까지 정화 완료 시 그 자리에 무기 강화 파일 즉시 드롭!
-                    if (weaponDrops.Count == 0)
+                    WeaponUpgradeFile drop = new WeaponUpgradeFile
                     {
-                        WeaponUpgradeFile drop = new WeaponUpgradeFile
-                        {
-                            X = player.X + 250,
-                            Y = player.Y - 15,
-                            StageIndex = currentStage,
-                            UpgradeLevel = player.WeaponLevel + 1
-                        };
-                        weaponDrops.Add(drop);
-                        // 💡 [삭제 완료]: 일반 방의 "모든 무리 정화! UPGRADE FILE DROP" 텍스트 효과 전면 차단
+                        X = rewardDummy.X,
+                        Y = Math.Max(115, Math.Min(ClientSize.Height - 95, rewardDummy.Y - 25)),
+                        StageIndex = currentStage,
+                        UpgradeLevel = player.WeaponLevel + 1
+                    };
+                    weaponDrops.Add(drop);
+                    effects.Add(new Effect("text", drop.X, drop.Y - 72, drop.X, drop.Y - 72, 120, Color.LightSkyBlue, "FINAL UPGRADE FILE DROP"));
+                    TryBeep(980, 150);
+                }
+
+                if (weaponDrops.Count > 0) return; // 드랍된 파일을 드래그해서 먹을 때까지 맵 종료 유보 대기
+                ClearCurrentStage();
+                return;
+            }
+
+            if (currentStage != 10)
+            {
+                bool anyEnemyAlive = false;
+                for (int i = 0; i < enemies.Count; i++)
+                {
+                    if (enemies[i].Hp > 0)
+                    {
+                        anyEnemyAlive = true;
+                        break;
                     }
                 }
+
+                // 맵에 소환된 적이 존재하고, 그중 살아있는 개체가 단 한 마리도 없을 때
+                if (enemies.Count > 0 && !anyEnemyAlive)
+                {
+                    // 정산 팝업창 레이아웃 활성화
+                    if (!showStageClearPopup)
+                    {
+                        showStageClearPopup = true;
+
+                        popupBonusCoins = currentStage * 450;
+                        player.Coins += popupBonusCoins;
+
+                        TryBeep(1050, 200); // 클리어 알림음
+                        return;
+                    }
+
+                    if (showStageClearPopup) return; // 확인 단추 클릭 전까지 프레임 잠금
+                }
             }
 
-            // 5초 타이머 카운트다운 처리 및 다음 웨이브 호출
-            if (isWaveWaiting)
+            // 💡 10스테이지 최종보스전이 아닐 때 작동하는 기존 일반 몹 클리어 조건 분기
+            if (enemyResult.AllEnemiesDefeated && enemies.Count > 0)
             {
-                waveDelayTicks--;
-                if (waveDelayTicks <= 0)
+                if (st.Index == 10 && bossRuntime.patternManager.IsIllusionActive) return; // 최종전 도중 날림 클리어 방지
+
+                if (!stageBossPhase)
                 {
-                    isWaveWaiting = false;
-                    currentWaveIndex++;
+                    if (st.Kind == StageKind.Normal)
+                    {
+                        if (weaponDrops.Count > 0) return;
+                        ClearCurrentStage();
+                        return;
+                    }
+                    StartStageBossPhase();
+                    return;
+                }
 
-                    // StageEnemyFactory에서 다음 순번의 무리 소환
-                    enemies.AddRange(StageEnemyFactory.CreateWaveEnemies(st, currentWaveIndex, ClientSize.Height));
+                // ---------------------------------------------------------------------------------
+                // [분기 제어]: 짝수층(보스 스테이지)일 때는 하단의 홀수 웨이브 제어 시스템을 완전히 스킵(Pass-through)
+                // ---------------------------------------------------------------------------------
+                if (currentStage % 2 == 0) return;
 
-                    // 💡 [삭제 완료]: 일반 방의 "X 무리 출현! 시스템을 정화하세요." 알림 문자열 주입 연산 삭제
-                    TryBeep(640, 70);
+                // ---------------------------------------------------------------------------------
+                // [홀수층 전용 무리 시퀀스 및 즉시 보상 제어]
+                // ---------------------------------------------------------------------------------
+                // 필드에 살아있는 리스트가 완벽히 비었고, 대기 상태가 아니며, 보상 파일이 드롭되지 않았을 때 진입
+                if (enemies.Count == 0 && !isWaveWaiting && weaponDrops.Count == 0)
+                {
+                    if (currentWaveIndex < 3) // a(0), b(1), c(2), d(3) 총 4개 무리 제한
+                    {
+                        // 다음 무리가 남아 있다면 즉시 5초 유예시간(150틱) 가동
+                        isWaveWaiting = true;
+                        waveDelayTicks = 150;
+
+                        char nextWaveChar = (char)('a' + currentWaveIndex + 1);
+                        effects.Add(new Effect("text", player.X + 150, player.Y - 120, player.X + 150, player.Y - 120, 120, Color.Yellow, $"무리 정화 완료. 5초 후 {nextWaveChar} 무리 진입..."));
+                    }
+                    else
+                    {
+                        // 마지막 d 무리까지 정화 완료 시 그 자리에 무기 강화 파일 즉시 드롭!
+                        if (weaponDrops.Count == 0)
+                        {
+                            WeaponUpgradeFile drop = new WeaponUpgradeFile
+                            {
+                                X = player.X + 250,
+                                Y = player.Y - 15,
+                                StageIndex = currentStage,
+                                UpgradeLevel = player.WeaponLevel + 1
+                            };
+                            weaponDrops.Add(drop);
+                            effects.Add(new Effect("text", drop.X, drop.Y - 70, drop.X, drop.Y - 70, 150, Color.Cyan, "모든 무리 정화! UPGRADE FILE DROP"));
+                        }
+                    }
+                }
+
+                // 5초 타이머 카운트다운 처리 및 다음 웨이브 호출
+                if (isWaveWaiting)
+                {
+                    waveDelayTicks--;
+                    if (waveDelayTicks <= 0)
+                    {
+                        isWaveWaiting = false;
+                        currentWaveIndex++;
+
+                        // StageEnemyFactory에서 다음 순번의 무리 소환
+                        enemies.AddRange(StageEnemyFactory.CreateWaveEnemies(st, currentWaveIndex, ClientSize.Height));
+
+                        char currentWaveChar = (char)('a' + currentWaveIndex);
+                        effects.Add(new Effect("text", player.X + 150, player.Y - 120, player.X + 150, player.Y - 120, 80, Color.Orange, $"{currentWaveChar} 무리 출현! 시스템을 정화하세요."));
+                        TryBeep(640, 70);
+                    }
                 }
             }
         }
@@ -383,23 +470,55 @@ namespace DebugHeroFileDungeonRPG
             for (int i = 0; i < enemies.Count; i++)
             {
                 GameEntity m = enemies[i];
-                if (m.Hp <= 0) continue;
+                if (m.Hp <= 0) continue; // 험악한 보스가 죽으면 본체 타격은 스킵
+
                 if (hit.IntersectsWith(m.Bounds))
                 {
-                    int finalDamage = damage;
-                    if (m.Name == "Empty_Folder" && m.MonsterState == 1)
+                    if ((m.Name.Contains("Binny") || m.Name.Contains("Illegal_Binny")) && bossRuntime.patternManager.IsDPSCheckActive && bossRuntime.patternManager.BinnyShield > 0)
                     {
-                        finalDamage = Math.Max(1, finalDamage / 2);
-                        effects.Add(new Effect("text", m.X + 20, m.Y - 104, m.X + 20, m.Y - 104, 26, Color.LightGray, "GUARD!"));
+                        bossRuntime.patternManager.BinnyShield -= damage;
+                        if (bossRuntime.patternManager.BinnyShield < 0) bossRuntime.patternManager.BinnyShield = 0;
+                        effects.Add(new Effect("text", m.X, m.Y - 84, m.X, m.Y - 84, 34, Color.DeepSkyBlue, $"[SHIELD -{damage}]"));
+                    }
+                    else
+                    {
+                        m.Hp -= damage;
+                        effects.Add(new Effect("text", m.X, m.Y - 84, m.X, m.Y - 84, 34, Color.Yellow, damage.ToString()));
                     }
 
-                    m.Hp -= finalDamage;
                     m.HitFlash = 10;
                     hitAny = true;
-
-                    effects.Add(new Effect("text", m.X, m.Y - 84, m.X, m.Y - 84, 34, Color.Yellow, finalDamage.ToString()));
                     effects.Add(new Effect("spark", m.X, m.Y - 44, m.X, m.Y - 44, 22, Color.White, ""));
-                    if (m.Hp <= 0) AwardDefeatReward(m);
+
+                    // 💡 [조기 드랍 봉쇄] 5번 최종 보스가 아닐 때만 즉시 보상을 드랍하도록 격리 필터 적용
+                    if (m.Hp <= 0 && !m.Name.Contains("Binny") && !m.Name.Contains("Illegal_Binny"))
+                    {
+                        AwardDefeatReward(m);
+                    }
+                }
+            }
+
+            // ==========================================================
+            // 💡 [무적 버그 해결] enemies 루프를 완전히 빠져나온 바깥 구역에 분신 타격 엔진 독립 매핑
+            // ==========================================================
+            if (bossRuntime.patternManager.IsIllusionActive && bossRuntime.patternManager.BinnyClone != null && !bossRuntime.patternManager.IsCloneDead)
+            {
+                // 분신의 실제 유영 위치를 바탕으로 타격용 가상 Bounds 레이아웃 실시간 계산
+                RectangleF cloneBounds = new RectangleF(
+                    bossRuntime.patternManager.BinnyClone.X - 121f,
+                    bossRuntime.patternManager.BinnyClone.Y - 252f,
+                    243f,
+                    252f
+                );
+
+                if (hit.IntersectsWith(cloneBounds))
+                {
+                    bossRuntime.patternManager.BinnyClone.Hp -= damage;
+                    if (bossRuntime.patternManager.BinnyClone.Hp < 0) bossRuntime.patternManager.BinnyClone.Hp = 0;
+
+                    hitAny = true;
+                    effects.Add(new Effect("text", bossRuntime.patternManager.BinnyClone.X, bossRuntime.patternManager.BinnyClone.Y - 84, bossRuntime.patternManager.BinnyClone.X, bossRuntime.patternManager.BinnyClone.Y - 84, 34, Color.Purple, damage.ToString()));
+                    effects.Add(new Effect("spark", bossRuntime.patternManager.BinnyClone.X, bossRuntime.patternManager.BinnyClone.Y - 44, bossRuntime.patternManager.BinnyClone.X, bossRuntime.patternManager.BinnyClone.Y - 44, 22, Color.Purple, ""));
                 }
             }
 

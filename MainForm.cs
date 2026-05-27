@@ -19,8 +19,9 @@ namespace DebugHeroFileDungeonRPG
         private readonly List<WeaponUpgradeFile> weaponDrops = new List<WeaponUpgradeFile>();
         private WeaponUpgradeFile draggedWeaponDrop;
 
-        private ScreenMode screen = ScreenMode.Boot;
+        //private ScreenMode screen = ScreenMode.Boot;
         private readonly PlayerState player = new PlayerState();
+        private ScreenMode screen = ScreenMode.StartMenu;
         private int tick;
         private int bootTicks;
         private int introIndex;
@@ -43,6 +44,11 @@ namespace DebugHeroFileDungeonRPG
         private readonly BossRuntime bossRuntime = new BossRuntime();
         private TaskbarUI taskbarUI;
         private BossPatternManager bossManager;
+        private bool showStageClearPopup = false;
+        private int popupBonusCoins = 0;
+        private Rectangle popupConfirmBtnBounds;
+
+
 
 
         public MainForm()
@@ -59,7 +65,7 @@ namespace DebugHeroFileDungeonRPG
 
             stages = GameData.CreateStages();
             timer = new Timer();
-            timer.Interval = 33; // 렉 방지를 위해 60FPS -> 30FPS로 조정
+            timer.Interval = 16;
             timer.Tick += Timer_Tick;
             timer.Start();
 
@@ -115,6 +121,19 @@ namespace DebugHeroFileDungeonRPG
 
             string safePath = Path.Combine(bossPath, "safezone.png");
             if (File.Exists(safePath)) Renderer.Img_Safezone = Image.FromFile(safePath);
+
+            string iceSwordPath = Path.Combine(bossPath, "ice_sword.png");
+            if (File.Exists(iceSwordPath)) Renderer.Img_IceSword = Image.FromFile(iceSwordPath);
+
+            string fireSwordPath = Path.Combine(bossPath, "fire_sword.png");
+            if (File.Exists(fireSwordPath)) Renderer.Img_FireSword = Image.FromFile(fireSwordPath);
+
+            string lightSwordPath = Path.Combine(bossPath, "lightning_sword.png");
+            if (File.Exists(lightSwordPath)) Renderer.Img_LightningSword = Image.FromFile(lightSwordPath);
+            
+        
+
+            
         }
 
         private void Timer_Tick(object sender, EventArgs e)
@@ -125,7 +144,6 @@ namespace DebugHeroFileDungeonRPG
                 effects[i].Ticks--;
                 if (effects[i].Ticks <= 0) effects.RemoveAt(i);
             }
-            // 이펙트가 과도하게 쌓이면 GDI+ 그리기 부하가 커져 렉이 발생하므로 상한을 둡니다.
             if (effects.Count > 60) effects.RemoveRange(0, effects.Count - 60);
 
             if (screen == ScreenMode.Boot)
@@ -139,6 +157,45 @@ namespace DebugHeroFileDungeonRPG
                 UpdateStage();
             }
             Invalidate();
+            if (bossRuntime.patternManager.PlayerSlowTicks > 0)
+            {
+                bossRuntime.patternManager.PlayerSlowTicks--;
+            }
+            if (bossRuntime.patternManager.PlayerBurnTicks > 0)
+            {
+                bossRuntime.patternManager.PlayerBurnTicks--;
+                if (bossRuntime.patternManager.PlayerBurnTicks % 30 == 0) // 1초당(30틱) 최대 체력의 5% 도트 연산
+                {
+                    player.Hp -= (int)(player.MaxHp * 0.05f);
+                    effects.Add(new Effect("text", player.X, player.Y - 60, player.X, player.Y - 60, 20, Color.DarkRed, "화상 피해"));
+                }
+            }
+
+            // ==========================================================
+            // 💡 [통합 사망 처리 엔진] 어떤 원인으로든 HP 유실 시 스테이지 튕김 처리
+            // ==========================================================
+            if (screen == ScreenMode.Stage && player.Hp <= 0)
+            {
+                // 윈도우 에러 알림 비프음 작동 (컨셉 강화)
+                TryBeep(440, 300);
+
+                // 진행 중이던 스테이지 상태 및 몬스터/이펙트 풀 완전 리셋
+                currentStage = 0;
+                enemies.Clear();
+                effects.Clear();
+                weaponDrops.Clear();
+                stageBossPhase = false;
+                stage1BossPhase = false;
+
+                // 1% 보스 패턴 관련 내부 데스링크 플래그도 안전하게 완전 청소
+                bossRuntime.patternManager.IsIllusionActive = false;
+                bossRuntime.patternManager.BinnyClone = null;
+
+                // ⚠️ 스폰되지 않고 즉시 바탕화면(스테이지 선택 화면)으로 강제 퇴장
+                screen = ScreenMode.Desktop;
+                return;
+            }
+            // ==========================================================
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
