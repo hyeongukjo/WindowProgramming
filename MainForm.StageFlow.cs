@@ -92,7 +92,27 @@ namespace DebugHeroFileDungeonRPG
                 ClearCurrentStage();
                 return;
             }
+            // STAGE SYSTEM COMPLETED 팝업 막고, ScreenMode.StageClearDialog으로 넘어가서 npc클리어 대사 출력 수정
+            if (currentStage != 10)
+            {
+                bool anyEnemyAlive = false;
 
+                for (int i = 0; i < enemies.Count; i++)
+                {
+                    if (enemies[i].Hp > 0)
+                    {
+                        anyEnemyAlive = true;
+                        break;
+                    }
+                }
+
+                if (enemies.Count > 0 && !anyEnemyAlive)
+                {
+                    ClearCurrentStage();
+                    return;
+                }
+            }
+            /*
             if (currentStage != 10)
             {
                 bool anyEnemyAlive = false;
@@ -117,9 +137,9 @@ namespace DebugHeroFileDungeonRPG
                     }
                     if (showStageClearPopup) return;
                 }
-            }
+            }*/
 
-            // 💡 10스테이지 최종보스전이 아닐 때 작동하는 기존 일반 몹 클리어 조건 분기
+            // 10스테이지 최종보스전이 아닐 때 작동하는 기존 일반 몹 클리어 조건 분기
             // * [위에서 죽은 몹들을 필터링하여 소거하므로 이제 안전하게 참(True) 분기로 진입합니다]
             if ((enemies.Count == 0 || enemyResult.AllEnemiesDefeated) && currentStage != 10)
             {
@@ -184,7 +204,7 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
-        // * [최종 디버깅]: 스테이지 전환 시 웨이브 인덱스 유실로 인한 1, 2웨이브 동시 시작 버그 해결
+        // [최종 디버깅]: 스테이지 전환 시 웨이브 인덱스 유실로 인한 1, 2웨이브 동시 시작 버그 해결
         private void StartStage(int stageIndex)
         {
             if (stageIndex < 1 || stageIndex > unlockedStage) return;
@@ -212,6 +232,7 @@ namespace DebugHeroFileDungeonRPG
             player.MoveVelocityX = 0f;
             player.MoveVelocityY = 0f;
             stageTime = 0;
+            stageNpcHintIndex = 0;
             cameraX = 0;
             stageNpcHintClosed = false;
 
@@ -296,7 +317,7 @@ namespace DebugHeroFileDungeonRPG
 
             enemies.Add(StageEnemyFactory.CreateBoss(st, Math.Max(760, ClientSize.Width - 360), ClientSize.Height, stages.Count));
 
-            // 💡 [유지 가드]: 보스방 자동 진입 연출 문구 역시 보스 스테이지 규칙에 해당하므로 그대로 남겨둡니다.
+            //[유지 가드]: 보스방 자동 진입 연출 문구 역시 보스 스테이지 규칙에 해당하므로 그대로 남겨둡니다.
             string bossText = "STAGE " + currentStage.ToString("00") + " 보스방 자동 진입: " + st.BossName;
             effects.Add(new Effect("text", player.X + 290, player.Y - 120, player.X + 290, player.Y - 120, 100, Color.Gold, bossText));
             effects.Add(new Effect("spark", player.X + 280, player.Y - 48, player.X + 280, player.Y - 48, 55, Color.Gold, ""));

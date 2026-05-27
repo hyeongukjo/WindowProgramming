@@ -12,7 +12,7 @@ namespace DebugHeroFileDungeonRPG
         private void AdvanceIntro()
         {
             introIndex++;
-            if (introIndex >= 3)
+            if (introIndex >= NpcDialogueData.IntroMessages.Length)
             {
                 screen = ScreenMode.ProfileSetup;
             }
@@ -260,7 +260,7 @@ namespace DebugHeroFileDungeonRPG
         {
             if (action == "introNext") AdvanceIntro();
             else if (action == "desktopNoticeOk" || action == "desktopNoticeClose") { firstDesktopNotice = false; }
-            else if (action == "npcHintClose") stageNpcHintClosed = true;
+            else if (action == "npcHintClose") AdvanceStageNpcHint();
             else if (action == "profileOk") ConfirmProfile();
             else if (action == "openShop") screen = ScreenMode.Shop;
             else if (action == "shopBack") screen = ScreenMode.Desktop;
@@ -282,12 +282,33 @@ namespace DebugHeroFileDungeonRPG
             else if (action == "finalOk") ResolveEnding();
             else if (action == "helpBack") screen = ScreenMode.Desktop;
         }
+        private void AdvanceStageNpcHint()
+        {
+            if (currentStage <= 0)
+            {
+                stageNpcHintClosed = true;
+                return;
+            }
+
+            int count = NpcDialogueData.GetStageDialogCount(currentStage);
+
+            stageNpcHintIndex++;
+
+            if (stageNpcHintIndex >= count)
+            {
+                stageNpcHintClosed = true;
+            }
+            else
+            {
+                stageNpcHintClosed = false;
+            }
+        }
 
         private void ConfirmProfile()
         {
             if (string.IsNullOrWhiteSpace(profileInput))
             {
-                effects.Add(new Effect("text", ClientSize.Width / 2, 250, ClientSize.Width / 2, 250, 50, Color.Red, "프로필 이름 필요"));
+                effects.Add(new Effect("text", ClientSize.Width / 2, 250, ClientSize.Width / 2, 250, 50, Color.Red, NpcDialogueData.ProfileNameRequired));
                 TryBeep(320, 80);
                 return;
             }
@@ -332,32 +353,9 @@ namespace DebugHeroFileDungeonRPG
 
         private void ResolveEnding()
         {
-            string input = (finalInput ?? "").Trim();
-            if (string.IsNullOrEmpty(input))
-            {
-                endingTitle = "잘못된 입력 엔딩";
-                endingBody = "빈칸은 삭제할 수 없습니다. 복구 절차가 중단되었습니다.";
-            }
-            else if (input.Equals(player.ProfileName, StringComparison.OrdinalIgnoreCase))
-            {
-                endingTitle = "진엔딩: 프로필 복구 완료";
-                endingBody = "복구 프로필 이름이 최종 입력으로 확인되었습니다. 휴지통 내부의 모든 기록이 정리되고 시스템이 조용히 재부팅됩니다.";
-            }
-            else if (input.IndexOf("Assistant", StringComparison.OrdinalIgnoreCase) >= 0 || input.IndexOf("Recovery", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                endingTitle = "Assistant 루프 엔딩";
-                endingBody = "Windows Recovery Assistant를 삭제 대상으로 지정했습니다. 하지만 도우미는 다시 알림창으로 돌아오고, 복구 절차는 처음으로 되감깁니다.";
-            }
-            else if (input.IndexOf("Driver", StringComparison.OrdinalIgnoreCase) >= 0 || input.IndexOf("Kernel", StringComparison.OrdinalIgnoreCase) >= 0 || input.IndexOf("BSOD", StringComparison.OrdinalIgnoreCase) >= 0 || input.IndexOf("Exception", StringComparison.OrdinalIgnoreCase) >= 0 || input.IndexOf("Binny", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                endingTitle = "일반 엔딩: 외부 대상 삭제";
-                endingBody = "보스 이름을 삭제 대상으로 지정했습니다. 표면적인 문제는 사라졌지만, 복구 기록은 완전히 닫히지 않았습니다.";
-            }
-            else
-            {
-                endingTitle = "잘못된 입력 엔딩";
-                endingBody = "존재하지 않는 프로세스 이름입니다. 휴지통은 다시 닫히고 복구 절차는 보류됩니다.";
-            }
+            NpcEndingText ending = NpcDialogueData.ResolveEnding(finalInput, player.ProfileName);
+            endingTitle = ending.Title;
+            endingBody = ending.Body;
             screen = ScreenMode.Ending;
         }
 

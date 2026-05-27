@@ -38,6 +38,7 @@ namespace DebugHeroFileDungeonRPG
         private string endingBody = "";
         private bool firstDesktopNotice = true;
         private bool stageNpcHintClosed = false;
+        private int stageNpcHintIndex = 0;
         private bool stageBossPhase = false;
         private bool stage1BossPhase = false;
         private bool lastClearWasBoss = false;
@@ -64,6 +65,7 @@ namespace DebugHeroFileDungeonRPG
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
 
             stages = GameData.CreateStages();
+            NpcDialogueData.ApplyToStages(stages);
             timer = new Timer();
             timer.Interval = 16;
             timer.Tick += Timer_Tick;
