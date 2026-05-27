@@ -41,12 +41,37 @@ namespace DebugHeroFileDungeonRPG
             }
             if (screen == ScreenMode.ProfileSetup)
             {
-                if (e.KeyCode == Keys.Back && profileInput.Length > 0) profileInput = profileInput.Substring(0, profileInput.Length - 1);
-                if (e.KeyCode == Keys.Enter) ConfirmProfile();
+                if (e.KeyCode == Keys.Back && profileInput.Length > 0)
+                {
+                    profileInput = profileInput.Substring(0, profileInput.Length - 1);
+                    return;
+                }
+
+                if (e.KeyCode == Keys.Enter)
+                {
+                    ConfirmProfile();
+                    ignoreEnterUntilKeyUp = true;
+                    return;
+                }
+
+                return;
+            }
+            if (ignoreEnterUntilKeyUp && e.KeyCode == Keys.Enter)
+            {
                 return;
             }
             if (screen == ScreenMode.Desktop)
             {
+                if (firstDesktopNotice)
+                {
+                    if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Space || e.KeyCode == Keys.E)
+                    {
+                        firstDesktopNotice = false;
+                    }
+
+                    return;
+                }
+
                 if (e.KeyCode == Keys.Right || e.KeyCode == Keys.Down) selectedStage = Math.Min(unlockedStage, selectedStage + 1);
                 if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Up) selectedStage = Math.Max(1, selectedStage - 1);
                 if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.E) StartStage(selectedStage);
@@ -138,6 +163,15 @@ namespace DebugHeroFileDungeonRPG
                     finalInput += e.KeyChar;
                     e.Handled = true;
                 }
+            }
+        }
+        protected override void OnKeyUp(KeyEventArgs e)
+        {
+            base.OnKeyUp(e);
+
+            if (e.KeyCode == Keys.Enter)
+            {
+                ignoreEnterUntilKeyUp = false;
             }
         }
 

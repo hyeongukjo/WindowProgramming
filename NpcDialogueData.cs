@@ -291,13 +291,19 @@ namespace DebugHeroFileDungeonRPG
             string[] lines = GetStageDialogLines(stageIndex);
 
             if (lines.Length == 0)
-                return "STAGE " + stageIndex.ToString("00") + "  " + stageName;
+                return string.Empty;
 
             int idx = Math.Max(0, Math.Min(dialogIndex, lines.Length - 1));
             string text = lines[idx];
 
-            return "STAGE " + stageIndex.ToString("00") + "  " + stageName + "\n\n" + text;
+            if (idx == 0)
+            {
+                return "STAGE " + stageIndex.ToString("00") + "  " + stageName + "\n\n" + text;
+            }
+
+            return text;
         }
+
 
         public static string BuildStageClearText(StageInfo st, int clearStage, IList<StageInfo> stages)
         {

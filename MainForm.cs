@@ -39,6 +39,7 @@ namespace DebugHeroFileDungeonRPG
         private bool firstDesktopNotice = true;
         private bool stageNpcHintClosed = false;
         private int stageNpcHintIndex = 0;
+        private bool ignoreEnterUntilKeyUp = false;
         private bool stageBossPhase = false;
         private bool stage1BossPhase = false;
         private bool lastClearWasBoss = false;
