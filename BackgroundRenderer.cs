@@ -105,7 +105,7 @@ namespace DebugHeroFileDungeonRPG
             }
 
             using (Font f = Renderer.F(10f, FontStyle.Regular))
-                g.DrawString("프로그램을 불러오는 중...", f, Brushes.LightGray, new Rectangle(0, h - 60, w, 22), Renderer.Center());
+                g.DrawString("프로그램 불러오는 중...", f, Brushes.LightGray, new Rectangle(0, h - 60, w, 22), Renderer.Center());
         }
 
         // 3. 바탕화면 배경과 작업 표시줄 UI를 동적으로 그리는 함수
