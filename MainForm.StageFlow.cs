@@ -150,14 +150,14 @@ namespace DebugHeroFileDungeonRPG
                 UpgradeLevel = player.WeaponLevel + 1
             };
             weaponDrops.Add(drop);
-            effects.Add(new Effect("text", drop.X, drop.Y - 72, drop.X, drop.Y - 72, 120, Color.LightSkyBlue, "UPGRADE FILE DROP"));
+            effects.Add(new Effect("text", drop.X, drop.Y - 72, drop.X, drop.Y - 72, 120, Color.LightSkyBlue, "Weapon Patch Drop"));
         }
 
         private void ApplyWeaponUpgrade(WeaponUpgradeFile drop)
         {
             player.WeaponLevel = Math.Max(player.WeaponLevel + 1, drop.UpgradeLevel);
             effects.Add(new Effect("spark", player.X, player.Y - 46, player.X, player.Y - 46, 70, Color.DeepSkyBlue, ""));
-            effects.Add(new Effect("text", player.X, player.Y - 104, player.X, player.Y - 104, 80, Color.Gold, "WEAPON +" + player.WeaponLevel));
+            effects.Add(new Effect("text", player.X, player.Y - 104, player.X, player.Y - 104, 80, Color.Gold, "Weapon Patch +" + player.WeaponLevel));
             TryBeep(980, 90);
         }
 

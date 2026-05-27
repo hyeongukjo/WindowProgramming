@@ -1883,7 +1883,6 @@ namespace DebugHeroFileDungeonRPG
                     g.FillRectangle(rb, px - sz / 2, py - sz / 2, sz, sz);
             }
         }
-
         public static void DrawEnemy(Graphics g, GameEntity e, float cameraX)
         {
             RectangleF b = e.Bounds;
@@ -1913,40 +1912,53 @@ namespace DebugHeroFileDungeonRPG
         {
             RectangleF b = drop.Bounds;
             Rectangle r = Rectangle.Round(new RectangleF(b.X - cameraX, b.Y, b.Width, b.Height));
-            int glowAlpha = drop.Dragging ? 110 : 70;
-            using (SolidBrush glow = new SolidBrush(Color.FromArgb(glowAlpha, 80, 190, 255)))
-                g.FillEllipse(glow, r.X - 16, r.Y - 14, r.Width + 32, r.Height + 28);
-            using (SolidBrush shadow = new SolidBrush(Color.FromArgb(85, 0, 0, 0)))
-                g.FillEllipse(shadow, r.X + 6, r.Bottom - 8, r.Width - 12, 12);
 
-            Point[] paper =
-            {
-                new Point(r.X + 8, r.Y + 4),
-                new Point(r.Right - 14, r.Y + 4),
-                new Point(r.Right - 4, r.Y + 16),
-                new Point(r.Right - 4, r.Bottom - 10),
-                new Point(r.X + 8, r.Bottom - 10)
-            };
-            using (LinearGradientBrush fill = new LinearGradientBrush(r, Color.White, Color.FromArgb(185, 225, 255), 90f))
-                g.FillPolygon(fill, paper);
-            using (Pen outline = new Pen(Color.FromArgb(40, 105, 210), 2f))
-                g.DrawPolygon(outline, paper);
-            using (SolidBrush fold = new SolidBrush(Color.FromArgb(120, 170, 225)))
-            {
-                Point[] corner =
-                {
-                    new Point(r.Right - 14, r.Y + 4),
-                    new Point(r.Right - 4, r.Y + 16),
-                    new Point(r.Right - 14, r.Y + 16)
-                };
-                g.FillPolygon(fold, corner);
-            }
-            using (Font f = F(7f, FontStyle.Bold))
-            using (SolidBrush text = new SolidBrush(Color.FromArgb(25, 70, 150)))
-            {
-                g.DrawString("WEAPON", f, text, new Rectangle(r.X + 6, r.Y + 20, r.Width - 12, 14), Center());
-                g.DrawString("+" + drop.UpgradeLevel, f, text, new Rectangle(r.X + 6, r.Y + 38, r.Width - 12, 16), Center());
-            }
+            int iconSize = drop.Dragging ? 68 : 60;
+
+            Rectangle iconRect = new Rectangle(
+                (int)(drop.X - cameraX - iconSize / 2),
+                (int)(drop.Y - 38),
+                iconSize,
+                iconSize
+            );
+
+            int glowAlpha = drop.Dragging ? 120 : 75;
+
+            using (SolidBrush glow = new SolidBrush(Color.FromArgb(glowAlpha, 80, 190, 255)))
+                g.FillEllipse(glow, iconRect.X - 14, iconRect.Y - 10, iconRect.Width + 28, iconRect.Height + 20);
+
+            using (SolidBrush shadow = new SolidBrush(Color.FromArgb(85, 0, 0, 0)))
+                g.FillEllipse(shadow, iconRect.X + 8, iconRect.Bottom - 8, iconRect.Width - 16, 12);
+
+            DesktopIconUI.Shared.DrawIconOnly(g, 2, 3, iconRect);
+
+            Rectangle levelBox = new Rectangle(
+                iconRect.Right - 24,
+                iconRect.Bottom - 20,
+                24,
+                18
+            );
+
+            using (SolidBrush bg = new SolidBrush(Color.FromArgb(165, 0, 0, 0)))
+                g.FillRectangle(bg, levelBox);
+
+            using (Font f = F(8f, FontStyle.Bold))
+            using (SolidBrush text = new SolidBrush(Color.White))
+                g.DrawString("+" + drop.UpgradeLevel, f, text, levelBox, Center());
+
+            Rectangle nameBox = new Rectangle(
+                iconRect.X - 24,
+                iconRect.Bottom + 2,
+                iconRect.Width + 48,
+                18
+            );
+
+            using (SolidBrush bg = new SolidBrush(Color.FromArgb(135, 0, 0, 0)))
+                g.FillRectangle(bg, nameBox);
+
+            using (Font f = F(7.5f, FontStyle.Bold))
+            using (SolidBrush text = new SolidBrush(Color.White))
+                g.DrawString("Weapon Patch", f, text, nameBox, Center());
         }
 
         private static void DrawFileMonster(Graphics g, Rectangle r, GameEntity e)
