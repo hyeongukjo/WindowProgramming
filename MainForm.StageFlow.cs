@@ -213,7 +213,10 @@ namespace DebugHeroFileDungeonRPG
             player.MoveVelocityY = 0f;
             stageTime = 0;
             cameraX = 0;
-            stageNpcHintClosed = false;
+            stageNpcHintClosed = true;
+
+            enemies.AddRange(StageEnemyFactory.CreatePreBossEnemies(st, ClientSize.Height, random));
+            effects.Add(new Effect("text", player.X + 220, player.Y - 110, player.X + 220, player.Y - 110, 80, Color.FromArgb(220, 255, 255), "몬스터 정리 후 보스방 자동 진입"));
             firstDesktopNotice = false;
             screen = ScreenMode.Stage;
 

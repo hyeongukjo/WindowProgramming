@@ -487,30 +487,44 @@ namespace DebugHeroFileDungeonRPG
                 "npcHintClose"
             );
         }
-
         private void DrawStageClear(Graphics g)
         {
             Renderer.DrawXPWallpaper(g, ClientRectangle);
-            Renderer.DrawXPTaskbar(g, ClientRectangle, "Stage Clear");
+            TaskbarUI.Shared.Draw(g, ClientRectangle);
 
             using (SolidBrush dim = new SolidBrush(Color.FromArgb(55, 0, 0, 0)))
                 g.FillRectangle(dim, ClientRectangle);
 
             StageInfo st = stages[clearStage - 1];
 
-            string body = "";
-            body += "복구 절차가 완료되었습니다.\n\n";
-            body += "STAGE " + st.Index.ToString("00") + "  " + st.Name + " 클리어.\n\n";
+            string body = BuildStageClearNoticeBody(st);
 
-            if (st.IsBossStage)
-            {
-                body += "격리 기록:\n";
-                body += st.BossName + " 항목이 격리 저장소로 이동되었습니다.\n\n";
-            }
+            Rectangle clearNotice = SystemWindowUI.Shared.GetStandardNoticeRect(ClientSize);
+
+            SystemWindowUI.Shared.DrawAssistantNotice(
+                g,
+                clearNotice,
+                "Windows Recovery Assistant",
+                body,
+                GetStageClearNpcMood(st),
+                Environment.TickCount / 30,
+                buttons,
+                "clearNext",
+                "clearNext"
+            );
+        }
+        private string BuildStageClearNoticeBody(StageInfo st)
+        {
+            string body = "";
+
+            body += "STAGE " + st.Index.ToString("00") + " 복구 리포트\n\n";
+            body += "▶ 처리 항목 : " + GetStageClearProcessText(st) + "\n";
+            body += "▶ 확인 파일 : " + GetStageClearFileText(st) + "\n";
+            body += "▶ 복구 상태 : 완료\n\n";
 
             if (clearStage < stages.Count)
             {
-                body += "새 바로가기가 생성되었습니다.\n";
+                body += "다음 복구 항목이 바탕화면에 생성되었습니다.\n";
                 body += stages[clearStage].FileName;
             }
             else
@@ -518,25 +532,51 @@ namespace DebugHeroFileDungeonRPG
                 body += "최종 입력 절차로 이동합니다.";
             }
 
-            Rectangle clearNotice = new Rectangle(
-                ClientSize.Width / 2 - 310,
-                ClientSize.Height / 2 - 145,
-                620,
-                290
-            );
-
-            SystemWindowUI.Shared.DrawAssistantNotice(
-                g,
-                clearNotice,
-                "System Restore Result",
-                body,
-                NpcMood.Log,
-                Environment.TickCount / 30,
-                buttons,
-                "clearNext",
-                "clearNext"
-            );
+            return body;
         }
+
+        private string GetStageClearProcessText(StageInfo st)
+        {
+            if (st.Index == 1) return "바탕화면 정리 완료";
+            if (st.Index == 2) return "Driver-K 충돌 상태 해제";
+            if (st.Index == 3) return "업데이트 구성 요소 정리 완료";
+            if (st.Index == 4) return "System32 무결성 확인 완료";
+            if (st.Index == 5) return "네트워크 연결 상태 안정화";
+            if (st.Index == 6) return "Blue Screen 충돌 회피 완료";
+            if (st.Index == 7) return "레지스트리 기록 검사 완료";
+            if (st.Index == 8) return "Exception Queen 오류 격리 완료";
+            if (st.Index == 9) return "임시 캐시 정리 완료";
+            if (st.Index == 10) return "Recycle Bin 최종 정리 완료";
+
+            return st.Name + " 복구 완료";
+        }
+
+        private string GetStageClearFileText(StageInfo st)
+        {
+            if (st.Index == 1) return "DESKTOP_CLEANUP.log";
+            if (st.Index == 2) return "CORE_UPGRADE.bin";
+            if (st.Index == 3) return "UPDATE_PATCH_INDEX.bin";
+            if (st.Index == 4) return "SYSTEM32_CHECK.log";
+            if (st.Index == 5) return "PORT_BLOCK_RECORD.dat";
+            if (st.Index == 6) return "BSOD_DUMP_TRACE.tmp";
+            if (st.Index == 7) return "RECENT_ACTIONS.reg";
+            if (st.Index == 8) return "UNSENT_REPORT.tmp";
+            if (st.Index == 9) return "TEMP_CACHE_TRACE.tmp";
+            if (st.Index == 10) return "FINAL_PROCESS_INPUT.sys";
+
+            return "RECOVERY_REPORT.log";
+        }
+
+        private NpcMood GetStageClearNpcMood(StageInfo st)
+        {
+            if (st.Index <= 2) return NpcMood.Happy;
+            if (st.Index <= 5) return NpcMood.Basic;
+            if (st.Index <= 7) return NpcMood.Log;
+            if (st.Index <= 9) return NpcMood.Warning;
+
+            return NpcMood.Damaged;
+        }
+
         private void DrawFinalInput(Graphics g)
         {
             Renderer.DrawStageBackground(g, ClientRectangle, stages[9], 0);
