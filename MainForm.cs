@@ -49,9 +49,10 @@ namespace DebugHeroFileDungeonRPG
         private bool showStageClearPopup = false;
         private int popupBonusCoins = 0;
         private Rectangle popupConfirmBtnBounds;
-
-
-
+        private int lastPlayerHpForMotion = -1;
+        private int playerHitMotionCooldown = 0;
+        private bool playerDeathSequenceActive = false;
+        private int playerDeathSequenceTicks = 0;
 
         public MainForm()
         {
@@ -134,8 +135,6 @@ namespace DebugHeroFileDungeonRPG
             string lightSwordPath = Path.Combine(bossPath, "lightning_sword.png");
             if (File.Exists(lightSwordPath)) Renderer.Img_LightningSword = Image.FromFile(lightSwordPath);
             
-        
-
             
         }
 
@@ -156,6 +155,20 @@ namespace DebugHeroFileDungeonRPG
             }
             else if (screen == ScreenMode.Stage)
             {
+                if (playerDeathSequenceActive)
+                {
+                    PlayerMovementSystem.UpdateActionAnimation(player);
+                    playerDeathSequenceTicks++;
+
+                    if (playerDeathSequenceTicks >= 55)
+                    {
+                        FinishPlayerDeathSequence();
+                    }
+
+                    Invalidate();
+                    return;
+                }
+
                 if (IsStageNpcHintOpen())
                 {
                     Invalidate();
@@ -182,33 +195,90 @@ namespace DebugHeroFileDungeonRPG
                 }
             }
 
-            // ==========================================================
-            // 💡 [통합 사망 처리 엔진] 어떤 원인으로든 HP 유실 시 스테이지 튕김 처리
-            // ==========================================================
-            if (screen == ScreenMode.Stage && player.Hp <= 0)
+            HandlePlayerHpMotion(); //사망처리 코드 수정
+        }
+        private void HandlePlayerHpMotion()
+        {
+            if (screen != ScreenMode.Stage)
             {
-                // 윈도우 에러 알림 비프음 작동 (컨셉 강화)
-                TryBeep(440, 300);
-
-                // 진행 중이던 스테이지 상태 및 몬스터/이펙트 풀 완전 리셋
-                currentStage = 0;
-                enemies.Clear();
-                effects.Clear();
-                weaponDrops.Clear();
-                stageBossPhase = false;
-                stage1BossPhase = false;
-
-                // 1% 보스 패턴 관련 내부 데스링크 플래그도 안전하게 완전 청소
-                bossRuntime.patternManager.IsIllusionActive = false;
-                bossRuntime.patternManager.BinnyClone = null;
-
-                // ⚠️ 스폰되지 않고 즉시 바탕화면(스테이지 선택 화면)으로 강제 퇴장
-                screen = ScreenMode.Desktop;
+                lastPlayerHpForMotion = player.Hp;
                 return;
             }
-            // ==========================================================
-        }
 
+            if (lastPlayerHpForMotion < 0)
+                lastPlayerHpForMotion = player.Hp;
+
+            if (playerHitMotionCooldown > 0)
+                playerHitMotionCooldown--;
+
+            if (player.Hp < lastPlayerHpForMotion && player.Hp > 0)
+            {
+                if (playerHitMotionCooldown <= 0 && player.ActionState != PlayerActionState.Die)
+                {
+                    PlayerMovementSystem.StartHitAnimation(player);
+                    playerHitMotionCooldown = 12;
+                }
+            }
+
+            if (player.Hp <= 0 && !playerDeathSequenceActive)
+            {
+                player.Hp = 0;
+                playerDeathSequenceActive = true;
+                playerDeathSequenceTicks = 0;
+
+                player.MoveVelocityX = 0f;
+                player.MoveVelocityY = 0f;
+                player.TargetX = player.X;
+                player.TargetY = player.Y;
+
+                PlayerMovementSystem.StartDeathAnimation(player);
+
+                effects.Add(new Effect(
+                    "text",
+                    player.X,
+                    player.Y - 92,
+                    player.X,
+                    player.Y - 92,
+                    70,
+                    Color.DarkRed,
+                    "PROCESS TERMINATED"
+                ));
+
+                TryBeep(440, 300);
+            }
+
+            lastPlayerHpForMotion = player.Hp;
+        }
+        private void FinishPlayerDeathSequence()
+        {
+            currentStage = 0;
+
+            enemies.Clear();
+            effects.Clear();
+            weaponDrops.Clear();
+            draggedWeaponDrop = null;
+
+            stageBossPhase = false;
+            stage1BossPhase = false;
+            showStageClearPopup = false;
+
+            bossRuntime.patternManager.IsIllusionActive = false;
+            bossRuntime.patternManager.BinnyClone = null;
+
+            playerDeathSequenceActive = false;
+            playerDeathSequenceTicks = 0;
+            playerHitMotionCooldown = 0;
+
+            player.Hp = player.MaxHp;
+            lastPlayerHpForMotion = player.Hp;
+
+            player.ActionState = PlayerActionState.Idle;
+            player.ActionFrame = 0;
+            player.ActionTick = 0;
+            player.SkillIndex = -1;
+
+            screen = ScreenMode.Desktop;
+        }
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);

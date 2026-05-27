@@ -1723,7 +1723,7 @@ namespace DebugHeroFileDungeonRPG
             return null;
         }
 
-        private static Rectangle GetPlayerMotionSourceRect(Image sheet, int frameCount, int frame)
+        private static Rectangle GetPlayerMotionSourceRect(Image sheet, int frameCount, int frame, string fileName)
         {
             if (frame < 0) frame = 0;
             if (frame >= frameCount) frame = frameCount - 1;
@@ -1731,13 +1731,26 @@ namespace DebugHeroFileDungeonRPG
             int x1 = (int)Math.Round(frame * sheet.Width / (double)frameCount);
             int x2 = (int)Math.Round((frame + 1) * sheet.Width / (double)frameCount);
 
+            int frameW = x2 - x1;
+
             int cropY = (int)(sheet.Height * 0.22f);
             int cropH = (int)(sheet.Height * 0.50f);
 
             if (cropY + cropH > sheet.Height)
                 cropH = sheet.Height - cropY;
 
-            return new Rectangle(x1, cropY, x2 - x1, cropH);
+            int sideCrop = 0;
+
+            if (fileName == "player_gameover.png")
+                sideCrop = (int)(frameW * 0.06f); // 좌우 각각 6% 자르기
+
+            int cropX = x1 + sideCrop;
+            int cropW = frameW - sideCrop * 2;
+
+            if (cropW < 1)
+                cropW = 1;
+
+            return new Rectangle(cropX, cropY, cropW, cropH);
         }
 
         private static void DrawPlayerMotionFrame(Graphics g, PlayerState p, float drawX, float baseY, int facing, string fileName)
@@ -1750,7 +1763,7 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
 
-            Rectangle src = GetPlayerMotionSourceRect(sheet, 6, p.ActionFrame);
+            Rectangle src = GetPlayerMotionSourceRect(sheet, 6, p.ActionFrame, fileName);
 
             float scale = 0.35f;
 

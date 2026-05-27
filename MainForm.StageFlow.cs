@@ -232,6 +232,14 @@ namespace DebugHeroFileDungeonRPG
             player.Hp = player.MaxHp;
             player.Mp = player.MaxMp;
             player.SystemStability = 100;
+            lastPlayerHpForMotion = player.Hp;
+            playerHitMotionCooldown = 0;
+            playerDeathSequenceActive = false;
+            playerDeathSequenceTicks = 0;
+            player.ActionState = PlayerActionState.Idle;
+            player.ActionFrame = 0;
+            player.ActionTick = 0;
+            player.SkillIndex = -1;
             player.X = 180;
             player.Y = ClientSize.Height - 118;
             player.TargetX = player.X;
@@ -312,6 +320,8 @@ namespace DebugHeroFileDungeonRPG
 
             player.Hp = Math.Min(player.MaxHp, player.Hp + Math.Max(20, player.MaxHp / 5));
             player.Mp = Math.Min(player.MaxMp, player.Mp + Math.Max(12, player.MaxMp / 4));
+            lastPlayerHpForMotion = player.Hp;
+            playerHitMotionCooldown = 0;
             player.SystemStability = Math.Min(100, player.SystemStability + 5);
             player.X = 190;
             player.TargetX = player.X;

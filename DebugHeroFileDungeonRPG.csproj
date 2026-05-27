@@ -41,6 +41,12 @@
     <None Update="Assets\Backgrounds\stage01_background.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Assets\Caracters\Player\player_attacked.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Caracters\Player\player_gameover.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Assets\Characters\Enemise\Dash_1.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
