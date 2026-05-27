@@ -155,7 +155,15 @@ namespace DebugHeroFileDungeonRPG
             }
             else if (screen == ScreenMode.Stage)
             {
-                if (tick % 45 == 0 && player.Mp < player.MaxMp) player.Mp = Math.Min(player.MaxMp, player.Mp + 1);
+                if (IsStageNpcHintOpen())
+                {
+                    Invalidate();
+                    return;
+                }
+
+                if (tick % 45 == 0 && player.Mp < player.MaxMp)
+                    player.Mp = Math.Min(player.MaxMp, player.Mp + 1);
+
                 UpdateStage();
             }
             Invalidate();

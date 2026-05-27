@@ -21,6 +21,13 @@ namespace DebugHeroFileDungeonRPG
 
             return Math.Max(ClientSize.Width, 1650 + st.Index * 180);
         }
+        private bool IsStageNpcHintOpen()
+        {
+            return screen == ScreenMode.Stage &&
+                   currentStage > 0 &&
+                   !stageNpcHintClosed &&
+                   !showStageClearPopup;
+        }
 
         private void UpdateStage()
         {
@@ -177,7 +184,7 @@ namespace DebugHeroFileDungeonRPG
                                         UpgradeLevel = player.WeaponLevel + 1
                                     };
                                     weaponDrops.Add(drop);
-                                    // 💡 [요청 반영 삭제]: 일반 스테이지 "모든 무리 정화! UPGRADE" 알림 문구 삭제
+                                    // [요청 반영 삭제]: 일반 스테이지 "모든 무리 정화! UPGRADE" 알림 문구 삭제
                                 }
                             }
                         }
@@ -192,7 +199,7 @@ namespace DebugHeroFileDungeonRPG
                                 currentWaveIndex++;
 
                                 enemies.AddRange(StageEnemyFactory.CreateWaveEnemies(st, currentWaveIndex, ClientSize.Height));
-                                // 💡 [요청 반영 삭제]: 일반 스테이지 "X 무리 출현! 시스템 정화" 알림 문구 삭제
+                                // [요청 반영 삭제]: 일반 스테이지 "X 무리 출현! 시스템 정화" 알림 문구 삭제
                                 TryBeep(640, 70);
                             }
                         }

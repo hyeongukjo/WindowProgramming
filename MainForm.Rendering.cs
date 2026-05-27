@@ -218,6 +218,11 @@ namespace DebugHeroFileDungeonRPG
             }
 
             DrawHud(g, st);
+            if (IsStageNpcHintOpen())
+            {
+                DrawStageNpcHint(g, st);
+                return;
+            }
             foreach (GameEntity m in enemies) if (m.Hp > 0) Renderer.DrawEnemy(g, m, cameraX, ClientSize.Height); 
             for (int i = 0; i < weaponDrops.Count; i++) Renderer.DrawWeaponUpgradeFile(g, weaponDrops[i], cameraX);
             bossRuntime.DrawOverlay(g, currentStage, stageBossPhase, cameraX, ClientSize);
@@ -350,7 +355,7 @@ namespace DebugHeroFileDungeonRPG
             }
 
             for (int i = 0; i < effects.Count; i++) Renderer.DrawEffect(g, effects[i], cameraX);
-            if (!stageNpcHintClosed && !showStageClearPopup)
+            if (IsStageNpcHintOpen())
             {
                 DrawStageNpcHint(g, st);
             }

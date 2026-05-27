@@ -70,6 +70,11 @@ namespace DebugHeroFileDungeonRPG
             }
             if (screen == ScreenMode.Stage)
             {
+                if (IsStageNpcHintOpen() && (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Space))
+                {
+                    AdvanceStageNpcHint();
+                    return;
+                }
                 if (e.KeyCode == Keys.Left) MovePlayerBy(-160, 0);
                 else if (e.KeyCode == Keys.Right) MovePlayerBy(160, 0);
                 else if (e.KeyCode == Keys.Up) MovePlayerBy(0, -120);
