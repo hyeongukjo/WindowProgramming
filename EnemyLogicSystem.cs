@@ -33,20 +33,28 @@ namespace DebugHeroFileDungeonRPG
 
                     string allocatedPattern = "None";
 
-                    if (m.Name == "Security_Firewall" || m.Name == "Alert_Popup_Spam")
+                    // 💡 [버그 해결]: 원본 프로젝트 명세 파일의 모든 일반 몹 이름을 패키징하여 연동 통로 개통
+                    // A. 돌진형 몬스터 그룹 (1성 및 정예 포함)
+                    if (m.Name == "Security_Firewall" || m.Name == "Alert_Popup_Spam" || m.Name == "Broken_Document.txt" || m.Name == "Broken Key" || m.Name == "Temp Fragment")
                     {
                         allocatedPattern = "Delay_Inertia_Dash";
                     }
-                    else if (m.Name == "Runtime_Clock_Buoy")
+                    // B. 부표형 포탑 몬스터 그룹 (Spread 전용 - 이 구역이 완전히 뚫려야 정상 사출됩니다)
+                    else if (m.Name == "Runtime_Clock_Buoy" || m.Name == "Empty_Folder" || m.Name == "Open Port Buoy" || m.Name == "Firewall Barnacle")
                     {
                         allocatedPattern = "Heavy_Projectile_Spread";
                     }
-                    else if (m.Name == "Registry_Ghost_Key")
+                    // C. 유령형 텔레포트 몬스터 그룹
+                    else if (m.Name == "Registry_Ghost_Key" || m.Name == "Broken_Shortcut.lnk" || m.Name == "Request Crab" || m.Name == "Unsent Report" || m.Name == "Recent Ghost")
                     {
                         allocatedPattern = "Random_Teleport_Barrage";
                     }
+                    else if (m.Name == "Registry_Ghost_Key" || m.Name == "Packet_Minnow" || m.Name == "Broken_Shortcut.lnk" || m.Name == "Request Crab" || m.Name == "Unsent Report" || m.Name == "Recent Ghost")
+                    {
+                        allocatedPattern = "Random_Teleport_Barrage";
+}
 
-                    // * [1. Delay_Inertia_Dash 패턴 최종 정밀 교정 - 플레이어 방향성 완전 차단]
+                    // * [1. Delay_Inertia_Dash 패턴 구현 - 돌진 후 임펄스 초기화 분산]
                     if (allocatedPattern == "Delay_Inertia_Dash")
                     {
                         m.StateTimer++;
@@ -70,40 +78,66 @@ namespace DebugHeroFileDungeonRPG
                             m.VX *= 0.94f; m.VY *= 0.94f;
                             m.X += m.VX; m.Y += m.VY;
 
-                            // * [돌진 종료 판정]
                             if (Math.Abs(m.VX) < 0.15f && Math.Abs(m.VY) < 0.15f)
                             {
-                                m.MonsterState = 2; // 튕김 전용 상태로 전환
+                                m.MonsterState = 2; // 튕김 전용 상태로 분리 가드
                                 m.StateTimer = 0;
 
-                                // 💡 [핵심 수정]: 기존 속도를 완전히 지우고 플레이어와 무관한 각도 생성
-                                m.VX = 0; m.VY = 0;
+                                m.VX = 0; m.VY = 0; // 플레이어 방향 속도 완전 거세
 
-                                // * 개체별 고유 시드를 이용한 완전 무작위 방향(0~360도) 결정
                                 double randomAngle = rand.NextDouble() * Math.PI * 2.0;
-
-                                // * [과감한 분산]: 최소 15.0에서 최대 30.0 사이의 강력한 임펄스 부여
-                                float scatterForce = 15.0f + (float)(rand.NextDouble() * 15.0f);
+                                float scatterForce = 15.0f + (float)(rand.NextDouble() * 15.0f); // 과감한 5배급 기하학 분산
 
                                 m.VX = (float)Math.Cos(randomAngle) * scatterForce;
                                 m.VY = (float)Math.Sin(randomAngle) * scatterForce;
                             }
                         }
-                        else if (m.MonsterState == 2) // 튕김 전용 상태 (관성 가드 해제 구역)
+                        else if (m.MonsterState == 2) // 튕김 상태
                         {
-                            // * 플레이어를 향하는 연산 없이 순수하게 튕겨 나간 벡터로만 이동
                             m.VX *= 0.92f; m.VY *= 0.92f;
                             m.X += m.VX; m.Y += m.VY;
 
                             if (Math.Abs(m.VX) < 0.3f && Math.Abs(m.VY) < 0.3f)
                             {
-                                m.MonsterState = 0; // 충분히 흩어진 후 대기 상태로 복귀
+                                m.MonsterState = 0;
                                 m.StateTimer = 0;
                             }
                         }
                     }
 
-                    // * [3. Random_Teleport_Barrage 패턴 구현 - 무작위 텔레포트 탄막 사출]
+                    // * [2. Heavy_Projectile_Spread 패턴 구현 - 부표형 투사체 사출 모듈]
+                    else if (allocatedPattern == "Heavy_Projectile_Spread")
+                    {
+                        if (tick % (110 + i * 15) == 0)
+                        {
+                            m.VX += Math.Sign(player.X - m.X) * 0.12f;
+                            m.VY += Math.Sign(player.Y - m.Y) * 0.08f;
+                        }
+                        float maxSpeed = 0.9f;
+                        float speed = (float)Math.Sqrt(m.VX * m.VX + m.VY * m.VY);
+                        if (speed > maxSpeed) { m.VX = m.VX / speed * maxSpeed; m.VY = m.VY / speed * maxSpeed; }
+                        m.X += m.VX; m.Y += m.VY;
+
+                        // 70틱 주기로 정밀 탄막 사출
+                        if (tick % 70 == 0)
+                        {
+                            // 💡 [기획 명세 고수]: 상대적 길이 오차 완전 격리 공식
+                            // 단위 벡터 추정 후 고정 사거리 계수(550픽셀) 곱연산 수행
+                            float tDx = player.X - m.X;
+                            float tDy = player.Y - m.Y;
+                            float tDist = (float)Math.Sqrt(tDx * tDx + tDy * tDy);
+                            if (tDist < 1) tDist = 1;
+
+                            float fixedLength = 550f; // 변하지 않는 절대적 고정 길이 가이드
+                            float fixedEndX = m.X + (tDx / tDist) * fixedLength;
+                            float fixedEndY = m.Y + (tDy / tDist) * fixedLength;
+
+                            // 이펙트 매니저 유입 등록
+                            effects.Add(new Effect("projectile", m.X, m.Y, fixedEndX, fixedEndY, 40, Color.OrangeRed, "TRASH"));
+                        }
+                    }
+
+                    // * [3. Random_Teleport_Barrage 패턴 구현 - 유령형 6방향 탄막 사출]
                     else if (allocatedPattern == "Random_Teleport_Barrage")
                     {
                         m.StateTimer++;
@@ -120,9 +154,7 @@ namespace DebugHeroFileDungeonRPG
                             for (int k = 0; k < 6; k++)
                             {
                                 float angle = baseAngle + (float)(k * Math.PI * 2 / 6);
-                                float speedX = (float)Math.Cos(angle) * 3.5f; float speedY = (float)Math.Sin(angle) * 3.5f;
 
-                                // * [동일 적용]: 유령의 6방향 전방위 탄막 역시 플레이어 위치와 상관없이 절대 길이 600픽셀로 영구 고정 직선 관통 유도
                                 float bulletLength = 600f;
                                 float bEndX = m.X + (float)Math.Cos(angle) * bulletLength;
                                 float bEndY = m.Y + (float)Math.Sin(angle) * bulletLength;
@@ -132,9 +164,7 @@ namespace DebugHeroFileDungeonRPG
                         }
                     }
 
-                    // ==========================================================
-                    // 💡 [유저 브랜치 복원] 패턴이 None일 때 작동하는 일반 잔몹 기본 물리 추적
-                    // ==========================================================
+                    // 패턴 가드를 받지 못하는 나머지 예외 잡몹들을 위한 유연한 백업 추적선
                     if (allocatedPattern == "None")
                     {
                         m.VX += Math.Sign(player.X - m.X) * 0.15f;
@@ -145,7 +175,6 @@ namespace DebugHeroFileDungeonRPG
                         m.X += m.VX; m.Y += m.VY;
                     }
 
-                    // * [공통 외곽 벽면 충돌 제동]
                     if (m.X < minX) { m.X = minX; m.VX = Math.Abs(m.VX); }
                     if (m.X > maxX) { m.X = maxX; m.VX = -Math.Abs(m.VX); }
                     if (m.Y < minY) { m.Y = minY; m.VY = Math.Abs(m.VY); }
@@ -168,9 +197,6 @@ namespace DebugHeroFileDungeonRPG
 
                 if (m.HitFlash > 0) m.HitFlash--;
 
-                // ==========================================================
-                // 💡 [통합 물리 충돌 엔진] 몸체 충돌 및 원거리 탄막 피격 모듈 복합 가동 (24틱 주기)
-                // ==========================================================
                 if (tick % 24 == 0)
                 {
                     bool isHit = false;
@@ -179,7 +205,7 @@ namespace DebugHeroFileDungeonRPG
                     if (m.Bounds.IntersectsWith(player.Bounds))
                     {
                         isHit = true;
-                        hitDamagePercent = rand.Next(7, 16) / 100.0; // 기본 최대 체력의 7% ~ 15% 랜덤 대미지 배정
+                        hitDamagePercent = rand.Next(7, 16) / 100.0;
                     }
                     else
                     {
@@ -197,7 +223,7 @@ namespace DebugHeroFileDungeonRPG
                                     if (eff.Text == "BULLET" || eff.Text == "TRASH" || eff.Text == "SPARK_LINE" || eff.Text == "TELEPORT_BULLET")
                                     {
                                         isHit = true;
-                                        eff.Ticks = 0; // 피격된 탄막 즉시 소멸
+                                        eff.Ticks = 0;
                                         hitDamagePercent = rand.Next(7, 16) / 100.0;
                                         break;
                                     }
@@ -217,8 +243,6 @@ namespace DebugHeroFileDungeonRPG
                         effects.Add(new Effect("text", player.X, player.Y - 70, player.X, player.Y - 70, 34, Color.OrangeRed, "-" + damage));
                         effects.Add(new Effect("spark", player.X, player.Y - 32, player.X, player.Y - 32, 22, Color.Red, ""));
 
-                        // ⚠️ [유저 브랜치 핵심 스펙 철저 고수] 
-                        // 로컬 부활을 차단하고 HP를 즉시 0으로 강제 세팅하여 MainForm 하단의 퇴장 엔진을 직동시킵니다.
                         if (player.Hp <= 0)
                         {
                             player.Hp = 0;

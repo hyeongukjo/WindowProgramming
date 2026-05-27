@@ -269,7 +269,7 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
-        // * [정밀 크롭 드로우 라우터 연결 조율]
+        // * [Renderer.cs 내부: 3x3 전체 시트 번짐 현상 전면 처단 최종 종결 버전]
         private static void DrawFileMonster(Graphics g, Rectangle r, GameEntity e)
         {
             Image sheet = LoadStrictMonsterAssetDirect(e);
@@ -280,6 +280,67 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
 
+            // 💡 [최종 종결 가드 격실]: 팩토리가 주는 에셋 이름이 "Teleport_2.png"일 때 하단의 낡은 연산틀을 차단합니다.
+            if (e.Kind != null && e.Kind.Contains("Teleport_2"))
+            {
+                // 형진님이 명세하신 1024x1024 해상도 기반 오차 없는 완벽한 정수 3분할 세팅
+                const int fixedCellW = 341;
+                const int fixedCellH = 341;
+                const int cols = 3;
+
+                int targetFrameIndex = 0;
+
+                // * [StateTimer 기반 애니메이션 동기화]
+                if (e.StateTimer >= 115) // 증발 단계: 2행 3열 (인덱스 5)
+                {
+                    targetFrameIndex = 5;
+                }
+                else if (e.StateTimer >= 0 && e.StateTimer < 10) // 안착 단계: 3행 3열 (인덱스 8)
+                {
+                    targetFrameIndex = 8;
+                }
+                else // 평상시 대기 애니메이션 (0~4번 프레임 순환)
+                {
+                    targetFrameIndex = (Environment.TickCount / 150) % 5;
+                }
+
+                int col = targetFrameIndex % cols;
+                int row = targetFrameIndex / cols;
+
+                // 💡 [진짜 9등분 크롭]: 옆 칸 레이아웃이 절대 침범하지 못하도록 341 단위로 정확히 쪼개냅니다.
+                int srcX = col * fixedCellW;
+                int srcY = row * fixedCellH;
+
+                // 외곽 테두리선의 압축 노이즈 제거를 위해 사방 3픽셀 안전 가드 마진 수축
+                Rectangle srcRect = new Rectangle(srcX + 3, srcY + 3, fixedCellW - 6, fixedCellH - 6);
+
+                // 💡 [찌그러짐 원천 차단 그릇]: 145x120의 비대칭 규격을 깨부수고, 완벽한 1:1 정방형 130px 크기 그릇 강제 부여!
+                int displaySize = 130;
+                Rectangle perfectGridDst = new Rectangle(
+                    r.X + (r.Width / 2) - (displaySize / 2),
+                    r.Y + r.Height - displaySize + 12, // 발바닥 지면 완벽 밀착 보정값
+                    displaySize,
+                    displaySize
+                );
+
+                // * 도트 깨짐 및 압축 오차 방지 필터 세팅
+                var oldInterpolation = g.InterpolationMode;
+                var oldPixelOffset = g.PixelOffsetMode;
+                g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                g.PixelOffsetMode = PixelOffsetMode.Half;
+
+                // 🌟 전체 시트 출력을 완전 중단하고, 정밀 분할된 딱 1칸만 드로우!
+                g.DrawImage(sheet, perfectGridDst, srcRect, GraphicsUnit.Pixel);
+
+                // * 엔진 상태 복원 후 즉시 종료하여 하단의 전체 드로우 else 구역을 원천 차단(Bypass)합니다.
+                g.InterpolationMode = oldInterpolation;
+                g.PixelOffsetMode = oldPixelOffset;
+                return;
+            }
+
+            // ==========================================================
+            // 기존의 멀쩡했던 4x4 일반 잡몹들(Dash, Spread 등)의 원본 라우팅 구역
+            // ==========================================================
             int drawW = 145, drawH = 120;
             Rectangle dst = new Rectangle(
                 r.X + 32 - (drawW / 2),
@@ -288,14 +349,13 @@ namespace DebugHeroFileDungeonRPG
                 drawH
             );
 
-            var oldInterpolation = g.InterpolationMode;
-            var oldPixelOffset = g.PixelOffsetMode;
-            var oldSmoothing = g.SmoothingMode;
+            var prevInterpolation = g.InterpolationMode;
+            var prevPixelOffset = g.PixelOffsetMode;
+            var prevSmoothing = g.SmoothingMode;
             g.InterpolationMode = InterpolationMode.NearestNeighbor;
             g.PixelOffsetMode = PixelOffsetMode.Half;
             g.SmoothingMode = SmoothingMode.None;
 
-            // 💡 [매칭 성공]: 파일명(e.Kind) 가이드에 따라 우리가 구축해 둔 1~4번 해석 연산 엔진을 안전하게 강제 기동합니다.
             if (e.Kind == "Dash_1.png")
             {
                 Draw_Image_Interpretation_1(g, sheet, dst, e);
@@ -308,7 +368,7 @@ namespace DebugHeroFileDungeonRPG
             {
                 Draw_Image_Interpretation_3(g, sheet, dst, e);
             }
-            else if (e.Kind == "Teleport_1.png" || e.Kind == "Teleport_2.png")
+            else if (e.Kind == "Teleport_1.png")
             {
                 Draw_Image_Interpretation_4(g, sheet, dst, e);
             }
@@ -318,9 +378,9 @@ namespace DebugHeroFileDungeonRPG
                 g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
             }
 
-            g.InterpolationMode = oldInterpolation;
-            g.PixelOffsetMode = oldPixelOffset;
-            g.SmoothingMode = oldSmoothing;
+            g.InterpolationMode = prevInterpolation;
+            g.PixelOffsetMode = prevPixelOffset;
+            g.SmoothingMode = prevSmoothing;
 
             if (e.HitFlash > 0)
             {
@@ -475,6 +535,67 @@ namespace DebugHeroFileDungeonRPG
             );
 
             g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+        }
+        // * [Renderer.cs 내부: 1024x1024 자산 비율 왜곡 전면 수정 버전]
+        private static void Draw_Image_Interpretation_5(Graphics g, Image sheet, Rectangle dst, GameEntity e)
+        {
+            // 💡 [수학적 9등분 공식]: 1024 / 3 = 정확히 341px 픽셀 격리
+            const int cellW = 341;
+            const int cellH = 341;
+            const int cols = 3;
+
+            int targetFrameIndex = 0;
+
+            // * [타이머 기반 프레임 추적 애니메이션]
+            if (e.StateTimer >= 115) // 증발 단계: 2행 3열 (인덱스 5)
+            {
+                targetFrameIndex = 5;
+            }
+            else if (e.StateTimer >= 0 && e.StateTimer < 10) // 안착 단계: 3행 3열 (인덱스 8)
+            {
+                targetFrameIndex = 8;
+            }
+            else // 일반 대기 (0~4번 프레임 순환)
+            {
+                targetFrameIndex = (Environment.TickCount / 150) % 5;
+            }
+
+            int col = targetFrameIndex % cols;
+            int row = targetFrameIndex / cols;
+
+            // 💡 [원본 소스 크롭]: 옆 칸 데이터가 절대 스며들지 못하게 정밀 341px 컷오프
+            int srcX = col * cellW;
+            int srcY = row * cellH;
+
+            // 외곽 경계선 노이즈 방지를 위해 사방 2픽셀씩만 안쪽으로 격리 수축
+            Rectangle srcRect = new Rectangle(srcX + 2, srcY + 2, cellW - 4, cellH - 4);
+
+            // 💡 [진짜 해결책 - 왜곡 그릇 전면 폐기]:
+            // * 위쪽 함수에서 강제로 구겨 넣은 dst.Width(145), dst.Height(120)의 비대칭 규격을 무시합니다!
+            // * 원본 1:1 도트 비율이 완벽하게 유지되도록 가로세로를 동일한 160px 정방형 그릇으로 재조정합니다.
+            int finalDisplaySize = 160;
+
+            // * 체력바 밑 지면에 발바닥이 완벽하게 밀착되도록 중심축 좌표 재계산
+            Rectangle perfectGridDst = new Rectangle(
+                dst.X + (dst.Width / 2) - (finalDisplaySize / 2),
+                dst.Y + dst.Height - finalDisplaySize + 10, // Y축 발바닥 고정 보정값
+                finalDisplaySize,
+                finalDisplaySize
+            );
+
+            // * [도트 깨짐 및 압축 오차 방지 필터 세팅]
+            var oldInterpolation = g.InterpolationMode;
+            var oldPixelOffset = g.PixelOffsetMode;
+
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+
+            // 🌟 교정된 정방형 그릇에 정밀 분할된 1칸 이미지 드로우
+            g.DrawImage(sheet, perfectGridDst, srcRect, GraphicsUnit.Pixel);
+
+            // * 엔진 상태 복원
+            g.InterpolationMode = oldInterpolation;
+            g.PixelOffsetMode = oldPixelOffset;
         }
         private static Image LoadStageBackgroundImage(int stageIndex, bool bossRoom)
         {

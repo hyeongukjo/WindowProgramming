@@ -68,6 +68,9 @@
     <None Update="Assets\Characters\Enemise\Teleport_1.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Assets\Characters\Enemise\Teleport_2.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Assets\Characters\NPC\npc_emotions.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

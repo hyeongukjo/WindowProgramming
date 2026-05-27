@@ -12,29 +12,42 @@ namespace DebugHeroFileDungeonRPG
 
             int stageNum = st.Index;
 
-            // * [1. 제미나이 새 이름 명세 풀 정의]
-            string[] testAssets = { "Dash_1.png", "Dash_2.png", "Spread_1.png", "Spread_2.png", "Teleport_1.png" };
-            string[] newNames = { "Security_Firewall", "Alert_Popup_Spam", "Runtime_Clock_Buoy", "Runtime_Clock_Buoy", "Registry_Ghost_Key" };
+            // * [1. 6종의 고유 몬스터 자산 명세 완벽 유지]
+            string[] testAssets = {
+                "Dash_1.png", "Dash_2.png",
+                "Spread_1.png", "Spread_2.png",
+                "Teleport_1.png", "Teleport_2.png"
+            };
 
-            // * [2. 무작위 분배 공식 연동]
-            int monsterTypeIndex = (stageNum + waveIndex) % testAssets.Length;
+            string[] newNames = {
+                "Security_Firewall", "Alert_Popup_Spam",
+                "Runtime_Clock_Buoy", "Runtime_Clock_Buoy",
+                "Registry_Ghost_Key", "Packet_Minnow"
+            };
+
+            // 💡 [2. 규칙적 순서 전면 파괴 - 하이퍼 비선형 랜덤 믹싱 알고리즘]
+            // * [돌진->포탑->텔포의 뻔한 고정 순서 시퀀스를 완전히 깨부숩니다]
+            // * [스테이지와 웨이브 값에 소수 곱 연산과 XOR 비트 노이즈를 믹스하여 불규칙성을 극대화합니다]
+            int hashSeed = (stageNum * 269) ^ (waveIndex * 397);
+            hashSeed = (hashSeed ^ (hashSeed >> 5)) * 7919; // 소수 기반 비선형 난수 유도
+
+            int monsterTypeIndex = Math.Abs(hashSeed) % testAssets.Length;
+
             string monsterName = newNames[monsterTypeIndex];
             string targetAssetFileName = testAssets[monsterTypeIndex];
 
-            // * [3. 일반 몹 기준 베이스 스펙 연산]
-            int baseHp = 44 + stageNum * 16;
+            // * [3. 형진님 마스터 명세]: 기본 수치 150 및 스테이지별 가중치 100 밸런스 완전 사수
+            int baseHp = 150 + stageNum * 100;
             int baseAtk = 4 + stageNum;
 
             int finalHp = baseHp + (waveIndex * 14);
             int finalAtk = baseAtk + waveIndex;
 
-            // * [4. 형진님 지시 마스터 정예화 조건 주입]: 패턴 종류와 관계없이 무조건 4웨이브 타겟팅
-            // * [4웨이브(waveIndex == 3)일 때만 정확하게 스폰 카운트를 2마리로 줄이고 능력치를 증폭합니다]
+            // * [4. 4웨이브 정예 중간 보스 규칙 완벽 사수]
             int spawnCount = (waveIndex == 3) ? 2 : 4;
 
             if (waveIndex == 3)
             {
-                // * [기존의 잘못된 3배 곱 연산을 전면 폐기하고, 약속된 공식만 대입합니다]
                 finalHp = (int)(finalHp * 2.5f);   // * [체력 정확히 2.5배 격상]
                 finalAtk = (int)(finalAtk * 1.5f); // * [공격력 정확히 1.5배 격상]
             }
