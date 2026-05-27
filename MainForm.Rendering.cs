@@ -492,27 +492,51 @@ namespace DebugHeroFileDungeonRPG
         {
             Renderer.DrawXPWallpaper(g, ClientRectangle);
             Renderer.DrawXPTaskbar(g, ClientRectangle, "Stage Clear");
+
+            using (SolidBrush dim = new SolidBrush(Color.FromArgb(55, 0, 0, 0)))
+                g.FillRectangle(dim, ClientRectangle);
+
             StageInfo st = stages[clearStage - 1];
-            string body = "복구 절차가 완료되었습니다.\n\n" + st.Name + " 클리어.\n";
-            if (st.IsBossStage) body += "보스 개체 [" + st.BossName + "]는 완전히 삭제되지 않고 격리 기록으로 보관됩니다.\n";
-            if (clearStage < stages.Count) body += "새 바로가기 생성: " + stages[clearStage].FileName + "\n";
-            else body += "최종 입력 절차로 이동합니다.\n";
-            body += "\n문서 고정 흐름:\n" + st.Flow;
-            Rectangle clearNotice = SystemWindowUI.Shared.GetLargeNoticeRect(ClientSize);
-            using (SolidBrush dim = new SolidBrush(Color.FromArgb(60, 0, 0, 0))) g.FillRectangle(dim, ClientRectangle);
+
+            string body = "";
+            body += "복구 절차가 완료되었습니다.\n\n";
+            body += "STAGE " + st.Index.ToString("00") + "  " + st.Name + " 클리어.\n\n";
+
+            if (st.IsBossStage)
+            {
+                body += "격리 기록:\n";
+                body += st.BossName + " 항목이 격리 저장소로 이동되었습니다.\n\n";
+            }
+
+            if (clearStage < stages.Count)
+            {
+                body += "새 바로가기가 생성되었습니다.\n";
+                body += stages[clearStage].FileName;
+            }
+            else
+            {
+                body += "최종 입력 절차로 이동합니다.";
+            }
+
+            Rectangle clearNotice = new Rectangle(
+                ClientSize.Width / 2 - 310,
+                ClientSize.Height / 2 - 145,
+                620,
+                290
+            );
+
             SystemWindowUI.Shared.DrawAssistantNotice(
                 g,
                 clearNotice,
-                "Windows Recovery Assistant",
+                "System Restore Result",
                 body,
-                st.NpcMood,
+                NpcMood.Log,
                 Environment.TickCount / 30,
                 buttons,
                 "clearNext",
-                null
+                "clearNext"
             );
         }
-
         private void DrawFinalInput(Graphics g)
         {
             Renderer.DrawStageBackground(g, ClientRectangle, stages[9], 0);

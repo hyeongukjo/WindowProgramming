@@ -34,6 +34,7 @@ namespace DebugHeroFileDungeonRPG
         private static readonly Dictionary<string, Image> playerMotionSheetCache = new Dictionary<string, Image>();
         private static readonly Dictionary<string, Rectangle> playerActionTrimCache = new Dictionary<string, Rectangle>();
         private static Image playerStillSwordImage;
+        private static Image playerShieldImage;
         private static Image normalMonsterSheet = null;
         // 몬스터 이미지 호출 관련 코드 //
         private static readonly Dictionary<string, Image> strictMonsterCache = new Dictionary<string, Image>();
@@ -888,24 +889,18 @@ namespace DebugHeroFileDungeonRPG
         }
         private static int GetNpcEmotionTopIgnore(NpcMood mood)
         {
-            // 2행/3행 표정은 윗칸 캐릭터 발 픽셀이 칸 경계에 걸려 들어올 수 있음
-            if (mood == NpcMood.Happy ||
-                mood == NpcMood.Question ||
-                mood == NpcMood.Error ||
-                mood == NpcMood.Bsod ||
-                mood == NpcMood.Damaged)
+            if (mood == NpcMood.Log)
             {
-                return 34;
+                return 15;
             }
 
-            // 4행은 위쪽에 오브젝트가 있음
             if (mood == NpcMood.Progress ||
                 mood == NpcMood.Thinking ||
-                mood == NpcMood.Warning ||
-                mood == NpcMood.Log)
+                mood == NpcMood.Warning)
             {
-                return 14;
+                return 10;
             }
+
 
             return 0;
         }
@@ -1582,7 +1577,92 @@ namespace DebugHeroFileDungeonRPG
 
             return playerStillSwordImage;
         }
+        private static Rectangle GetPlayerShieldSourceRect(Image sheet, int frame)
+        {
+            int columns = 3;
+            int rows = 3;
+            int totalFrames = columns * rows;
 
+            frame %= totalFrames;
+            if (frame < 0) frame = 0;
+
+            int col = frame % columns;
+            int row = frame / columns;
+
+            int x1 = (int)Math.Round(col * sheet.Width / (double)columns);
+            int x2 = (int)Math.Round((col + 1) * sheet.Width / (double)columns);
+            int y1 = (int)Math.Round(row * sheet.Height / (double)rows);
+            int y2 = (int)Math.Round((row + 1) * sheet.Height / (double)rows);
+
+            // 칸 구분선이 같이 잘리는 것 방지
+            int padding = 3;
+
+            return Rectangle.FromLTRB(
+                x1 + padding,
+                y1 + padding,
+                x2 - padding,
+                y2 - padding
+            );
+        }
+        private static Image GetPlayerShieldImage()
+        {
+            if (playerShieldImage != null)
+                return playerShieldImage;
+
+            string path = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "Assets",
+                "Caracters",
+                "Player",
+                "player_shield.png"
+            );
+
+            if (File.Exists(path))
+                playerShieldImage = Image.FromFile(path);
+
+            return playerShieldImage;
+        }
+        private static bool DrawPlayerShieldOverlay(Graphics g, PlayerState p, float drawX, float baseY)
+        {
+            Image shield = GetPlayerShieldImage();
+
+            if (shield == null)
+                return false;
+
+            // DefenseTicks = 100에서 시작한다고 가정
+            // 시간이 지날수록 0~8번 프레임 순서대로 재생
+            int elapsed = Math.Max(0, 100 - p.DefenseTicks);
+            int frame = (elapsed / 4) % 9;
+
+            Rectangle src = GetPlayerShieldSourceRect(shield, frame);
+
+            // 크기 조절
+            float scale = 0.60f;
+
+            int drawW = (int)(src.Width * scale);
+            int drawH = (int)(src.Height * scale);
+
+            // 캐릭터 중심보다 살짝 위에 방어막 중심 배치
+            float shieldCenterY = baseY - 62f;
+
+            Rectangle dst = new Rectangle(
+                (int)(drawX - drawW / 2),
+                (int)(shieldCenterY - drawH / 2),
+                drawW,
+                drawH
+            );
+
+            GraphicsState state = g.Save();
+
+            g.InterpolationMode = InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode = PixelOffsetMode.Half;
+
+            g.DrawImage(shield, dst, src, GraphicsUnit.Pixel);
+
+            g.Restore(state);
+
+            return true;
+        }
         private static void DrawPlayerStillSprite(Graphics g, PlayerState p, float drawX, float baseY, int facing)
         {
             Image img = GetPlayerStillSwordImage();
@@ -1774,11 +1854,11 @@ namespace DebugHeroFileDungeonRPG
                 using (SolidBrush aura = new SolidBrush(Color.FromArgb(walking ? 24 : 18, 70, 180, 255)))
                     g.FillEllipse(aura, (int)drawX - 54, (int)baseY - 112, 108, 120);
             }
-            if (p.DefenseTicks > 0)
+            /*if (p.DefenseTicks > 0)
             {
                 using (Pen shield = new Pen(Color.FromArgb(150, 120, 210, 255), 3f))
                     g.DrawEllipse(shield, drawX - 58, baseY - 120, 116, 130);
-            }
+            }*/
             if (p.ActionState == PlayerActionState.Die)
             {
                 DrawPlayerMotionFrame(g, p, drawX, baseY, facing, "player_gameover.png");
@@ -2244,7 +2324,6 @@ namespace DebugHeroFileDungeonRPG
                     g.FillRectangle(rb, px - sz / 2, py - sz / 2, sz, sz);
             }
         }
-
         public static void DrawEnemy(Graphics g, GameEntity e, float cameraX)
         {
             RectangleF b = e.Bounds;
@@ -2293,40 +2372,53 @@ namespace DebugHeroFileDungeonRPG
         {
             RectangleF b = drop.Bounds;
             Rectangle r = Rectangle.Round(new RectangleF(b.X - cameraX, b.Y, b.Width, b.Height));
-            int glowAlpha = drop.Dragging ? 110 : 70;
-            using (SolidBrush glow = new SolidBrush(Color.FromArgb(glowAlpha, 80, 190, 255)))
-                g.FillEllipse(glow, r.X - 16, r.Y - 14, r.Width + 32, r.Height + 28);
-            using (SolidBrush shadow = new SolidBrush(Color.FromArgb(85, 0, 0, 0)))
-                g.FillEllipse(shadow, r.X + 6, r.Bottom - 8, r.Width - 12, 12);
 
-            Point[] paper =
-            {
-                new Point(r.X + 8, r.Y + 4),
-                new Point(r.Right - 14, r.Y + 4),
-                new Point(r.Right - 4, r.Y + 16),
-                new Point(r.Right - 4, r.Bottom - 10),
-                new Point(r.X + 8, r.Bottom - 10)
-            };
-            using (LinearGradientBrush fill = new LinearGradientBrush(r, Color.White, Color.FromArgb(185, 225, 255), 90f))
-                g.FillPolygon(fill, paper);
-            using (Pen outline = new Pen(Color.FromArgb(40, 105, 210), 2f))
-                g.DrawPolygon(outline, paper);
-            using (SolidBrush fold = new SolidBrush(Color.FromArgb(120, 170, 225)))
-            {
-                Point[] corner =
-                {
-                    new Point(r.Right - 14, r.Y + 4),
-                    new Point(r.Right - 4, r.Y + 16),
-                    new Point(r.Right - 14, r.Y + 16)
-                };
-                g.FillPolygon(fold, corner);
-            }
-            using (Font f = F(7f, FontStyle.Bold))
-            using (SolidBrush text = new SolidBrush(Color.FromArgb(25, 70, 150)))
-            {
-                g.DrawString("WEAPON", f, text, new Rectangle(r.X + 6, r.Y + 20, r.Width - 12, 14), Center());
-                g.DrawString("+" + drop.UpgradeLevel, f, text, new Rectangle(r.X + 6, r.Y + 38, r.Width - 12, 16), Center());
-            }
+            int iconSize = drop.Dragging ? 68 : 60;
+
+            Rectangle iconRect = new Rectangle(
+                (int)(drop.X - cameraX - iconSize / 2),
+                (int)(drop.Y - 38),
+                iconSize,
+                iconSize
+            );
+
+            int glowAlpha = drop.Dragging ? 120 : 75;
+
+            using (SolidBrush glow = new SolidBrush(Color.FromArgb(glowAlpha, 80, 190, 255)))
+                g.FillEllipse(glow, iconRect.X - 14, iconRect.Y - 10, iconRect.Width + 28, iconRect.Height + 20);
+
+            using (SolidBrush shadow = new SolidBrush(Color.FromArgb(85, 0, 0, 0)))
+                g.FillEllipse(shadow, iconRect.X + 8, iconRect.Bottom - 8, iconRect.Width - 16, 12);
+
+            DesktopIconUI.Shared.DrawIconOnly(g, 2, 3, iconRect);
+
+            Rectangle levelBox = new Rectangle(
+                iconRect.Right - 24,
+                iconRect.Bottom - 20,
+                24,
+                18
+            );
+
+            using (SolidBrush bg = new SolidBrush(Color.FromArgb(165, 0, 0, 0)))
+                g.FillRectangle(bg, levelBox);
+
+            using (Font f = F(8f, FontStyle.Bold))
+            using (SolidBrush text = new SolidBrush(Color.White))
+                g.DrawString("+" + drop.UpgradeLevel, f, text, levelBox, Center());
+
+            Rectangle nameBox = new Rectangle(
+                iconRect.X - 24,
+                iconRect.Bottom + 2,
+                iconRect.Width + 48,
+                18
+            );
+
+            using (SolidBrush bg = new SolidBrush(Color.FromArgb(135, 0, 0, 0)))
+                g.FillRectangle(bg, nameBox);
+
+            using (Font f = F(7.5f, FontStyle.Bold))
+            using (SolidBrush text = new SolidBrush(Color.White))
+                g.DrawString("Weapon Patch", f, text, nameBox, Center());
         }
         private static void DrawFallbackFileMonster(Graphics g, Rectangle r, GameEntity e)
         {

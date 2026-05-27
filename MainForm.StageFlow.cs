@@ -314,7 +314,7 @@ namespace DebugHeroFileDungeonRPG
                 UpgradeLevel = player.WeaponLevel + 1
             };
             weaponDrops.Add(drop);
-            effects.Add(new Effect("text", drop.X, drop.Y - 72, drop.X, drop.Y - 72, 120, Color.LightSkyBlue, "UPGRADE FILE DROP"));
+            effects.Add(new Effect("text", drop.X, drop.Y - 72, drop.X, drop.Y - 72, 120, Color.LightSkyBlue, "Weapon Patch Drop"));
         }
 
         private void UseHpPotion()

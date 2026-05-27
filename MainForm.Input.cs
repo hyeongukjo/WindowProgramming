@@ -91,7 +91,6 @@ namespace DebugHeroFileDungeonRPG
                 }
                 else if (e.KeyCode == Keys.R)
                 {
-                    PlayerMovementSystem.StartSkillAnimation(player, 3);
                     CastSkill(3);
                 }
                 else if (e.KeyCode == Keys.D) UseHpPotion();
