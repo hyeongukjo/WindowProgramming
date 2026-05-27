@@ -13,11 +13,10 @@ namespace DebugHeroFileDungeonRPG
     public static class EnemyLogicSystem
     {
         private static readonly Random rand = new Random();
+
         public static EnemyUpdateResult Update(List<GameEntity> enemies, PlayerState player, StageInfo st, int currentStage, bool bossPhase, int tick, int mapWidth, Rectangle client, BossRuntime bossRuntime, List<Effect> effects)
         {
             EnemyUpdateResult result = new EnemyUpdateResult();
-
-            // * [플레이어 디버프 이동속도 상태값 배율 초기화]
             float playerCurrentSpeedModifier = 1.0f;
 
             for (int i = 0; i < enemies.Count; i++)
@@ -32,87 +31,74 @@ namespace DebugHeroFileDungeonRPG
                     float minY = 124f;
                     float maxY = Math.Max(minY, client.Height - 82f);
 
-                    // * [패턴 특징 명명 변수 선언 및 데이터 테이블 기반 몬스터별 패턴 할당 유도]
                     string allocatedPattern = "None";
 
-                    // * [1. Security_Firewall 및 Alert_Popup_Spam은 기존 유예 관성 돌진 패턴 적용]
                     if (m.Name == "Security_Firewall" || m.Name == "Alert_Popup_Spam")
                     {
                         allocatedPattern = "Delay_Inertia_Dash";
                     }
-                    // * [2. Runtime_Clock_Buoy는 기존 부표형 원거리 파편 살포 패턴 적용]
                     else if (m.Name == "Runtime_Clock_Buoy")
                     {
                         allocatedPattern = "Heavy_Projectile_Spread";
                     }
-                    // * [3. Registry_Ghost_Key는 기존 레지스트리 유령 6방향 텔레포트 탄막 패턴 적용]
                     else if (m.Name == "Registry_Ghost_Key")
                     {
                         allocatedPattern = "Random_Teleport_Barrage";
                     }
-                    else
-                    {
-                        allocatedPattern = "None";
-                    }
 
-                    // * [1. Delay_Inertia_Dash 패턴 구현 - 2초 유예 대기 후 관성 돌진]
+                    // * [1. Delay_Inertia_Dash 패턴 최종 정밀 교정 - 플레이어 방향성 완전 차단]
                     if (allocatedPattern == "Delay_Inertia_Dash")
                     {
                         m.StateTimer++;
-                        if (m.MonsterState == 0) // * [0: 대기 폼]
+
+                        if (m.MonsterState == 0) // 대기 상태
                         {
                             m.VX *= 0.8f; m.VY *= 0.8f;
-
-                            if (m.StateTimer >= 60) // * [2초 대기 만료]
+                            if (m.StateTimer >= 60)
                             {
                                 m.MonsterState = 1; m.StateTimer = 0;
                                 float dx = player.X - m.X; float dy = player.Y - m.Y;
                                 float dist = (float)Math.Sqrt(dx * dx + dy * dy); if (dist < 1) dist = 1;
-
                                 m.TargetPosX = player.X + (dx / dist) * 180f;
                                 m.TargetPosY = player.Y + (dy / dist) * 180f;
-
                                 m.VX = (m.TargetPosX - m.X) * 0.08f;
                                 m.VY = (m.TargetPosY - m.Y) * 0.08f;
-                                effects.Add(new Effect("spark", m.X, m.Y, m.X, m.Y, 20, Color.White, ""));
                             }
                         }
-                        else // * [1: 관성 미끄러짐 폼]
+                        else if (m.MonsterState == 1) // 돌진 상태
                         {
                             m.VX *= 0.94f; m.VY *= 0.94f;
                             m.X += m.VX; m.Y += m.VY;
 
+                            // * [돌진 종료 판정]
                             if (Math.Abs(m.VX) < 0.15f && Math.Abs(m.VY) < 0.15f)
                             {
-                                m.MonsterState = 0; m.StateTimer = 0;
+                                m.MonsterState = 2; // 튕김 전용 상태로 전환
+                                m.StateTimer = 0;
+
+                                // 💡 [핵심 수정]: 기존 속도를 완전히 지우고 플레이어와 무관한 각도 생성
+                                m.VX = 0; m.VY = 0;
+
+                                // * 개체별 고유 시드를 이용한 완전 무작위 방향(0~360도) 결정
+                                double randomAngle = rand.NextDouble() * Math.PI * 2.0;
+
+                                // * [과감한 분산]: 최소 15.0에서 최대 30.0 사이의 강력한 임펄스 부여
+                                float scatterForce = 15.0f + (float)(rand.NextDouble() * 15.0f);
+
+                                m.VX = (float)Math.Cos(randomAngle) * scatterForce;
+                                m.VY = (float)Math.Sin(randomAngle) * scatterForce;
                             }
                         }
-                    }
-
-                    // * [2. Periodic_Hardening_Guard 패턴 구현 - 주기적 정지 경화 방어]
-                    else if (allocatedPattern == "Periodic_Hardening_Guard")
-                    {
-                        m.StateTimer++;
-                        if (m.MonsterState == 0) // * [0: 기본 추적 속성]
+                        else if (m.MonsterState == 2) // 튕김 전용 상태 (관성 가드 해제 구역)
                         {
-                            m.VX += Math.Sign(player.X - m.X) * 0.15f;
-                            m.VY += Math.Sign(player.Y - m.Y) * 0.10f;
-                            float maxSpeed = 1.2f; float speed = (float)Math.Sqrt(m.VX * m.VX + m.VY * m.VY);
-                            if (speed > maxSpeed) { m.VX = m.VX / speed * maxSpeed; m.VY = m.VY / speed * maxSpeed; }
+                            // * 플레이어를 향하는 연산 없이 순수하게 튕겨 나간 벡터로만 이동
+                            m.VX *= 0.92f; m.VY *= 0.92f;
                             m.X += m.VX; m.Y += m.VY;
 
-                            if (m.StateTimer >= 90) // * [3초 활성화 후 방어]
+                            if (Math.Abs(m.VX) < 0.3f && Math.Abs(m.VY) < 0.3f)
                             {
-                                m.MonsterState = 1; m.StateTimer = 0; m.HitFlash = 30;
-                            }
-                        }
-                        else // * [1: GUARD 정지 상태]
-                        {
-                            m.VX = 0; m.VY = 0;
-                            if (m.HitFlash < 5) m.HitFlash = 5;
-                            if (m.StateTimer >= 30) // * [1초 후 해제]
-                            {
-                                m.MonsterState = 0; m.StateTimer = 0;
+                                m.MonsterState = 0; // 충분히 흩어진 후 대기 상태로 복귀
+                                m.StateTimer = 0;
                             }
                         }
                     }
@@ -123,7 +109,7 @@ namespace DebugHeroFileDungeonRPG
                         m.StateTimer++;
                         m.X += m.VX * 0.4f; m.Y += m.VY * 0.4f;
 
-                        if (m.StateTimer >= 120) // * [4초 주기 발동 완료 시점]
+                        if (m.StateTimer >= 120)
                         {
                             m.StateTimer = 0;
                             m.X = (float)(rand.NextDouble() * (maxX - minX) + minX);
@@ -136,100 +122,16 @@ namespace DebugHeroFileDungeonRPG
                                 float angle = baseAngle + (float)(k * Math.PI * 2 / 6);
                                 float speedX = (float)Math.Cos(angle) * 3.5f; float speedY = (float)Math.Sin(angle) * 3.5f;
 
-                                // * [보정]: 투사체 식별 이름을 TELEPORT_BULLET으로 변경하여 6발 정확히 전방위 사출
-                                effects.Add(new Effect("projectile", m.X, m.Y, m.X + speedX * 100, m.Y + speedY * 100, 50, Color.Cyan, "TELEPORT_BULLET"));
+                                // * [동일 적용]: 유령의 6방향 전방위 탄막 역시 플레이어 위치와 상관없이 절대 길이 600픽셀로 영구 고정 직선 관통 유도
+                                float bulletLength = 600f;
+                                float bEndX = m.X + (float)Math.Cos(angle) * bulletLength;
+                                float bEndY = m.Y + (float)Math.Sin(angle) * bulletLength;
+
+                                effects.Add(new Effect("projectile", m.X, m.Y, bEndX, bEndY, 50, Color.Cyan, "TELEPORT_BULLET"));
                             }
                         }
                     }
 
-                    // * [4. Heavy_Projectile_Spread 패턴 구현 - 정예 묵직 이동 및 파편 살포]
-                    else if (allocatedPattern == "Heavy_Projectile_Spread")
-                    {
-                        // * [물리: 묵직한 가속 및 느린 최대 속도 유지]
-                        if (tick % (110 + i * 15) == 0)
-                        {
-                            m.VX += Math.Sign(player.X - m.X) * 0.12f;
-                            m.VY += Math.Sign(player.Y - m.Y) * 0.08f;
-                        }
-                        float maxSpeed = 0.9f;
-                        float speed = (float)Math.Sqrt(m.VX * m.VX + m.VY * m.VY);
-                        if (speed > maxSpeed) { m.VX = m.VX / speed * maxSpeed; m.VY = m.VY / speed * maxSpeed; }
-                        m.X += m.VX; m.Y += m.VY;
-
-                        // * [공격: 주기적으로 TRASH 투사체 조준 발사]
-                        if (tick % 70 == 0)
-                        {
-                            effects.Add(new Effect("projectile", m.X, m.Y, player.X, player.Y, 40, Color.OrangeRed, "TRASH"));
-                        }
-                    }
-
-                    // * [5. Slime_Bounce_Approach 패턴 구현 - 슬라임 점프 도약식 느린 추적]
-                    else if (allocatedPattern == "Slime_Bounce_Approach")
-                    {
-                        m.StateTimer++;
-                        if (m.StateTimer % 40 < 18) // * [도약 상태]
-                        {
-                            m.VX += Math.Sign(player.X - m.X) * 0.18f;
-                            m.VY += Math.Sign(player.Y - m.Y) * 0.12f;
-                        }
-                        else // * [착지 브레이크 상태]
-                        {
-                            m.VX *= 0.75f; m.VY *= 0.75f;
-                        }
-                        float maxSpeed = 0.9f; float speed = (float)Math.Sqrt(m.VX * m.VX + m.VY * m.VY);
-                        if (speed > maxSpeed) { m.VX = m.VX / speed * maxSpeed; m.VY = m.VY / speed * maxSpeed; }
-                        m.X += m.VX; m.Y += m.VY;
-                    }
-
-                    // * [6. Contamination_Zone_Leak 패턴 구현 - 디버프 오염장판 흔적 전개]
-                    else if (allocatedPattern == "Contamination_Zone_Leak")
-                    {
-                        m.VX += Math.Sign(player.X - m.X) * 0.14f;
-                        m.VY += Math.Sign(player.Y - m.Y) * 0.09f;
-                        float maxSpeed = 1.1f; float speed = (float)Math.Sqrt(m.VX * m.VX + m.VY * m.VY);
-                        if (speed > maxSpeed) { m.VX = m.VX / speed * maxSpeed; m.VY = m.VY / speed * maxSpeed; }
-                        m.X += m.VX; m.Y += m.VY;
-
-                        if (tick % 6 == 0)
-                        {
-                            effects.Add(new Effect("spark", m.X, m.Y, m.X, m.Y, 8, Color.FromArgb(45, Color.LimeGreen), ""));
-                        }
-
-                        float dx = player.X - m.X; float dy = player.Y - m.Y;
-                        float distance = (float)Math.Sqrt(dx * dx + dy * dy);
-                        if (distance <= 130f)
-                        {
-                            playerCurrentSpeedModifier = 0.6f; // * [이동속도 40% 저하]
-                            if (tick % 30 == 0) // * [매초 2%씩 독 연산 처리]
-                            {
-                                int poisonDamage = (int)(player.MaxHp * 0.02);
-                                player.Hp -= poisonDamage;
-                                effects.Add(new Effect("text", player.X + 25, player.Y - 80, player.X + 25, player.Y - 80, 20, Color.LimeGreen, "-" + poisonDamage));
-                            }
-                        }
-                    }
-
-                    // * [7. IRQ Conflict 전용 보조 전격 스파크 코드 패턴]
-                    else if (allocatedPattern == "IRQ_Lightning_Strike")
-                    {
-                        m.StateTimer++;
-                        if (tick % 12 == 0) { m.VX = (float)(rand.NextDouble() * 3.0 - 1.5); m.VY = (float)(rand.NextDouble() * 2.0 - 1.0); }
-                        m.X += m.VX; m.Y += m.VY;
-
-                        if (m.StateTimer >= 90)
-                        {
-                            m.StateTimer = 0; float rangeRadius = 140f;
-                            for (int k = 0; k < 9; k++)
-                            {
-                                double angle = k * Math.PI * 2 / 9;
-                                float tX = m.X + (float)Math.Cos(angle) * rangeRadius;
-                                float tY = m.Y + (float)Math.Sin(angle) * rangeRadius;
-                                effects.Add(new Effect("projectile", m.X, m.Y, tX, tY, 22, Color.Gold, "SPARK_LINE"));
-                            }
-                        }
-                    }
-
-                    // * [공통 외곽 벽면 충돌 제동]
                     if (m.X < minX) { m.X = minX; m.VX = Math.Abs(m.VX); }
                     if (m.X > maxX) { m.X = maxX; m.VX = -Math.Abs(m.VX); }
                     if (m.Y < minY) { m.Y = minY; m.VY = Math.Abs(m.VY); }
@@ -237,7 +139,6 @@ namespace DebugHeroFileDungeonRPG
                 }
                 else
                 {
-                    // * [보스 오리지널 패턴 링크 작동 보존 구역]
                     float towardX = player.X - m.X;
                     float towardY = player.Y - m.Y;
                     float distance = (float)Math.Sqrt(towardX * towardX + towardY * towardY);
@@ -253,7 +154,7 @@ namespace DebugHeroFileDungeonRPG
 
                 if (m.HitFlash > 0) m.HitFlash--;
 
-                // * [8. 통합 투사체 및 몸체 충돌 피해 연산 매개 모듈 가동]
+                // * [통합 투사체 및 몸체 충돌 피해 연산 모듈 가동]
                 if (tick % 24 == 0)
                 {
                     bool isHit = false;
@@ -262,7 +163,7 @@ namespace DebugHeroFileDungeonRPG
                     if (m.Bounds.IntersectsWith(player.Bounds))
                     {
                         isHit = true;
-                        hitDamagePercent = rand.Next(7, 16) / 100.0; // * [기본 최대 체력의 7% ~ 15% 랜덤 대미지 배정]
+                        hitDamagePercent = rand.Next(7, 16) / 100.0;
                     }
                     else
                     {
@@ -275,9 +176,6 @@ namespace DebugHeroFileDungeonRPG
                                 float effCurrX = eff.X + (eff.X2 - eff.X) * progress;
                                 float effCurrY = eff.Y + (eff.Y2 - eff.Y) * progress;
 
-                                // -----------------------------------------------------------------
-                                // 💡 질문하신 코드가 바로 이 자리에 위치해 있습니다!
-                                // -----------------------------------------------------------------
                                 if (player.Bounds.Contains(effCurrX, effCurrY))
                                 {
                                     if (eff.Text == "BULLET" || eff.Text == "TRASH" || eff.Text == "SPARK_LINE" || eff.Text == "TELEPORT_BULLET")
@@ -311,7 +209,6 @@ namespace DebugHeroFileDungeonRPG
                 }
             }
 
-            // * [9. 장판 디버프 최종 적용 수치를 플레이어 물리 속도 모듈에 주입 동기화]
             player.MoveVelocityX *= playerCurrentSpeedModifier;
             player.MoveVelocityY *= playerCurrentSpeedModifier;
 

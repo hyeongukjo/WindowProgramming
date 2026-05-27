@@ -346,63 +346,54 @@ namespace DebugHeroFileDungeonRPG
             );
             g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
         }
+        // * [해석 방식 3 최종 종결판 - 원본 이미지 완벽 호환 버전]
+        // * [형진님이 주신 원본의 '0808' 디자인을 100% 그대로 쓰면서 아래칸 찌꺼기만 코드로 칼같이 잘라냅니다]
         private static void Draw_Image_Interpretation_3(Graphics g, Image sheet, Rectangle dst, GameEntity e)
         {
             int cols = 4; int rows = 4;
-            int cellW = sheet.Width / cols; int cellH = sheet.Height / rows;
 
-            // * [기본 대기 시작점 고정: 1행을 완전히 배제하고 2행의 첫 번째인 4번 프레임 채택]
-            int targetFrameIndex = 4;
+            // 💡 이미지 전체 해상도를 기반으로 분할하되, 아랫칸 침범을 막기 위해 수동 마진 적용
+            int cellW = sheet.Width / cols;
+            int cellH = sheet.Height / rows;
+
+            int targetFrameIndex = 4; // 1행(0~3) 배제, 2행 첫 칸(4) 시작
 
             int localAiTick = (Environment.TickCount / 33) % 70;
 
-            // * [요청 반영: 1행 (1,1)~(1,4) 즉, 0~3번 프레임은 전 시퀀스에서 절대 사용하지 않음]
-            if (localAiTick >= 0 && localAiTick < 20) // A. 공격 준비 및 충전 (2행 적용: 4, 5, 6)
+            if (localAiTick >= 0 && localAiTick < 20)
             {
                 int[] prepare = { 4, 5, 6 };
-                int frameIdx = localAiTick / 7;
-                targetFrameIndex = prepare[Math.Min(frameIdx, prepare.Length - 1)];
+                targetFrameIndex = prepare[(localAiTick / 7) % prepare.Length];
             }
-            else if (localAiTick >= 20 && localAiTick < 45) // B. 투사체 발사 (3행 적용: 7, 8, 9, 10, 11)
+            else if (localAiTick >= 20 && localAiTick < 45)
             {
                 int[] fire = { 7, 8, 9, 10, 11 };
-                int frameIdx = (localAiTick - 20) / 5;
-                targetFrameIndex = fire[Math.Min(frameIdx, fire.Length - 1)];
+                targetFrameIndex = fire[((localAiTick - 20) / 5) % fire.Length];
             }
-            else if (localAiTick >= 45 && localAiTick < 60) // C. 반동 복귀 (4행 적용: 12, 13, 14, 15)
+            else if (localAiTick >= 45 && localAiTick < 60)
             {
                 int[] recovery = { 12, 13, 14, 15 };
-                int frameIdx = (localAiTick - 45) / 4;
-                targetFrameIndex = recovery[Math.Min(frameIdx, recovery.Length - 1)];
+                targetFrameIndex = recovery[((localAiTick - 45) / 4) % recovery.Length];
             }
-            else // D. 기본 부표 대기 (4, 5번 프레임 안에서만 제자리 둥둥 서핑 모션 유지)
+            else
             {
                 targetFrameIndex = 4 + ((localAiTick - 60) / 5) % 2;
             }
 
-            int col = targetFrameIndex % cols; int row = targetFrameIndex / cols;
+            int col = targetFrameIndex % cols;
+            int row = targetFrameIndex / rows;
 
-            // 💡 [핵심 교정 구역]: 아래 칸 데이터가 절대 위로 튀어 오르지 못하도록 안심 가드 설정
-            int padX = 2;
-            int padY = 2;
+            // 💡 [핵심 보정]: 원본의 불균일한 경계를 잡기 위해, 자르는 사각형의 상단은 내리고, 하단은 대폭 깎아냅니다.
+            int startX = col * cellW + 4;               // 좌측 마진 증가
+            int startY = row * cellH + 4;               // 상단 마진을 내려서 윗칸 잔상 제거
+            int cropW = cellW - 8;                      // 가로폭 압축
+            int cropH = cellH - 12;                     // 🌟 높이를 12픽셀이나 바짝 줄여서 아래칸 안테나 절대 침범 불가하도록 가드
 
-            // * [src 계산식 수정]: 다음 행(row + 1)의 안테나가 섞여 들어오지 못하도록 
-            // * [셀의 높이에서 패딩을 빼고 추가로 2픽셀을 더 바짝 잘라내어 경계선을 완전히 격리합니다]
-            int safetyCutHeight = cellH - (padY * 2) - 2;
-
-            Rectangle src = new Rectangle(
-                col * cellW + padX,
-                row * cellH + padY,
-                Math.Max(1, cellW - padX * 2),
-                Math.Max(1, safetyCutHeight)
-            );
-
+            Rectangle src = new Rectangle(startX, startY, Math.Max(1, cropW), Math.Max(1, cropH));
             g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
         }
-        // * [해석 방식 4]: 4x4 구조 (유령형 - Registry_Ghost_Key 전용)
-        // * [순간이동 타이머인 StateTimer(120틱 주기)와 동기화]
-        // * [해석 방식 4 최종 종결판]: 4x4 구조 (유령형 - Registry_Ghost_Key 발밑 하얀 선 완벽 차단)
-        // * [소수점 반올림 오차로 인해 아래 행의 이미지 조각이 딸려 올라오는 현상을 원천 가드합니다]
+        // * [해석 방식 4 최종 종결 보정판]: 4x4 구조 (유령형 - 사방 마진 가드로 하얀 선 완벽 소멸)
+        // * [소수점 반올림 오차로 인해 아래 행/옆 칸의 이미지 조각이 딸려 올라오는 현상을 물리적으로 완전 가드합니다]
         private static void Draw_Image_Interpretation_4(Graphics g, Image sheet, Rectangle dst, GameEntity e)
         {
             int cols = 4; int rows = 4;
@@ -425,19 +416,21 @@ namespace DebugHeroFileDungeonRPG
 
             int col = targetFrameIndex % cols; int row = targetFrameIndex / cols;
 
-            // 💡 [핵심 버그 해결]: 상하좌우 내부 패딩 인셋 연산 고정
-            int padX = 2;
-            int padY = 2;
+            // 💡 [버그 해결]: 상하좌우 모든 방향에 대한 가드 마진(Inset) 3픽셀로 확장 강화
+            // * [좌우 여백(padX)과 상하 여백(padY)을 사방으로 3픽셀씩 깊숙하게 깎아내어 경계선 격리]
+            int padX = 3;
+            int padY = 3;
 
-            // * [정밀 타격 컷오프]: 다음 행(row + 1)의 머리 윗부분 픽셀이 섞여 들어오지 못하도록 
-            // * [셀 전체 높이에서 마진을 빼고 추가로 2픽셀을 더 타이트하게 깎아내어 경계선을 완전 분리합니다]
-            int safetyCutHeight = cellH - (padY * 2) - 2;
+            // * [정밀 크롭 연산]: 셀 본연의 크기에서 사방 마진 영역을 확실하게 빼주어
+            // * [아랫줄 프레임의 데이터 찌꺼기가 단 1픽셀도 위로 침범하여 하얀 선을 만들 수 없도록 차단]
+            int safeCropWidth = cellW - (padX * 2);
+            int safeCropHeight = cellH - (padY * 2);
 
             Rectangle src = new Rectangle(
                 col * cellW + padX,
                 row * cellH + padY,
-                Math.Max(1, cellW - padX * 2),
-                Math.Max(1, safetyCutHeight) // * [하단 찌꺼기 강제 침묵 가드 벨트]
+                Math.Max(1, safeCropWidth),
+                Math.Max(1, safeCropHeight)
             );
 
             g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
