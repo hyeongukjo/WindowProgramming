@@ -330,7 +330,7 @@ namespace DebugHeroFileDungeonRPG
                     }
                 }
                 for (int i = 0; i < effects.Count; i++) Renderer.DrawEffect(g, effects[i], cameraX);
-                if (!stageNpcHintClosed) DrawStageNpcHint(g, st);
+                //if (!stageNpcHintClosed) DrawStageNpcHint(g, st);
 
                 if (showStageClearPopup)
                 {
@@ -400,7 +400,10 @@ namespace DebugHeroFileDungeonRPG
             }
 
             for (int i = 0; i < effects.Count; i++) Renderer.DrawEffect(g, effects[i], cameraX);
-            if (!stageNpcHintClosed) DrawStageNpcHint(g, st);
+            if (!stageNpcHintClosed && !showStageClearPopup)
+            {
+                DrawStageNpcHint(g, st);
+            }
         }
 
         private void DrawStage1BossPatternOverlay(Graphics g)
