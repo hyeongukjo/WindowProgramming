@@ -430,24 +430,18 @@ namespace DebugHeroFileDungeonRPG
         }
         private static int GetNpcEmotionTopIgnore(NpcMood mood)
         {
-            // 2행/3행 표정은 윗칸 캐릭터 발 픽셀이 칸 경계에 걸려 들어올 수 있음
-            if (mood == NpcMood.Happy ||
-                mood == NpcMood.Question ||
-                mood == NpcMood.Error ||
-                mood == NpcMood.Bsod ||
-                mood == NpcMood.Damaged)
+            if (mood == NpcMood.Log)
             {
-                return 34;
+                return 15;
             }
 
-            // 4행은 위쪽에 오브젝트가 있음
             if (mood == NpcMood.Progress ||
                 mood == NpcMood.Thinking ||
-                mood == NpcMood.Warning ||
-                mood == NpcMood.Log)
+                mood == NpcMood.Warning)
             {
-                return 14;
+                return 10;
             }
+
 
             return 0;
         }
