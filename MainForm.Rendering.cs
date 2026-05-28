@@ -520,10 +520,7 @@ namespace DebugHeroFileDungeonRPG
                     Renderer.LeftMiddle()
                 );
 
-                g.DrawString(
-                    "Q:기본공격 | W:오버클럭 | E:데이터실드 | R:시스템콜",
-                    f, b, new Rectangle(h.X + 22, h.Y + 206, h.Width - 44, 18), Renderer.LeftMiddle()
-                );
+              
 
                 int rightColumnX = h.X + 195;
                 using (Font skillFont = Renderer.F(8.0f, FontStyle.Bold))

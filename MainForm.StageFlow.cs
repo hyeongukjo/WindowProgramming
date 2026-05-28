@@ -161,28 +161,54 @@ namespace DebugHeroFileDungeonRPG
             // 본체(IsMainDead)와 분신(IsCloneDead)이 모두 죽고 패턴이 종료되었을 때만
             // 정확히 단 한 번 정식 최종 보상을 드랍하고 스테이지를 클리어시킵니다.
             // ==========================================================
-            if (stageBossPhase && currentStage == 10 && bossRuntime.patternManager.IsMainDead && bossRuntime.patternManager.IsCloneDead && !bossRuntime.patternManager.IsIllusionActive)
+            //if (stageBossPhase && currentStage == 10 && bossRuntime.patternManager.IsMainDead && bossRuntime.patternManager.IsCloneDead && !bossRuntime.patternManager.IsIllusionActive)
+            //{
+            //    if (weaponDrops.Count == 0)
+            //    {
+            //        GameEntity rewardDummy = new GameEntity { X = player.X + 150, Y = player.Y - 50, IsBoss = true };
+            //        RewardSystem.AwardDefeatReward(rewardDummy, player, currentStage, effects, random);
+
+            //        WeaponUpgradeFile drop = new WeaponUpgradeFile
+            //        {
+            //            X = rewardDummy.X,
+            //            Y = Math.Max(115, Math.Min(ClientSize.Height - 95, rewardDummy.Y - 25)),
+            //            StageIndex = currentStage,
+            //            UpgradeLevel = player.WeaponLevel + 1
+            //        };
+            //        weaponDrops.Add(drop);
+            //        effects.Add(new Effect("text", drop.X, drop.Y - 72, drop.X, drop.Y - 72, 120, Color.LightSkyBlue, "FINAL UPGRADE FILE DROP"));
+            //        TryBeep(980, 150);
+            //    }
+
+            //    if (weaponDrops.Count > 0) return;
+            //    ClearCurrentStage();
+            //    return;
+            //}
+            if (stageBossPhase && currentStage == 10)
             {
-                if (weaponDrops.Count == 0)
+                // 현재 에너미 리스트에서 최종 보스 본체 객체를 탐색합니다.
+                GameEntity mainBoss = enemies.Find(e => e.IsBoss);
+
+                // 1. 정상 기믹을 거쳤든, 데미지가 높아서 원턴킬로 증발했든 상관없이 
+                //    '보스 본체 데이터가 존재하고 체력이 0 이하'라면 무조건 클리어 판정 진입!
+                if (mainBoss != null && mainBoss.Hp <= 0)
                 {
-                    GameEntity rewardDummy = new GameEntity { X = player.X + 150, Y = player.Y - 50, IsBoss = true };
-                    RewardSystem.AwardDefeatReward(rewardDummy, player, currentStage, effects, random);
+                    // 2. 만약 정상 피격으로 분신 발악 기믹(IsIllusionActive)이 발동된 상태라면,
+                    //    잔여 분신(BinnyClone)까지 완벽하게 처리되었는지 한 번 더 체크해 줍니다.
+                    bool isCloneActiveNow = bossRuntime.patternManager.IsIllusionActive;
+                    bool isCloneDeadOrNull = (bossRuntime.patternManager.BinnyClone == null) || bossRuntime.patternManager.IsCloneDead;
 
-                    WeaponUpgradeFile drop = new WeaponUpgradeFile
+                    // 분신 기믹 중이 아닐 때 보스가 한방에 죽었거나, 분신 기믹 중인데 분신까지 다 잡았다면 최종 승리!
+                    if (!isCloneActiveNow || isCloneDeadOrNull)
                     {
-                        X = rewardDummy.X,
-                        Y = Math.Max(115, Math.Min(ClientSize.Height - 95, rewardDummy.Y - 25)),
-                        StageIndex = currentStage,
-                        UpgradeLevel = player.WeaponLevel + 1
-                    };
-                    weaponDrops.Add(drop);
-                    effects.Add(new Effect("text", drop.X, drop.Y - 72, drop.X, drop.Y - 72, 120, Color.LightSkyBlue, "FINAL UPGRADE FILE DROP"));
-                    TryBeep(980, 150);
-                }
+                        // 잔여 상태값 깔끔하게 초기화
+                        bossRuntime.patternManager.IsIllusionActive = false;
+                        bossRuntime.patternManager.BinnyClone = null;
 
-                if (weaponDrops.Count > 0) return;
-                ClearCurrentStage();
-                return;
+                        ClearCurrentStage();
+                        return;
+                    }
+                }
             }
             // STAGE SYSTEM COMPLETED 팝업 막고, ScreenMode.StageClearDialog으로 넘어가서 npc클리어 대사 출력 수정
             if (currentStage != 10)
@@ -359,7 +385,7 @@ namespace DebugHeroFileDungeonRPG
                 stageBossPhase = true;
                 enemies.Add(StageEnemyFactory.CreateBoss(st, Math.Max(760, ClientSize.Width - 360), ClientSize.Height, stages.Count));
 
-                // 💡 [유지 가드]: 형진님의 요청에 따라 보스전 진입 시 금빛 인트로 선언 텍스트는 그대로 보존합니다.
+               
                 string bossText = $"STAGE {currentStage:00} 보스 레이드 개시: {st.BossName}";
                 effects.Add(new Effect("text", player.X + 290, player.Y - 120, player.X + 290, player.Y - 120, 100, Color.Gold, bossText));
             }
@@ -367,7 +393,7 @@ namespace DebugHeroFileDungeonRPG
             {
                 stageBossPhase = false;
                 enemies.AddRange(StageEnemyFactory.CreateWaveEnemies(st, currentWaveIndex, ClientSize.Height));
-                // 💡 [요청 반영 삭제]: 일반 스테이지 시작 문구 차단
+              
             }
 
             TryBeep(600, 80);
@@ -596,6 +622,7 @@ namespace DebugHeroFileDungeonRPG
             {
                 damage = (int)(damage * 1.5f);
             }
+            damage *= 30; //테스트 데미지 증가
             Color color = slot == 0 ? Color.FromArgb(80, 190, 255) : slot == 1 ? Color.FromArgb(80, 255, 130) : Color.FromArgb(255, 210, 60);
             float startX = originX + dir * 34;
             float endX = originX + dir * range;

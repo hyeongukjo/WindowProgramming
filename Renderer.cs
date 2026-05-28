@@ -1966,6 +1966,8 @@ namespace DebugHeroFileDungeonRPG
         }
         private static void DrawPlayerSkillAction(Graphics g, PlayerState p, float drawX, float baseY, int facing)
         {
+            // 사망 상태라면 스킬 렌더링 로직으로 진입하지 않고 즉시 종료.
+            if (p.ActionState == PlayerActionState.Die) return;
             Image targetFrame = null;
             int frameIdx = Math.Min(p.ActionFrame, 4); // 5프레임 오버플로우 가드 벨트
 

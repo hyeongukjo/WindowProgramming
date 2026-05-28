@@ -243,6 +243,20 @@ namespace DebugHeroFileDungeonRPG
             }
 
             HandlePlayerHpMotion(); //사망처리 코드 수정
+
+            if (playerDeathSequenceActive)
+            {
+                PlayerMovementSystem.UpdateActionAnimation(player);
+                playerDeathSequenceTicks++;
+
+
+                if (playerDeathSequenceTicks >= 55)
+                {
+                    FinishPlayerDeathSequence();
+                }
+                Invalidate();
+                return;
+            }
         }
         private void HandlePlayerHpMotion()
         {
@@ -273,10 +287,16 @@ namespace DebugHeroFileDungeonRPG
                 playerDeathSequenceActive = true;
                 playerDeathSequenceTicks = 0;
 
+                player.ActionState = PlayerActionState.Die; // 상태를 사망으로 강제 전환
+                player.ActionFrame = 0;                     // 프레임 리셋
+                player.ActionTick = 0;
+                player.SkillIndex = -1;
+
                 player.MoveVelocityX = 0f;
                 player.MoveVelocityY = 0f;
                 player.TargetX = player.X;
                 player.TargetY = player.Y;
+
 
                 PlayerMovementSystem.StartDeathAnimation(player);
 
@@ -329,6 +349,8 @@ namespace DebugHeroFileDungeonRPG
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
+
+            if (playerDeathSequenceActive) return;
 
             // 인게임 스테이지 작동 중이면서 보스 페이즈일 때 실시간 타이핑 해킹 입력 연동
             if (screen == ScreenMode.Stage && stageBossPhase)

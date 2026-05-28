@@ -21,6 +21,7 @@ namespace DebugHeroFileDungeonRPG
 
         private void MainForm_KeyDown(object sender, KeyEventArgs e)
         {
+            if (playerDeathSequenceActive) return;
             if (screen == ScreenMode.StartMenu)
             {
                 if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Space) StartNewGameFromAdminMenu();
@@ -185,6 +186,7 @@ namespace DebugHeroFileDungeonRPG
         protected override void OnMouseClick(MouseEventArgs e)
         {
             base.OnMouseClick(e);
+            if (playerDeathSequenceActive) return;
             Point mousePos = e.Location;
 
             // ==========================================================
@@ -226,6 +228,7 @@ namespace DebugHeroFileDungeonRPG
 
         private void MainForm_MouseDown(object sender, MouseEventArgs e)
         {
+            if (playerDeathSequenceActive) return;
             for (int i = 0; i < buttons.Count; i++)
             {
                 if (buttons[i].Bounds.Contains(e.Location))

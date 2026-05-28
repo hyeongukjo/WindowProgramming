@@ -422,7 +422,7 @@ namespace DebugHeroFileDungeonRPG
                             if (isHit)
                             {
                                 player.Hp -= (int)(player.MaxHp * 0.40f); // 💡 5% -> 40% 아웃
-                                boss.Hp = Math.Min(boss.MaxHp, boss.Hp + (int)(boss.MaxHp * 0.25f)); // 보스 힐량 25% 상향
+                                //boss.Hp = Math.Min(boss.MaxHp, boss.Hp + (int)(boss.MaxHp * 0.25f)); // 보스 힐량 25% 상향
                             }
                             fireSequenceCount = 0;
                         }

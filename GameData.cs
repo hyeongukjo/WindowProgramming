@@ -141,14 +141,25 @@ namespace DebugHeroFileDungeonRPG
         public float WalkCycle = 0f;
         public int LastMoveTicks = 0;
         public int DefenseTicks = 0;
-        public int Hp = 10000;  // 테스트용
+
+        // ==========================================================
+        // 테스트버젼
+        // ==========================================================
+        private int _hp = 10000;
+        public int Hp
+        {
+            get { return _hp; }
+            set { _hp = MaxHp; } // 💡 어떤 차감 연산이 들어와도 무조건 최대 체력 유지!
+        }
         public int MaxHp = 10000;
-        public int Mp = 60000;  //테스트용
+        // ==========================================================
+
+        public int Mp = 60000;  // 💡 스테이지 시작 시 만땅으로 차오르므로 무한 스킬 가능
         public int MaxMp = 60000;
         public int SystemStability = 100;
         public int CpuLoad = 15;
-        public int Coins = 0;
-        public int HpPotions = 2;
+        public int Coins = 1000000;      // 테스트용 넉넉한 자금
+        public int HpPotions = 20000000; // 테스트용 포션
         public int MpPotions = 2;
         public int Level = 1;
         public int WeaponLevel = 1;
