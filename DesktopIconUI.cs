@@ -41,6 +41,30 @@ namespace DebugHeroFileDungeonRPG
 
             return desktopIconsSheet;
         }
+        public void DrawIconOnly(Graphics g, int col, int row, Rectangle dest)
+        {
+            Image sheet = LoadDesktopIconsSheet();
+
+            if (sheet != null)
+            {
+                Rectangle src = GetIconSourceRect(sheet, col, row);
+
+                InterpolationMode oldInterpolation = g.InterpolationMode;
+                PixelOffsetMode oldPixelOffset = g.PixelOffsetMode;
+
+                g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                g.PixelOffsetMode = PixelOffsetMode.Half;
+
+                g.DrawImage(sheet, dest, src, GraphicsUnit.Pixel);
+
+                g.InterpolationMode = oldInterpolation;
+                g.PixelOffsetMode = oldPixelOffset;
+            }
+            else
+            {
+                DrawFallbackIcon(g, dest);
+            }
+        }
 
         public void DrawFixedDesktopIcons(Graphics g, Rectangle client)
         {

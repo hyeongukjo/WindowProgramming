@@ -418,43 +418,42 @@ namespace DebugHeroFileDungeonRPG
 
             Renderer.DrawXPWallpaper(g, client);
             TaskbarUI.Shared.Draw(g, client);
-
             Rectangle win = new Rectangle(
-                client.Width / 2 - 460,
-                client.Height / 2 - 286,
-                920,
-                572
-            );
+    client.Width / 2 - 420,
+    client.Height / 2 - 215,
+    840,
+    430
+);
 
             DrawShopFrame(g, win, buttons);
 
-            int margin = 28;
-            int contentTop = win.Y + 96;
+            int margin = 22;
+            int contentTop = win.Y + 48;
 
             Rectangle guideBox = new Rectangle(
                 win.X + margin,
                 contentTop,
                 win.Width - margin * 2,
-                54
+                34
             );
 
             Rectangle statusBox = new Rectangle(
                 win.X + margin,
-                guideBox.Bottom + 10,
+                guideBox.Bottom + 4,
                 win.Width - margin * 2,
-                70
+                44
             );
 
             Rectangle footerBox = new Rectangle(
                 win.X + margin,
-                win.Bottom - 76,
+                win.Bottom - 66,
                 win.Width - margin * 2,
-                50
+                30
             );
 
-            int mainTop = statusBox.Bottom + 14;
-            int mainHeight = footerBox.Y - mainTop - 14;
-            int gap = 16;
+            int mainTop = statusBox.Bottom + 5;
+            int mainHeight = footerBox.Y - mainTop - 5;
+            int gap = 12;
             int leftWidth = (win.Width - margin * 2 - gap) / 2;
 
             Rectangle listBox = new Rectangle(
@@ -482,15 +481,15 @@ namespace DebugHeroFileDungeonRPG
         {
             SystemWindowUI.Shared.DrawBlueCancelFrameNineSlice(g, win);
 
-            using (Font titleFont = Renderer.F(13.5f, FontStyle.Bold))
+            using (Font titleFont = Renderer.F(12.5f, FontStyle.Bold))
             using (SolidBrush white = new SolidBrush(Color.White))
             using (StringFormat sf = LeftMiddle())
             {
                 Rectangle titleRect = new Rectangle(
                     win.X + 28,
-                    win.Y + 6,
+                    win.Y + 1,
                     win.Width - 130,
-                    38
+                    30
                 );
 
                 g.DrawString(
@@ -503,10 +502,10 @@ namespace DebugHeroFileDungeonRPG
             }
 
             Rectangle closeRect = new Rectangle(
-                win.Right - 88,
-                win.Y + 8,
-                62,
-                58
+                win.Right - 72,
+                win.Y + 5,
+                54,
+                34
             );
 
             if (buttons != null)
@@ -515,19 +514,19 @@ namespace DebugHeroFileDungeonRPG
 
         private void DrawGuideBox(Graphics g, Rectangle r)
         {
-            DrawInsetPanel(g, r);
+            //DrawInsetPanel(g, r);
 
-            Rectangle icon = new Rectangle(r.X + 24, r.Y + 11, 32, 32);
+            Rectangle icon = new Rectangle(r.X + 24, r.Y + 3, 28, 28);
             DrawInfoIcon(g, icon);
 
-            using (Font f = Renderer.F(11.2f, FontStyle.Bold))
+            using (Font f = Renderer.F(10.4f, FontStyle.Bold))
             using (SolidBrush b = new SolidBrush(Color.FromArgb(20, 24, 32)))
             using (StringFormat sf = LeftMiddle())
             {
                 Rectangle textRect = new Rectangle(
-                    r.X + 78,
+                    r.X + 66,
                     r.Y,
-                    r.Width - 96,
+                    r.Width - 84,
                     r.Height
                 );
 
@@ -543,27 +542,72 @@ namespace DebugHeroFileDungeonRPG
 
         private void DrawStatusBox(Graphics g, Rectangle r, PlayerState player)
         {
-            DrawInsetPanel(g, r);
-
-            Rectangle monitor = new Rectangle(r.X + 24, r.Y + 12, 46, 46);
-            DrawMonitorIcon(g, monitor);
-
-            using (Font f = Renderer.F(10.2f, FontStyle.Bold))
+            using (Font labelFont = Renderer.F(9.4f, FontStyle.Bold))
+            using (Font valueFont = Renderer.F(9.8f, FontStyle.Bold))
             using (SolidBrush textBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
             using (SolidBrush blueBrush = new SolidBrush(Color.FromArgb(0, 62, 160)))
+            using (Pen dividerPen = new Pen(Color.FromArgb(145, 138, 118), 2f))
+            using (StringFormat left = LeftMiddle())
             {
-                int x = r.X + 94;
-                int y1 = r.Y + 13;
-                int y2 = r.Y + 39;
+                int y1 = r.Y + 2;
+                int y2 = r.Y + 22;
+                int lineH = 18;
 
-                g.DrawString("보유 Recovered Coin:", f, textBrush, x, y1);
-                g.DrawString(player.Coins.ToString(), f, blueBrush, x + 205, y1);
+                int leftLabelX = r.X + 18;
+                int leftValueX = r.X + 205;
 
-                g.DrawString("보유 Recovery Kit:", f, textBrush, x, y2);
-                g.DrawString(player.HpPotions.ToString(), f, blueBrush, x + 205, y2);
+                int rightLabelX = r.X + 345;
+                int rightValueX = r.X + 525;
 
-                g.DrawString("/  보유 Memory Kit:", f, textBrush, x + 250, y2);
-                g.DrawString(player.MpPotions.ToString(), f, blueBrush, x + 465, y2);
+                g.DrawString(
+                    "Recovered Coin:",
+                    labelFont,
+                    textBrush,
+                    new Rectangle(leftLabelX, y1, 170, lineH),
+                    left
+                );
+
+                g.DrawString(
+                    player.Coins.ToString(),
+                    valueFont,
+                    blueBrush,
+                    new Rectangle(leftValueX, y1, 40, lineH),
+                    left
+                );
+
+                g.DrawString(
+                    "Recovery Kit:",
+                    labelFont,
+                    textBrush,
+                    new Rectangle(leftLabelX, y2, 170, lineH),
+                    left
+                );
+
+                g.DrawString(
+                    player.HpPotions.ToString(),
+                    valueFont,
+                    blueBrush,
+                    new Rectangle(leftValueX, y2, 40, lineH),
+                    left
+                );
+
+                g.DrawString(
+                    "Memory Kit:",
+                    labelFont,
+                    textBrush,
+                    new Rectangle(rightLabelX, y2, 150, lineH),
+                    left
+                );
+
+                g.DrawString(
+                    player.MpPotions.ToString(),
+                    valueFont,
+                    blueBrush,
+                    new Rectangle(rightValueX, y2, 40, lineH),
+                    left
+                );
+
+                g.DrawLine(dividerPen, r.X + 4, r.Bottom - 2, r.Right - 4, r.Bottom - 2);
             }
         }
 
@@ -576,13 +620,13 @@ namespace DebugHeroFileDungeonRPG
             DrawGroupBox(g, r, "사용 가능 도구");
 
             Rectangle inner = new Rectangle(
-                r.X + 14,
-                r.Y + 54,
-                r.Width - 28,
-                r.Height - 72
-            );
+                r.X + 10,
+                r.Y + 36,
+                r.Width - 20,
+                r.Height - 42
+                );
 
-            DrawInsetPanel(g, inner);
+            //DrawInsetPanel(g, inner);
 
             int rowHeight = inner.Height / 3;
 
@@ -653,9 +697,9 @@ namespace DebugHeroFileDungeonRPG
                     g.DrawLine(line, row.X + 6, row.Y, row.Right - 6, row.Y);
             }
 
-            int iconSize = Math.Min(54, row.Height - 10);
+            int iconSize = Math.Min(40, row.Height - 8);
             Rectangle iconRect = new Rectangle(
-                row.X + 20,
+                row.X + 18,
                 row.Y + (row.Height - iconSize) / 2,
                 iconSize,
                 iconSize
@@ -663,22 +707,22 @@ namespace DebugHeroFileDungeonRPG
 
             DrawItemIcon(g, iconImage, sourceRect, iconRect);
 
-            using (Font itemFont = Renderer.F(10.8f, FontStyle.Bold))
+            using (Font itemFont = Renderer.F(9.8f, FontStyle.Bold))
             using (SolidBrush itemBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
             using (StringFormat leftMiddle = LeftMiddle())
             using (StringFormat rightMiddle = RightMiddle())
             {
                 Rectangle nameRect = new Rectangle(
-                    row.X + 100,
+                    row.X + 82,
                     row.Y,
-                    row.Width - 220,
+                    row.Width - 190,
                     row.Height
                 );
 
                 Rectangle priceRect = new Rectangle(
-                    row.Right - 112,
+                    row.Right - 102,
                     row.Y,
-                    100,
+                    90,
                     row.Height
                 );
 
@@ -695,48 +739,64 @@ namespace DebugHeroFileDungeonRPG
             DrawGroupBox(g, r, "선택 항목 설명");
 
             Rectangle inner = new Rectangle(
-                r.X + 14,
-                r.Y + 54,
-                r.Width - 28,
-                r.Height - 72
+                r.X + 10,
+                r.Y + 36,
+                r.Width - 20,
+                r.Height - 42
             );
-
-            DrawInsetPanel(g, inner);
 
             ShopItemInfo info = GetShopItemInfo(selectedItem);
 
-            Rectangle iconRect = new Rectangle(inner.X + 22, inner.Y + 18, 64, 64);
+            Rectangle iconRect = new Rectangle(inner.X + 20, inner.Y + 12, 48, 48);
             DrawItemIcon(g, info.IconImage, info.IconSource, iconRect);
 
-            using (Font titleFont = Renderer.F(13.2f, FontStyle.Bold))
+            using (Font titleFont = Renderer.F(12.8f, FontStyle.Bold))
             using (SolidBrush titleBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
             using (StringFormat sf = LeftMiddle())
             {
                 Rectangle titleRect = new Rectangle(
-                    iconRect.Right + 18,
-                    inner.Y + 18,
-                    inner.Width - 126,
-                    42
+                    iconRect.Right + 16,
+                    inner.Y + 14,
+                    inner.Width - 104,
+                    32
                 );
 
                 g.DrawString(info.Title, titleFont, titleBrush, titleRect, sf);
             }
 
-            using (Pen line = new Pen(Color.FromArgb(190, 178, 158)))
-                g.DrawLine(line, inner.X + 20, inner.Y + 96, inner.Right - 20, inner.Y + 96);
+            int lineY = inner.Y + 66;
 
-            using (Font bodyFont = Renderer.F(10.2f, FontStyle.Regular))
-            using (SolidBrush bodyBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
-            using (StringFormat sf = LeftTopTrim())
+            using (Pen line = new Pen(Color.FromArgb(145, 138, 118), 2f))
             {
-                Rectangle bodyRect = new Rectangle(
-                    inner.X + 22,
-                    inner.Y + 112,
-                    inner.Width - 44,
-                    inner.Height - 126
+                g.DrawLine(line, inner.X + 18, lineY, inner.Right - 18, lineY);
+            }
+
+            string[] descLines = info.Description.Split('\n');
+
+            using (Font line1Font = Renderer.F(9.6f, FontStyle.Bold))
+            using (Font line2Font = Renderer.F(10.2f, FontStyle.Bold))
+            using (SolidBrush bodyBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
+            using (StringFormat sf = LeftMiddle())
+            {
+                Rectangle line1Rect = new Rectangle(
+                    inner.X + 20,
+                    lineY + 10,
+                    inner.Width - 40,
+                    22
                 );
 
-                g.DrawString(info.Description, bodyFont, bodyBrush, bodyRect, sf);
+                Rectangle line2Rect = new Rectangle(
+                    inner.X + 20,
+                    lineY + 32,
+                    inner.Width - 40,
+                    24
+                );
+
+                if (descLines.Length > 0)
+                    g.DrawString(descLines[0], line1Font, bodyBrush, line1Rect, sf);
+
+                if (descLines.Length > 1)
+                    g.DrawString(descLines[1], line2Font, bodyBrush, line2Rect, sf);
             }
         }
 
@@ -746,9 +806,7 @@ namespace DebugHeroFileDungeonRPG
             {
                 return new ShopItemInfo(
                     "Memory Kit",
-                    "MP 포션 1개를 보충합니다.\n" +
-                    "던전에서는 F 키로 사용합니다.\n\n" +
-                    "구매하려면 아래 [확인]을 누르세요.",
+                    "MP 포션 1개를 보충합니다.\n던전에서는 F 키로 사용합니다.",
                     memoryKitImage,
                     memoryKitSource
                 );
@@ -758,9 +816,7 @@ namespace DebugHeroFileDungeonRPG
             {
                 return new ShopItemInfo(
                     "Supply Bundle",
-                    "Recovery Kit 2개와 Memory Kit 2개를 함께 보충합니다.\n" +
-                    "묶음 가격은 90 coin입니다.\n\n" +
-                    "구매하려면 아래 [확인]을 누르세요.",
+                    "Recovery Kit 2개와 Memory Kit 2개를 함께 보충합니다.\n묶음 가격은 90 coin입니다.",
                     bundleImage,
                     bundleSource
                 );
@@ -768,9 +824,7 @@ namespace DebugHeroFileDungeonRPG
 
             return new ShopItemInfo(
                 "Recovery Kit",
-                "HP 포션 1개를 보충합니다.\n" +
-                "던전에서는 D 키로 사용합니다.\n\n" +
-                "구매하려면 아래 [확인]을 누르세요.",
+                "HP 포션 1개를 보충합니다.\n던전에서는 D 키로 사용합니다.",
                 recoveryKitImage,
                 recoveryKitSource
             );
@@ -778,16 +832,16 @@ namespace DebugHeroFileDungeonRPG
 
         private void DrawFooter(Graphics g, Rectangle r, List<UiButton> buttons)
         {
-            DrawInsetPanel(g, r);
+            //DrawInsetPanel(g, r);
 
-            using (Font f = Renderer.F(9.3f, FontStyle.Regular))
+            using (Font f = Renderer.F(8.5f, FontStyle.Regular))
             using (SolidBrush b = new SolidBrush(Color.FromArgb(70, 70, 70)))
             using (StringFormat sf = LeftMiddle())
             {
-                Rectangle textRect = new Rectangle(r.X + 18, r.Y, r.Width - 190, r.Height);
+                Rectangle textRect = new Rectangle(r.X + 18, r.Y, r.Width - 160, r.Height);
 
                 g.DrawString(
-                    "왼쪽 목록에서 도구를 선택한 뒤, 구매하려면 [확인]을 누르세요.",
+                    "도구를 선택한 뒤 [확인]을 누르면 구매합니다.",
                     f,
                     b,
                     textRect,
@@ -795,7 +849,7 @@ namespace DebugHeroFileDungeonRPG
                 );
             }
 
-            Rectangle ok = new Rectangle(r.Right - 150, r.Y + 10, 120, 30);
+            Rectangle ok = new Rectangle(r.Right - 126, r.Y + 1, 104, 26);
 
             SystemWindowUI.Shared.DrawDialogImageButton(
                 g,

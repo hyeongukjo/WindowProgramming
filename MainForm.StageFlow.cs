@@ -22,6 +22,13 @@ namespace DebugHeroFileDungeonRPG
 
             return Math.Max(ClientSize.Width, 1650 + st.Index * 180);
         }
+        private bool IsStageNpcHintOpen()
+        {
+            return screen == ScreenMode.Stage &&
+                   currentStage > 0 &&
+                   !stageNpcHintClosed &&
+                   !showStageClearPopup;
+        }
 
         private void UpdateStage()
         {
@@ -58,7 +65,6 @@ namespace DebugHeroFileDungeonRPG
             int preUpdateHp = player.Hp;
 
             PlayerMovementSystem.Update(player, st, stageBossPhase, ClientSize.Width, ClientSize.Height, mapWidth, ref cameraX, tick);
-
             PlayerMovementSystem.UpdateActionAnimation(player);
 
             // 몬스터 AI 및 물리 충돌 업데이트
@@ -127,13 +133,27 @@ namespace DebugHeroFileDungeonRPG
                 effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 70, Color.Red, "복구 지점으로 반환"));
             }
 
+            // 💡 [버그 해결 핵심 가드 벨트 주입]: 
+            // * [죽은 몬스터(Hp <= 0)를 리스트에서 실시간으로 완벽히 역순 소거하여 Count를 0으로 만들어 줍니다]
+            // * [이 연산이 빠져 있어서 enemies.Count가 4로 묶여 웨이브 정지 버그가 발생했습니다]
+            if (!stageBossPhase)
+            {
+                for (int i = enemies.Count - 1; i >= 0; i--)
+                {
+                    if (enemies[i].Hp <= 0)
+                    {
+                        enemies.RemoveAt(i); // 완전히 리스트에서 메모리 소거 완료
+                    }
+                }
+            }
+
             // ==========================================================
             // 본체가 죽어 enemies 리스트에서 지워지더라도,
             // 분신 패턴이 실행 중이라면 이곳에서 강제로 제어권을 넘겨받아 3초 링크/타이머를 계속 연산시킵니다.
             // ==========================================================
             if (stageBossPhase && currentStage == 10 && bossRuntime.patternManager.IsIllusionActive)
             {
-                GameEntity mainBoss = enemies.Find(e => e.IsBoss); // 없으면 null이 전달되며 안전 가드가 작동함
+                GameEntity mainBoss = enemies.Find(e => e.IsBoss);
                 bossRuntime.patternManager.Update(mainBoss, player, effects, mapWidth);
             }
 
@@ -143,9 +163,8 @@ namespace DebugHeroFileDungeonRPG
             // ==========================================================
             if (stageBossPhase && currentStage == 10 && bossRuntime.patternManager.IsMainDead && bossRuntime.patternManager.IsCloneDead && !bossRuntime.patternManager.IsIllusionActive)
             {
-                if (weaponDrops.Count == 0) // 보상 파일 중복 생성 방지
+                if (weaponDrops.Count == 0)
                 {
-                    // 정식 보상 레이아웃 및 큐 관리 가동
                     GameEntity rewardDummy = new GameEntity { X = player.X + 150, Y = player.Y - 50, IsBoss = true };
                     RewardSystem.AwardDefeatReward(rewardDummy, player, currentStage, effects, random);
 
@@ -161,11 +180,31 @@ namespace DebugHeroFileDungeonRPG
                     TryBeep(980, 150);
                 }
 
-                if (weaponDrops.Count > 0) return; // 드랍된 파일을 드래그해서 먹을 때까지 맵 종료 유보 대기
+                if (weaponDrops.Count > 0) return;
                 ClearCurrentStage();
                 return;
             }
+            // STAGE SYSTEM COMPLETED 팝업 막고, ScreenMode.StageClearDialog으로 넘어가서 npc클리어 대사 출력 수정
+            if (currentStage != 10)
+            {
+                bool anyEnemyAlive = false;
 
+                for (int i = 0; i < enemies.Count; i++)
+                {
+                    if (enemies[i].Hp > 0)
+                    {
+                        anyEnemyAlive = true;
+                        break;
+                    }
+                }
+
+                if (enemies.Count > 0 && !anyEnemyAlive)
+                {
+                    ClearCurrentStage();
+                    return;
+                }
+            }
+            /*
             if (currentStage != 10)
             {
                 bool anyEnemyAlive = false;
@@ -178,100 +217,86 @@ namespace DebugHeroFileDungeonRPG
                     }
                 }
 
-                // 맵에 소환된 적이 존재하고, 그중 살아있는 개체가 단 한 마리도 없을 때
                 if (enemies.Count > 0 && !anyEnemyAlive)
                 {
-                    // 정산 팝업창 레이아웃 활성화
                     if (!showStageClearPopup)
                     {
                         showStageClearPopup = true;
-
                         popupBonusCoins = currentStage * 450;
                         player.Coins += popupBonusCoins;
-
-                        TryBeep(1050, 200); // 클리어 알림음
+                        TryBeep(1050, 200);
                         return;
                     }
-
-                    if (showStageClearPopup) return; // 확인 단추 클릭 전까지 프레임 잠금
+                    if (showStageClearPopup) return;
                 }
-            }
+            }*/
 
-            // 💡 10스테이지 최종보스전이 아닐 때 작동하는 기존 일반 몹 클리어 조건 분기
-            if (enemyResult.AllEnemiesDefeated && enemies.Count > 0)
+            // 10스테이지 최종보스전이 아닐 때 작동하는 기존 일반 몹 클리어 조건 분기
+            // * [위에서 죽은 몹들을 필터링하여 소거하므로 이제 안전하게 참(True) 분기로 진입합니다]
+            if ((enemies.Count == 0 || enemyResult.AllEnemiesDefeated) && currentStage != 10)
             {
-                if (st.Index == 10 && bossRuntime.patternManager.IsIllusionActive) return; // 최종전 도중 날림 클리어 방지
+                if (st.Index == 10 && bossRuntime.patternManager.IsIllusionActive) return;
 
                 if (!stageBossPhase)
                 {
                     if (st.Kind == StageKind.Normal)
                     {
-                        if (weaponDrops.Count > 0) return;
-                        ClearCurrentStage();
+                        // ---------------------------------------------------------------------------------
+                        // [분기 제어]: 짝수층(보스 스테이지)일 때는 하단의 홀수 웨이브 제어 시스템을 완전히 스킵(Pass-through)
+                        // ---------------------------------------------------------------------------------
+                        if (currentStage % 2 == 0) return;
+
+                        // ---------------------------------------------------------------------------------
+                        // [홀수층 전용 무리 시퀀스 및 즉시 보상 제어]
+                        // ---------------------------------------------------------------------------------
+                        if (enemies.Count == 0 && !isWaveWaiting && weaponDrops.Count == 0)
+                        {
+                            if (currentWaveIndex < 3)
+                            {
+                                isWaveWaiting = true;
+                                waveDelayTicks = 150;
+                                // 💡 [요청 반영 삭제]: 일반 스테이지 "무리 정화 완료" 알림 문구 삭제
+                            }
+                            else
+                            {
+                                if (weaponDrops.Count == 0)
+                                {
+                                    WeaponUpgradeFile drop = new WeaponUpgradeFile
+                                    {
+                                        X = player.X + 250,
+                                        Y = player.Y - 15,
+                                        StageIndex = currentStage,
+                                        UpgradeLevel = player.WeaponLevel + 1
+                                    };
+                                    weaponDrops.Add(drop);
+                                    // [요청 반영 삭제]: 일반 스테이지 "모든 무리 정화! UPGRADE" 알림 문구 삭제
+                                }
+                            }
+                        }
+
+                        // 5초 타이머 카운트다운 처리 및 다음 웨이브 호출
+                        if (isWaveWaiting)
+                        {
+                            waveDelayTicks--;
+                            if (waveDelayTicks <= 0)
+                            {
+                                isWaveWaiting = false;
+                                currentWaveIndex++;
+
+                                enemies.AddRange(StageEnemyFactory.CreateWaveEnemies(st, currentWaveIndex, ClientSize.Height));
+                                // [요청 반영 삭제]: 일반 스테이지 "X 무리 출현! 시스템 정화" 알림 문구 삭제
+                                TryBeep(640, 70);
+                            }
+                        }
                         return;
                     }
                     StartStageBossPhase();
                     return;
                 }
-
-                // ---------------------------------------------------------------------------------
-                // [분기 제어]: 짝수층(보스 스테이지)일 때는 하단의 홀수 웨이브 제어 시스템을 완전히 스킵(Pass-through)
-                // ---------------------------------------------------------------------------------
-                if (currentStage % 2 == 0) return;
-
-                // ---------------------------------------------------------------------------------
-                // [홀수층 전용 무리 시퀀스 및 즉시 보상 제어]
-                // ---------------------------------------------------------------------------------
-                // 필드에 살아있는 리스트가 완벽히 비었고, 대기 상태가 아니며, 보상 파일이 드롭되지 않았을 때 진입
-                if (enemies.Count == 0 && !isWaveWaiting && weaponDrops.Count == 0)
-                {
-                    if (currentWaveIndex < 3) // a(0), b(1), c(2), d(3) 총 4개 무리 제한
-                    {
-                        // 다음 무리가 남아 있다면 즉시 5초 유예시간(150틱) 가동
-                        isWaveWaiting = true;
-                        waveDelayTicks = 150;
-
-                        char nextWaveChar = (char)('a' + currentWaveIndex + 1);
-                        effects.Add(new Effect("text", player.X + 150, player.Y - 120, player.X + 150, player.Y - 120, 120, Color.Yellow, $"무리 정화 완료. 5초 후 {nextWaveChar} 무리 진입..."));
-                    }
-                    else
-                    {
-                        // 마지막 d 무리까지 정화 완료 시 그 자리에 무기 강화 파일 즉시 드롭!
-                        if (weaponDrops.Count == 0)
-                        {
-                            WeaponUpgradeFile drop = new WeaponUpgradeFile
-                            {
-                                X = player.X + 250,
-                                Y = player.Y - 15,
-                                StageIndex = currentStage,
-                                UpgradeLevel = player.WeaponLevel + 1
-                            };
-                            weaponDrops.Add(drop);
-                            effects.Add(new Effect("text", drop.X, drop.Y - 70, drop.X, drop.Y - 70, 150, Color.Cyan, "모든 무리 정화! UPGRADE FILE DROP"));
-                        }
-                    }
-                }
-
-                // 5초 타이머 카운트다운 처리 및 다음 웨이브 호출
-                if (isWaveWaiting)
-                {
-                    waveDelayTicks--;
-                    if (waveDelayTicks <= 0)
-                    {
-                        isWaveWaiting = false;
-                        currentWaveIndex++;
-
-                        // StageEnemyFactory에서 다음 순번의 무리 소환
-                        enemies.AddRange(StageEnemyFactory.CreateWaveEnemies(st, currentWaveIndex, ClientSize.Height));
-
-                        char currentWaveChar = (char)('a' + currentWaveIndex);
-                        effects.Add(new Effect("text", player.X + 150, player.Y - 120, player.X + 150, player.Y - 120, 80, Color.Orange, $"{currentWaveChar} 무리 출현! 시스템을 정화하세요."));
-                        TryBeep(640, 70);
-                    }
-                }
             }
         }
 
+        // [최종 디버깅]: 스테이지 전환 시 웨이브 인덱스 유실로 인한 1, 2웨이브 동시 시작 버그 해결
         private void StartStage(int stageIndex)
         {
             if (stageIndex < 1 || stageIndex > unlockedStage) return;
@@ -289,6 +314,11 @@ namespace DebugHeroFileDungeonRPG
             draggedWeaponDrop = null;
             bossRuntime.Reset(currentStage);
             stage1BossPhase = false;
+
+            currentWaveIndex = 0;
+            isWaveWaiting = false;
+            waveDelayTicks = 0;
+
             player.Hp = player.MaxHp;
             player.Mp = player.MaxMp;
             player.SystemStability = 100;
@@ -307,25 +337,29 @@ namespace DebugHeroFileDungeonRPG
             player.MoveVelocityX = 0f;
             player.MoveVelocityY = 0f;
             stageTime = 0;
+            stageNpcHintIndex = 0;
             cameraX = 0;
             stageNpcHintClosed = false;
+
+            enemies.AddRange(StageEnemyFactory.CreatePreBossEnemies(st, ClientSize.Height, random));
+            effects.Add(new Effect("text", player.X + 220, player.Y - 110, player.X + 220, player.Y - 110, 80, Color.FromArgb(220, 255, 255), "몬스터 정리 후 보스방 자동 진입"));
             firstDesktopNotice = false;
             screen = ScreenMode.Stage;
 
-            // 💡 [핵심 개편] 스테이지 속성이 보스/최종방(IsBossStage)이면 일반 몹 없이 바로 보스를 스폰합니다!
             if (st.IsBossStage)
             {
                 stageBossPhase = true;
                 enemies.Add(StageEnemyFactory.CreateBoss(st, Math.Max(760, ClientSize.Width - 360), ClientSize.Height, stages.Count));
+
+                // 💡 [유지 가드]: 형진님의 요청에 따라 보스전 진입 시 금빛 인트로 선언 텍스트는 그대로 보존합니다.
                 string bossText = $"STAGE {currentStage:00} 보스 레이드 개시: {st.BossName}";
                 effects.Add(new Effect("text", player.X + 290, player.Y - 120, player.X + 290, player.Y - 120, 100, Color.Gold, bossText));
             }
             else
             {
                 stageBossPhase = false;
-                // [수정]: 5초 대기 없이 진입 즉시 첫 번째 'a' 무리(인덱스 0)를 필드에 강제 소환합니다!
                 enemies.AddRange(StageEnemyFactory.CreateWaveEnemies(st, currentWaveIndex, ClientSize.Height));
-                effects.Add(new Effect("text", player.X + 220, player.Y - 110, player.X + 220, player.Y - 110, 80, Color.FromArgb(220, 255, 255), "일반 데이터 정화 시작"));
+                // 💡 [요청 반영 삭제]: 일반 스테이지 시작 문구 차단
             }
 
             TryBeep(600, 80);
@@ -337,7 +371,6 @@ namespace DebugHeroFileDungeonRPG
             effects.Add(new Effect("text", player.X, player.Y - 104, player.X, player.Y - 104, 80, Color.Gold, "WEAPON +" + player.WeaponLevel));
             TryBeep(980, 90);
 
-            // 무기 강화 압축 파일을 캐릭터 바운드에 드롭하는 즉시 스테이지 클리어
             ClearCurrentStage();
         }
 
@@ -362,7 +395,6 @@ namespace DebugHeroFileDungeonRPG
             if (m == null || m.RewardGiven) return;
             RewardSystem.AwardDefeatReward(m, player, currentStage, effects, random);
         }
-
 
         private void StartStageBossPhase()
         {
@@ -389,6 +421,8 @@ namespace DebugHeroFileDungeonRPG
             stageTime = 0;
 
             enemies.Add(StageEnemyFactory.CreateBoss(st, Math.Max(760, ClientSize.Width - 360), ClientSize.Height, stages.Count));
+
+            //[유지 가드]: 보스방 자동 진입 연출 문구 역시 보스 스테이지 규칙에 해당하므로 그대로 남겨둡니다.
             string bossText = "STAGE " + currentStage.ToString("00") + " 보스방 자동 진입: " + st.BossName;
             effects.Add(new Effect("text", player.X + 290, player.Y - 120, player.X + 290, player.Y - 120, 100, Color.Gold, bossText));
             effects.Add(new Effect("spark", player.X + 280, player.Y - 48, player.X + 280, player.Y - 48, 55, Color.Gold, ""));
@@ -409,7 +443,7 @@ namespace DebugHeroFileDungeonRPG
                 UpgradeLevel = player.WeaponLevel + 1
             };
             weaponDrops.Add(drop);
-            effects.Add(new Effect("text", drop.X, drop.Y - 72, drop.X, drop.Y - 72, 120, Color.LightSkyBlue, "UPGRADE FILE DROP"));
+            effects.Add(new Effect("text", drop.X, drop.Y - 72, drop.X, drop.Y - 72, 120, Color.LightSkyBlue, "Weapon Patch Drop"));
         }
 
         private void UseHpPotion()
@@ -427,7 +461,10 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
             player.HpPotions--;
-            int heal = Math.Min(player.MaxHp - player.Hp, 45 + player.Level * 10);
+
+            int heal = (int)(player.MaxHp * 0.25);
+            if (player.Hp + heal > player.MaxHp) heal = player.MaxHp - player.Hp;
+
             player.Hp += heal;
             effects.Add(new Effect("spark", player.X, player.Y - 42, player.X, player.Y - 42, 34, Color.LimeGreen, ""));
             effects.Add(new Effect("text", player.X, player.Y - 92, player.X, player.Y - 92, 42, Color.LimeGreen, "HP +" + heal));
@@ -449,7 +486,10 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
             player.MpPotions--;
-            int restore = Math.Min(player.MaxMp - player.Mp, 36 + player.Level * 8);
+
+            int restore = (int)(player.MaxMp * 0.25);
+            if (player.Mp + restore > player.MaxMp) restore = player.MaxMp - player.Mp;
+
             player.Mp += restore;
             effects.Add(new Effect("spark", player.X, player.Y - 42, player.X, player.Y - 42, 34, Color.DeepSkyBlue, ""));
             effects.Add(new Effect("text", player.X, player.Y - 92, player.X, player.Y - 92, 42, Color.DeepSkyBlue, "MP +" + restore));
@@ -475,7 +515,6 @@ namespace DebugHeroFileDungeonRPG
 
                 int dir = dx >= 0 ? 1 : -1;
                 float score = dist;
-                // 이동 중에는 이동 방향의 적을 우선하지만, 아주 가까운 반대편 적은 자동 보정합니다.
                 if (dir != fallback && dist > 130f) score += 90f;
                 if (score < bestScore)
                 {
@@ -492,7 +531,6 @@ namespace DebugHeroFileDungeonRPG
             if (Math.Abs(moveDx) <= 6f) return player.X;
 
             int moveDir = moveDx > 0 ? 1 : -1;
-            // 이동 방향과 공격 방향이 같을 때만 살짝 앞당겨서, 달리면서 쏠 때 투사체와 판정이 뒤처지지 않게 합니다.
             if (moveDir == dir)
             {
                 float lead = Math.Min(48f, Math.Abs(moveDx) * 0.22f);
@@ -527,7 +565,7 @@ namespace DebugHeroFileDungeonRPG
 
             bool moving = Math.Abs(player.TargetX - player.X) > 6f || Math.Abs(player.TargetY - player.Y) > 6f;
             float range = slot == 0 ? 190f : slot == 1 ? 265f : 390f;
-            if (moving) range += 65f; // 이동 중에는 판정이 밀리지 않도록 사거리를 약간 보정
+            if (moving) range += 65f;
 
             int dir = ResolveAttackDirection(range);
             player.Facing = dir;
@@ -551,11 +589,9 @@ namespace DebugHeroFileDungeonRPG
             string actionText = slot == 2 ? "FLASH" : slot == 1 ? "SPRAY" : "SLASH";
             int fxTicks = slot == 0 ? 26 : slot == 1 ? 44 : 38;
             effects.Add(new Effect(agentPose, originX, player.Y, endX, player.Y, fxTicks, color, actionText));
-            // Player skill uses one continuous beam. Extra projectile effect removed to prevent double-shot visual.
             effects.Add(new Effect("spark", startX, player.Y - 44, startX, player.Y - 44, 18 + slot * 4, Color.White, ""));
             if (slot == 2) effects.Add(new Effect("spark", originX, player.Y - 40, originX, player.Y - 40, 44, color, ""));
 
-            // 핵심 수정: 이동 중에도 판정이 캐릭터 현재 위치에만 묶이지 않도록 originX, 추가 폭, 넓은 Y 범위 적용.
             RectangleF hit = new RectangleF(
                 dir > 0 ? originX - 22f : originX - range - 48f,
                 player.Y - (slot == 1 ? 150f : 124f),
@@ -567,7 +603,7 @@ namespace DebugHeroFileDungeonRPG
             for (int i = 0; i < enemies.Count; i++)
             {
                 GameEntity m = enemies[i];
-                if (m.Hp <= 0) continue; // 험악한 보스가 죽으면 본체 타격은 스킵
+                if (m.Hp <= 0) continue;
 
                 if (hit.IntersectsWith(m.Bounds))
                 {
@@ -587,7 +623,6 @@ namespace DebugHeroFileDungeonRPG
                     hitAny = true;
                     effects.Add(new Effect("spark", m.X, m.Y - 44, m.X, m.Y - 44, 22, Color.White, ""));
 
-                    // 💡 [조기 드랍 봉쇄] 5번 최종 보스가 아닐 때만 즉시 보상을 드랍하도록 격리 필터 적용
                     if (m.Hp <= 0 && !m.Name.Contains("Binny") && !m.Name.Contains("Illegal_Binny"))
                     {
                         AwardDefeatReward(m);
@@ -595,12 +630,8 @@ namespace DebugHeroFileDungeonRPG
                 }
             }
 
-            // ==========================================================
-            // 💡 [무적 버그 해결] enemies 루프를 완전히 빠져나온 바깥 구역에 분신 타격 엔진 독립 매핑
-            // ==========================================================
             if (bossRuntime.patternManager.IsIllusionActive && bossRuntime.patternManager.BinnyClone != null && !bossRuntime.patternManager.IsCloneDead)
             {
-                // 분신의 실제 유영 위치를 바탕으로 타격용 가상 Bounds 레이아웃 실시간 계산
                 RectangleF cloneBounds = new RectangleF(
                     bossRuntime.patternManager.BinnyClone.X - 121f,
                     bossRuntime.patternManager.BinnyClone.Y - 252f,
@@ -621,7 +652,6 @@ namespace DebugHeroFileDungeonRPG
 
             if (!hitAny)
             {
-                // 빗맞아도 이동 중 공격 입력이 먹었다는 피드백을 남겨 조작감을 명확하게 합니다.
                 effects.Add(new Effect("text", endX, effectY - 34, endX, effectY - 34, 18, Color.LightGray, "MISS"));
             }
 

@@ -63,20 +63,20 @@ namespace DebugHeroFileDungeonRPG
         private int titleHeight = 30;
 
         private int npcX = 24;
-        private int npcY = 72;
-        private int npcWidth = 158;
-        private int npcHeight = 188;
+        private int npcY = 60;
+        private int npcWidth = 150;
+        private int npcHeight = 190;
 
-        private int bodyX = 190;
-        private int bodyY = 76;
-        private int bodyRightPadding = 30;
-        private int bodyBottomPadding = 82;
+        private int bodyX = 188;
+        private int bodyY = 72;
+        private int bodyRightPadding = 34;
+        private int bodyBottomPadding = 96;
 
         private int buttonWidth = 110;
         private int buttonHeight = 28;
         private int buttonGap = 14;
-        private int buttonRightPadding = 36;
-        private int buttonBottomPadding = 24;
+        private int buttonRightPadding = 42;
+        private int buttonBottomPadding = 48;
 
         private int closeSize = 24;
         private int closeRightPadding = 16;

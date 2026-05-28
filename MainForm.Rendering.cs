@@ -55,20 +55,15 @@ namespace DebugHeroFileDungeonRPG
             DesktopIconUI.Shared.DrawFixedDesktopIcons(g, ClientRectangle);
             Renderer.DrawXPTaskbar(g, ClientRectangle, "Windows XP Desktop");
 
-            string[] text = new string[]
-            {
-                "안녕하세요!\nWindows Recovery Assistant입니다.\n현재 바탕화면에 정리되지 않은 파일 개체가 많아 보여요.\n걱정하지 마세요. 제가 옆에서 도와드릴게요!",
-                "먼저 간단한 복구 테스트를 시작해볼까요?\n위험한 건 아니에요.\n가벼운 정리 작업이라고 생각하시면 됩니다!",
-                "복구 작업을 시작하기 전에\n프로필 이름을 설정해주세요.\n이 이름은 복구 기록과 진행 상황을 저장하는 데 사용됩니다."
-            };
-            string title = introIndex < 2 ? "Windows Recovery Assistant" : "Recovery Profile Setup";
+            string title = NpcDialogueData.GetIntroTitle(introIndex);
+            string introBody = NpcDialogueData.GetIntroMessage(introIndex);
             using (SolidBrush dim = new SolidBrush(Color.FromArgb(70, 0, 0, 0))) g.FillRectangle(dim, ClientRectangle);
             Rectangle introNotice = SystemWindowUI.Shared.GetStandardNoticeRect(ClientSize);
             SystemWindowUI.Shared.DrawAssistantNotice(
                 g,
                 introNotice,
                 title,
-                text[Math.Min(introIndex, text.Length - 1)],
+                introBody,
                 NpcMood.Welcome,
                 Environment.TickCount / 30,
                 buttons,
@@ -126,7 +121,7 @@ namespace DebugHeroFileDungeonRPG
                     g,
                     notice,
                     "Windows Recovery Assistant",
-                    "Recovery Program이 생성되었습니다.\n바탕화면에 보이는 파일 바로가기를 실행해 복구 절차를 진행하세요.\n아직 보이지 않는 파일은 이전 스테이지를 완료해야 생성됩니다.",
+                    NpcDialogueData.DesktopNoticeBody,
                     NpcMood.Basic,
                     Environment.TickCount / 30,
                     buttons,
@@ -136,49 +131,6 @@ namespace DebugHeroFileDungeonRPG
             }
             TaskbarUI.Shared.Draw(g, ClientRectangle);
         }
-        /*
-        Renderer.DrawXPWallpaper(g, ClientRectangle);
-        Renderer.DrawXPTaskbar(g, ClientRectangle, "Windows XP Desktop - File Dungeon Shortcuts");
-        using (Font f = Renderer.F(11f, FontStyle.Bold))
-        using (SolidBrush b = new SolidBrush(Color.White))
-        using (SolidBrush bg = new SolidBrush(Color.FromArgb(130, 0, 0, 0)))
-        {
-            Rectangle header = new Rectangle(120, 20, 610, 42);
-            g.FillRectangle(bg, header);
-            g.DrawString("문서 고정 진행: 열리지 않은 파일 던전은 보이지 않고, 클리어 후 새 바로가기가 생성됩니다.", f, b, header, Renderer.Center());
-        }
-        int cols = 5;
-        int startX = 120;
-        int startY = 90;
-        for (int i = 1; i <= unlockedStage && i <= stages.Count; i++)
-        {
-            int col = (i - 1) % cols;
-            int row = (i - 1) / cols;
-            Rectangle r = new Rectangle(startX + col * 170, startY + row * 145, 128, 112);
-            StageInfo st = stages[i - 1];
-            bool sel = selectedStage == i;
-            bool newly = i == unlockedStage && i > player.ClearedStages;
-            Renderer.DrawFileShortcut(g, r, st, sel, newly);
-            buttons.Add(new UiButton(r, "stage" + i.ToString()));
-        }
-        DrawDesktopInfoPanel(g);
-        DrawRecycleBinShopShortcut(g);
-        if (firstDesktopNotice)
-        {
-            using (SolidBrush dim = new SolidBrush(Color.FromArgb(68, 0, 0, 0))) g.FillRectangle(dim, ClientRectangle);
-            Rectangle notice = new Rectangle(ClientSize.Width / 2 - 330, ClientSize.Height / 2 - 145, 660, 290);
-            Renderer.DrawNotification(g, notice, "NPC_404_DESKTOP_NOTICE.exe - 확인 필요", "Recovery Program이 생성되었습니다.\n바탕화면에 보이는 파일 바로가기를 실행해 복구 절차를 진행하세요.\n아직 보이지 않는 파일은 이전 스테이지를 완료해야 생성됩니다.", NpcMood.Basic, true);
-            buttons.Add(new UiButton(NotificationOkRect(notice), "desktopNoticeOk"));
-        }*/
-
-
-        /*
-        private void DrawRecycleBinShopShortcut(Graphics g)
-        {
-            Rectangle r = new Rectangle(120, ClientSize.Height - 170, 150, 116);
-            Renderer.DrawShopShortcut(g, r, player.Coins);
-            buttons.Add(new UiButton(r, "openShop"));
-        }*/
 
         private void DrawShop(Graphics g)
         {
@@ -191,8 +143,6 @@ namespace DebugHeroFileDungeonRPG
             );
         }
 
-        //게임 진행상 불필요 할수도... 삭제??
-        // 바탕화면 우측 상태 패널: 개발용 스테이지 설명 대신 실제 플레이 정보 표시
         private void DrawDesktopInfoPanel(Graphics g)
         {
             RecoveryToolsUI.Shared.DrawDesktopStatusPanel(
@@ -268,6 +218,11 @@ namespace DebugHeroFileDungeonRPG
             }
 
             DrawHud(g, st);
+            if (IsStageNpcHintOpen())
+            {
+                DrawStageNpcHint(g, st);
+                return;
+            }
             foreach (GameEntity m in enemies) if (m.Hp > 0) Renderer.DrawEnemy(g, m, cameraX, ClientSize.Height); 
             for (int i = 0; i < weaponDrops.Count; i++) Renderer.DrawWeaponUpgradeFile(g, weaponDrops[i], cameraX);
             bossRuntime.DrawOverlay(g, currentStage, stageBossPhase, cameraX, ClientSize);
@@ -330,7 +285,7 @@ namespace DebugHeroFileDungeonRPG
                     }
                 }
                 for (int i = 0; i < effects.Count; i++) Renderer.DrawEffect(g, effects[i], cameraX);
-                if (!stageNpcHintClosed) DrawStageNpcHint(g, st);
+                //if (!stageNpcHintClosed) DrawStageNpcHint(g, st);
 
                 if (showStageClearPopup)
                 {
@@ -342,7 +297,7 @@ namespace DebugHeroFileDungeonRPG
                     if (Renderer.Img_AlarmBg != null) g.DrawImage(Renderer.Img_AlarmBg, winX, winY, winW, winH);
 
                     // ----------------------------------------------------------
-                    // 🔥 [보정 모듈 주입] 글자가 번지고 흐려지는 현상 원천 차단!
+                    // [보정 모듈 주입] 글자가 번지고 흐려지는 현상 원천 차단!
                     // GDI+의 텍스트 렌더링 힌트를 'ClearTypeGridFit'으로 격상시킵니다.
                     // ----------------------------------------------------------
                     g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
@@ -500,7 +455,10 @@ namespace DebugHeroFileDungeonRPG
             }
 
             for (int i = 0; i < effects.Count; i++) Renderer.DrawEffect(g, effects[i], cameraX);
-            if (!stageNpcHintClosed) DrawStageNpcHint(g, st);
+            if (IsStageNpcHintOpen())
+            {
+                DrawStageNpcHint(g, st);
+            }
         }
 
         private void DrawStage1BossPatternOverlay(Graphics g)
@@ -596,44 +554,110 @@ namespace DebugHeroFileDungeonRPG
         {
             using (SolidBrush dim = new SolidBrush(Color.FromArgb(72, 0, 0, 0))) g.FillRectangle(dim, ClientRectangle);
             Rectangle r = SystemWindowUI.Shared.GetStandardNoticeRect(ClientSize);
-            string text = st.Dialogs[Math.Min(stageTime / 520, st.Dialogs.Length - 1)];
-            string body = "STAGE " + st.Index.ToString("00") + "  " + st.Name + "\n\n" + text;
+            string body = NpcDialogueData.GetStageHintText(st.Index, st.Name, stageNpcHintIndex);
+            NpcMood mood = NpcDialogueData.GetStageHintMood(st.Index, stageNpcHintIndex, st.NpcMood);
+
             SystemWindowUI.Shared.DrawAssistantNotice(
                 g,
                 r,
                 "Windows Recovery Assistant",
                 body,
-                st.NpcMood,
+                mood,
                 Environment.TickCount / 30,
                 buttons,
                 "npcHintClose",
                 "npcHintClose"
             );
         }
-
         private void DrawStageClear(Graphics g)
         {
             Renderer.DrawXPWallpaper(g, ClientRectangle);
-            Renderer.DrawXPTaskbar(g, ClientRectangle, "Stage Clear");
+            TaskbarUI.Shared.Draw(g, ClientRectangle);
+
+            using (SolidBrush dim = new SolidBrush(Color.FromArgb(55, 0, 0, 0)))
+                g.FillRectangle(dim, ClientRectangle);
+
             StageInfo st = stages[clearStage - 1];
-            string body = "복구 절차가 완료되었습니다.\n\n" + st.Name + " 클리어.\n";
-            if (st.IsBossStage) body += "보스 개체 [" + st.BossName + "]는 완전히 삭제되지 않고 격리 기록으로 보관됩니다.\n";
-            if (clearStage < stages.Count) body += "새 바로가기 생성: " + stages[clearStage].FileName + "\n";
-            else body += "최종 입력 절차로 이동합니다.\n";
-            body += "\n문서 고정 흐름:\n" + st.Flow;
-            Rectangle clearNotice = SystemWindowUI.Shared.GetLargeNoticeRect(ClientSize);
-            using (SolidBrush dim = new SolidBrush(Color.FromArgb(60, 0, 0, 0))) g.FillRectangle(dim, ClientRectangle);
+
+            string body = NpcDialogueData.BuildStageClearText(st, clearStage, stages);
+            NpcMood mood = NpcDialogueData.GetStageClearMood(st);
+
+            Rectangle clearNotice = SystemWindowUI.Shared.GetStandardNoticeRect(ClientSize);
+
             SystemWindowUI.Shared.DrawAssistantNotice(
                 g,
                 clearNotice,
                 "Windows Recovery Assistant",
                 body,
-                st.NpcMood,
+                mood,
                 Environment.TickCount / 30,
                 buttons,
                 "clearNext",
-                null
+                "clearNext"
             );
+        }
+        private string BuildStageClearNoticeBody(StageInfo st)
+        {
+            string body = "";
+
+            body += "STAGE " + st.Index.ToString("00") + " 복구 리포트\n\n";
+            body += "▶ 처리 항목 : " + GetStageClearProcessText(st) + "\n";
+            body += "▶ 확인 파일 : " + GetStageClearFileText(st) + "\n";
+            body += "▶ 복구 상태 : 완료\n\n";
+
+            if (clearStage < stages.Count)
+            {
+                body += "다음 복구 항목이 바탕화면에 생성되었습니다.\n";
+                body += stages[clearStage].FileName;
+            }
+            else
+            {
+                body += "최종 입력 절차로 이동합니다.";
+            }
+
+            return body;
+        }
+
+        private string GetStageClearProcessText(StageInfo st)
+        {
+            if (st.Index == 1) return "바탕화면 정리 완료";
+            if (st.Index == 2) return "Driver-K 충돌 상태 해제";
+            if (st.Index == 3) return "업데이트 구성 요소 정리 완료";
+            if (st.Index == 4) return "System32 무결성 확인 완료";
+            if (st.Index == 5) return "네트워크 연결 상태 안정화";
+            if (st.Index == 6) return "Blue Screen 충돌 회피 완료";
+            if (st.Index == 7) return "레지스트리 기록 검사 완료";
+            if (st.Index == 8) return "Exception Queen 오류 격리 완료";
+            if (st.Index == 9) return "임시 캐시 정리 완료";
+            if (st.Index == 10) return "Recycle Bin 최종 정리 완료";
+
+            return st.Name + " 복구 완료";
+        }
+
+        private string GetStageClearFileText(StageInfo st)
+        {
+            if (st.Index == 1) return "DESKTOP_CLEANUP.log";
+            if (st.Index == 2) return "CORE_UPGRADE.bin";
+            if (st.Index == 3) return "UPDATE_PATCH_INDEX.bin";
+            if (st.Index == 4) return "SYSTEM32_CHECK.log";
+            if (st.Index == 5) return "PORT_BLOCK_RECORD.dat";
+            if (st.Index == 6) return "BSOD_DUMP_TRACE.tmp";
+            if (st.Index == 7) return "RECENT_ACTIONS.reg";
+            if (st.Index == 8) return "UNSENT_REPORT.tmp";
+            if (st.Index == 9) return "TEMP_CACHE_TRACE.tmp";
+            if (st.Index == 10) return "FINAL_PROCESS_INPUT.sys";
+
+            return "RECOVERY_REPORT.log";
+        }
+
+        private NpcMood GetStageClearNpcMood(StageInfo st)
+        {
+            if (st.Index <= 2) return NpcMood.Happy;
+            if (st.Index <= 5) return NpcMood.Basic;
+            if (st.Index <= 7) return NpcMood.Log;
+            if (st.Index <= 9) return NpcMood.Warning;
+
+            return NpcMood.Damaged;
         }
 
         private void DrawFinalInput(Graphics g)
@@ -645,8 +669,7 @@ namespace DebugHeroFileDungeonRPG
             using (Font f = Renderer.F(10f, FontStyle.Regular))
             using (SolidBrush b = new SolidBrush(Color.FromArgb(32, 38, 50)))
             {
-                string text = "Stage 10 문서 지시사항:\nIllegal_Binny 처치 이후 진짜 갈등은 Windows Recovery Assistant와 최종 입력창으로 넘어갑니다.\n\n삭제할 프로세스 이름을 직접 입력하세요.\n- 복구 프로필 이름 입력: 진엔딩\n- 보스 이름 입력: 일반 엔딩\n- Windows Recovery Assistant 입력: Assistant 루프 엔딩\n- 빈칸/없는 이름: 잘못된 입력 엔딩";
-                g.DrawString(text, f, b, new Rectangle(win.X + 215, win.Y + 62, win.Width - 250, 170), Renderer.Left());
+                string text = NpcDialogueData.FinalInputInstruction;
             }
             Rectangle input = new Rectangle(win.X + 215, win.Y + 250, 520, 36);
             using (SolidBrush b = new SolidBrush(Color.White)) g.FillRectangle(b, input);

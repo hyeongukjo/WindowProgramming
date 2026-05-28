@@ -74,6 +74,7 @@ namespace DebugHeroFileDungeonRPG
         public string BossName;
         public string BossRole;
         public string[] Dialogs;
+        public NpcMood[] DialogMoods;
         public Color Accent;
         public Color BackColor;
         public NpcMood NpcMood;
@@ -278,11 +279,11 @@ namespace DebugHeroFileDungeonRPG
             s.Add(new StageInfo
             {
                 Index = 3,
-                Name = "System32 잔여 충돌 구역",
-                FileName = "System32_Mobs.exe",
+                Name = "Windows Update 연구소",
+                FileName = "Windows_Update_Lab.exe",
                 Kind = StageKind.Normal,
                 Background = "Windows XP 탐색기 기본",
-                Enemies = new string[] { "Unknown Device", "Broken Driver Icon", "IRQ Conflict", "Driver Cache Fragment" },
+                Enemies = new string[] { "pdate Patch 조각", " Loading Bar Slime", "Restart Reminder", "Failed Update" },
                 BossName = "",
                 BossRole = "",
                 Dialogs = new string[]
@@ -323,11 +324,11 @@ namespace DebugHeroFileDungeonRPG
             s.Add(new StageInfo
             {
                 Index = 5,
-                Name = "Windows Update 연구소",
-                FileName = "Windows_Update_Lab.exe",
+                Name = "Network Port 항구",
+                FileName = " Network_Port.exe",
                 Kind = StageKind.Normal,
                 Background = "Windows XP 업데이트 창",
-                Enemies = new string[] { "Update Patch 조각", "Loading Bar Slime", "Restart Reminder" },
+                Enemies = new string[] { "Open Port Buoy", "Packet Minnow", "Request Crab", "Firewall Barnacle" },
                 BossName = "",
                 BossRole = "",
                 Dialogs = new string[]

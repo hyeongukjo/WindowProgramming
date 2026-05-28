@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Drawing;
 
@@ -17,8 +17,6 @@ namespace DebugHeroFileDungeonRPG
         public static EnemyUpdateResult Update(List<GameEntity> enemies, PlayerState player, StageInfo st, int currentStage, bool bossPhase, int tick, int mapWidth, Rectangle client, BossRuntime bossRuntime, List<Effect> effects)
         {
             EnemyUpdateResult result = new EnemyUpdateResult();
-
-            // * [ÇÃ·¹ÀÌ¾î µğ¹öÇÁ ÀÌµ¿¼Óµµ »óÅÂ°ª ¹èÀ² ÃÊ±âÈ­]
             float playerCurrentSpeedModifier = 1.0f;
 
             for (int i = 0; i < enemies.Count; i++)
@@ -33,134 +31,83 @@ namespace DebugHeroFileDungeonRPG
                     float minY = 124f;
                     float maxY = Math.Max(minY, client.Height - 82f);
 
-                    // * [ÆĞÅÏ Æ¯Â¡ ¸í¸í º¯¼ö ¼±¾ğ ¹× µ¥ÀÌÅÍ Å×ÀÌºí ±â¹İ ¸ó½ºÅÍº° ÆĞÅÏ ÇÒ´ç À¯µµ]
                     string allocatedPattern = "None";
 
-                    // * [Delay_Inertia_Dash ÆĞÅÏ ÇÒ´ç ´ë»ó ÁöÁ¤]
-                    if (m.Name == "Broken_Document.txt" || m.Name == "Broken Key" || m.Name == "Temp Fragment")
+                    // ğŸ’¡ [ë²„ê·¸ í•´ê²°]: ì›ë³¸ í”„ë¡œì íŠ¸ ëª…ì„¸ íŒŒì¼ì˜ ëª¨ë“  ì¼ë°˜ ëª¹ ì´ë¦„ì„ íŒ¨í‚¤ì§•í•˜ì—¬ ì—°ë™ í†µë¡œ ê°œí†µ
+                    // A. ëŒì§„í˜• ëª¬ìŠ¤í„° ê·¸ë£¹ (1ì„± ë° ì •ì˜ˆ í¬í•¨)
+                    if (m.Name == "Security_Firewall" || m.Name == "Alert_Popup_Spam" || m.Name == "Broken_Document.txt" || m.Name == "Broken Key" || m.Name == "Temp Fragment")
                     {
                         allocatedPattern = "Delay_Inertia_Dash";
                     }
-                    // * [Periodic_Hardening_Guard ÆĞÅÏ ÇÒ´ç ´ë»ó ÁöÁ¤]
-                    else if (m.Name == "Empty_Folder" || m.Name == "Open Port Buoy")
-                    {
-                        allocatedPattern = "Periodic_Hardening_Guard";
-                    }
-                    // * [Random_Teleport_Barrage ÆĞÅÏ ÇÒ´ç ´ë»ó ÁöÁ¤]
-                    else if (m.Name == "Broken_Shortcut.lnk" || m.Name == "Request Crab" || m.Name == "Unsent Report")
-                    {
-                        allocatedPattern = "Random_Teleport_Barrage";
-                    }
-                    // * [Heavy_Projectile_Spread ÆĞÅÏ ÇÒ´ç ´ë»ó ÁöÁ¤]
-                    else if (m.Name == "Unemptied_Trash.bak" || m.Name == "Firewall Barnacle" || m.Name == "Recent Trace" || m.Name == "Recent Ghost" || m.Name == "Driver Cache Fragment")
+                    // B. ë¶€í‘œí˜• í¬íƒ‘ ëª¬ìŠ¤í„° ê·¸ë£¹ (Spread ì „ìš© - ì´ êµ¬ì—­ì´ ì™„ì „íˆ ëš«ë ¤ì•¼ ì •ìƒ ì‚¬ì¶œë©ë‹ˆë‹¤)
+                    else if (m.Name == "Runtime_Clock_Buoy" || m.Name == "Empty_Folder" || m.Name == "Open Port Buoy" || m.Name == "Firewall Barnacle")
                     {
                         allocatedPattern = "Heavy_Projectile_Spread";
                     }
-                    // * [Slime_Bounce_Approach ÆĞÅÏ ÇÒ´ç ´ë»ó ÁöÁ¤]
-                    else if (m.Name == "Unknown Device" || m.Name == "Packet Minnow" || m.Name == "Orphan Entry")
+                    // C. ìœ ë ¹í˜• í…”ë ˆí¬íŠ¸ ëª¬ìŠ¤í„° ê·¸ë£¹
+                    else if (m.Name == "Registry_Ghost_Key" || m.Name == "Broken_Shortcut.lnk" || m.Name == "Request Crab" || m.Name == "Unsent Report" || m.Name == "Recent Ghost")
                     {
-                        allocatedPattern = "Slime_Bounce_Approach";
+                        allocatedPattern = "Random_Teleport_Barrage";
                     }
-                    // * [Contamination_Zone_Leak ÆĞÅÏ ÇÒ´ç ´ë»ó ÁöÁ¤]
-                    else if (m.Name == "Broken Driver Icon" || m.Name == "Duplicate Value" || m.Name == "Cache Leech")
+                    else if (m.Name == "Registry_Ghost_Key" || m.Name == "Packet_Minnow" || m.Name == "Broken_Shortcut.lnk" || m.Name == "Request Crab" || m.Name == "Unsent Report" || m.Name == "Recent Ghost")
                     {
-                        allocatedPattern = "Contamination_Zone_Leak";
-                    }
-                    // * [IRQ Conflict Àü¿ë ¹ø°³ ±â¹Í ÀÓ½Ã ¼ö¿ë]
-                    else if (m.Name == "IRQ Conflict")
-                    {
-                        allocatedPattern = "IRQ_Lightning_Strike";
-                    }
+                        allocatedPattern = "Random_Teleport_Barrage";
+}
 
-                    // * [1. Delay_Inertia_Dash ÆĞÅÏ ±¸Çö - 2ÃÊ À¯¿¹ ´ë±â ÈÄ °ü¼º µ¹Áø]
+                    // * [1. Delay_Inertia_Dash íŒ¨í„´ êµ¬í˜„ - ëŒì§„ í›„ ì„í„ìŠ¤ ì´ˆê¸°í™” ë¶„ì‚°]
                     if (allocatedPattern == "Delay_Inertia_Dash")
                     {
                         m.StateTimer++;
-                        if (m.MonsterState == 0) // * [0: ´ë±â Æû]
+
+                        if (m.MonsterState == 0) // ëŒ€ê¸° ìƒíƒœ
                         {
                             m.VX *= 0.8f; m.VY *= 0.8f;
-
-                            if (m.StateTimer >= 60) // * [2ÃÊ ´ë±â ¸¸·á]
+                            if (m.StateTimer >= 60)
                             {
                                 m.MonsterState = 1; m.StateTimer = 0;
                                 float dx = player.X - m.X; float dy = player.Y - m.Y;
                                 float dist = (float)Math.Sqrt(dx * dx + dy * dy); if (dist < 1) dist = 1;
-
                                 m.TargetPosX = player.X + (dx / dist) * 180f;
                                 m.TargetPosY = player.Y + (dy / dist) * 180f;
-
                                 m.VX = (m.TargetPosX - m.X) * 0.08f;
                                 m.VY = (m.TargetPosY - m.Y) * 0.08f;
-                                effects.Add(new Effect("spark", m.X, m.Y, m.X, m.Y, 20, Color.White, ""));
                             }
                         }
-                        else // * [1: °ü¼º ¹Ì²ô·¯Áü Æû]
+                        else if (m.MonsterState == 1) // ëŒì§„ ìƒíƒœ
                         {
                             m.VX *= 0.94f; m.VY *= 0.94f;
                             m.X += m.VX; m.Y += m.VY;
 
                             if (Math.Abs(m.VX) < 0.15f && Math.Abs(m.VY) < 0.15f)
                             {
-                                m.MonsterState = 0; m.StateTimer = 0;
+                                m.MonsterState = 2; // íŠ•ê¹€ ì „ìš© ìƒíƒœë¡œ ë¶„ë¦¬ ê°€ë“œ
+                                m.StateTimer = 0;
+
+                                m.VX = 0; m.VY = 0; // í”Œë ˆì´ì–´ ë°©í–¥ ì†ë„ ì™„ì „ ê±°ì„¸
+
+                                double randomAngle = rand.NextDouble() * Math.PI * 2.0;
+                                float scatterForce = 15.0f + (float)(rand.NextDouble() * 15.0f); // ê³¼ê°í•œ 5ë°°ê¸‰ ê¸°í•˜í•™ ë¶„ì‚°
+
+                                m.VX = (float)Math.Cos(randomAngle) * scatterForce;
+                                m.VY = (float)Math.Sin(randomAngle) * scatterForce;
                             }
                         }
-                    }
-
-                    // * [2. Periodic_Hardening_Guard ÆĞÅÏ ±¸Çö - ÁÖ±âÀû Á¤Áö °æÈ­ ¹æ¾î]
-                    else if (allocatedPattern == "Periodic_Hardening_Guard")
-                    {
-                        m.StateTimer++;
-                        if (m.MonsterState == 0) // * [0: ±âº» ÃßÀû ¼Ó¼º]
+                        else if (m.MonsterState == 2) // íŠ•ê¹€ ìƒíƒœ
                         {
-                            m.VX += Math.Sign(player.X - m.X) * 0.15f;
-                            m.VY += Math.Sign(player.Y - m.Y) * 0.10f;
-                            float maxSpeed = 1.2f; float speed = (float)Math.Sqrt(m.VX * m.VX + m.VY * m.VY);
-                            if (speed > maxSpeed) { m.VX = m.VX / speed * maxSpeed; m.VY = m.VY / speed * maxSpeed; }
+                            m.VX *= 0.92f; m.VY *= 0.92f;
                             m.X += m.VX; m.Y += m.VY;
 
-                            if (m.StateTimer >= 90) // * [3ÃÊ È°¼ºÈ­ ÈÄ ¹æ¾î]
+                            if (Math.Abs(m.VX) < 0.3f && Math.Abs(m.VY) < 0.3f)
                             {
-                                m.MonsterState = 1; m.StateTimer = 0; m.HitFlash = 30;
-                            }
-                        }
-                        else // * [1: GUARD Á¤Áö »óÅÂ]
-                        {
-                            m.VX = 0; m.VY = 0;
-                            if (m.HitFlash < 5) m.HitFlash = 5;
-                            if (m.StateTimer >= 30) // * [1ÃÊ ÈÄ ÇØÁ¦]
-                            {
-                                m.MonsterState = 0; m.StateTimer = 0;
+                                m.MonsterState = 0;
+                                m.StateTimer = 0;
                             }
                         }
                     }
 
-                    // * [3. Random_Teleport_Barrage ÆĞÅÏ ±¸Çö - ¹«ÀÛÀ§ ÅÚ·¹Æ÷Æ® Åº¸· »çÃâ]
-                    else if (allocatedPattern == "Random_Teleport_Barrage")
-                    {
-                        m.StateTimer++;
-                        m.X += m.VX * 0.4f; m.Y += m.VY * 0.4f;
-
-                        if (m.StateTimer >= 120) // * [4ÃÊ ÁÖ±â ¹ßµ¿]
-                        {
-                            m.StateTimer = 0;
-                            m.X = (float)(rand.NextDouble() * (maxX - minX) + minX);
-                            m.Y = (float)(rand.NextDouble() * (maxY - minY) + minY);
-                            effects.Add(new Effect("spark", m.X, m.Y, m.X, m.Y, 20, Color.Cyan, "LINK_JUMP"));
-
-                            float baseAngle = (float)Math.Atan2(player.Y - m.Y, player.X - m.X);
-                            for (int k = 0; k < 6; k++)
-                            {
-                                float angle = baseAngle + (float)(k * Math.PI * 2 / 6);
-                                float speedX = (float)Math.Cos(angle) * 3.5f; float speedY = (float)Math.Sin(angle) * 3.5f;
-                                effects.Add(new Effect("projectile", m.X, m.Y, m.X + speedX * 100, m.Y + speedY * 100, 50, Color.Cyan, "BULLET"));
-                            }
-                        }
-                    }
-
-                    // * [4. Heavy_Projectile_Spread ÆĞÅÏ ±¸Çö - Á¤¿¹ ¹¬Á÷ ÀÌµ¿ ¹× ÆÄÆí »ìÆ÷]
+                    // * [2. Heavy_Projectile_Spread íŒ¨í„´ êµ¬í˜„ - ë¶€í‘œí˜• íˆ¬ì‚¬ì²´ ì‚¬ì¶œ ëª¨ë“ˆ]
                     else if (allocatedPattern == "Heavy_Projectile_Spread")
                     {
-                        // * [¹°¸®: ¹¬Á÷ÇÑ °¡¼Ó ¹× ´À¸° ÃÖ´ë ¼Óµµ À¯Áö]
                         if (tick % (110 + i * 15) == 0)
                         {
                             m.VX += Math.Sign(player.X - m.X) * 0.12f;
@@ -171,82 +118,53 @@ namespace DebugHeroFileDungeonRPG
                         if (speed > maxSpeed) { m.VX = m.VX / speed * maxSpeed; m.VY = m.VY / speed * maxSpeed; }
                         m.X += m.VX; m.Y += m.VY;
 
-                        // * [°ø°İ: ÁÖ±âÀûÀ¸·Î TRASH Åõ»çÃ¼ Á¶ÁØ ¹ß»ç]
+                        // 70í‹± ì£¼ê¸°ë¡œ ì •ë°€ íƒ„ë§‰ ì‚¬ì¶œ
                         if (tick % 70 == 0)
                         {
-                            effects.Add(new Effect("projectile", m.X, m.Y, player.X, player.Y, 40, Color.OrangeRed, "TRASH"));
+                            // ğŸ’¡ [ê¸°íš ëª…ì„¸ ê³ ìˆ˜]: ìƒëŒ€ì  ê¸¸ì´ ì˜¤ì°¨ ì™„ì „ ê²©ë¦¬ ê³µì‹
+                            // ë‹¨ìœ„ ë²¡í„° ì¶”ì • í›„ ê³ ì • ì‚¬ê±°ë¦¬ ê³„ìˆ˜(550í”½ì…€) ê³±ì—°ì‚° ìˆ˜í–‰
+                            float tDx = player.X - m.X;
+                            float tDy = player.Y - m.Y;
+                            float tDist = (float)Math.Sqrt(tDx * tDx + tDy * tDy);
+                            if (tDist < 1) tDist = 1;
+
+                            float fixedLength = 550f; // ë³€í•˜ì§€ ì•ŠëŠ” ì ˆëŒ€ì  ê³ ì • ê¸¸ì´ ê°€ì´ë“œ
+                            float fixedEndX = m.X + (tDx / tDist) * fixedLength;
+                            float fixedEndY = m.Y + (tDy / tDist) * fixedLength;
+
+                            // ì´í™íŠ¸ ë§¤ë‹ˆì € ìœ ì… ë“±ë¡
+                            effects.Add(new Effect("projectile", m.X, m.Y, fixedEndX, fixedEndY, 40, Color.OrangeRed, "TRASH"));
                         }
                     }
 
-                    // * [5. Slime_Bounce_Approach ÆĞÅÏ ±¸Çö - ½½¶óÀÓ Á¡ÇÁ µµ¾à½Ä ´À¸° ÃßÀû]
-                    else if (allocatedPattern == "Slime_Bounce_Approach")
+                    // * [3. Random_Teleport_Barrage íŒ¨í„´ êµ¬í˜„ - ìœ ë ¹í˜• 6ë°©í–¥ íƒ„ë§‰ ì‚¬ì¶œ]
+                    else if (allocatedPattern == "Random_Teleport_Barrage")
                     {
                         m.StateTimer++;
-                        if (m.StateTimer % 40 < 18) // * [µµ¾à »óÅÂ]
-                        {
-                            m.VX += Math.Sign(player.X - m.X) * 0.18f;
-                            m.VY += Math.Sign(player.Y - m.Y) * 0.12f;
-                        }
-                        else // * [ÂøÁö ºê·¹ÀÌÅ© »óÅÂ]
-                        {
-                            m.VX *= 0.75f; m.VY *= 0.75f;
-                        }
-                        float maxSpeed = 0.9f; float speed = (float)Math.Sqrt(m.VX * m.VX + m.VY * m.VY);
-                        if (speed > maxSpeed) { m.VX = m.VX / speed * maxSpeed; m.VY = m.VY / speed * maxSpeed; }
-                        m.X += m.VX; m.Y += m.VY;
-                    }
+                        m.X += m.VX * 0.4f; m.Y += m.VY * 0.4f;
 
-                    // * [6. Contamination_Zone_Leak ÆĞÅÏ ±¸Çö - µğ¹öÇÁ ¿À¿°ÀåÆÇ ÈçÀû Àü°³]
-                    else if (allocatedPattern == "Contamination_Zone_Leak")
-                    {
-                        m.VX += Math.Sign(player.X - m.X) * 0.14f;
-                        m.VY += Math.Sign(player.Y - m.Y) * 0.09f;
-                        float maxSpeed = 1.1f; float speed = (float)Math.Sqrt(m.VX * m.VX + m.VY * m.VY);
-                        if (speed > maxSpeed) { m.VX = m.VX / speed * maxSpeed; m.VY = m.VY / speed * maxSpeed; }
-                        m.X += m.VX; m.Y += m.VY;
-
-                        if (tick % 6 == 0)
+                        if (m.StateTimer >= 120)
                         {
-                            effects.Add(new Effect("spark", m.X, m.Y, m.X, m.Y, 8, Color.FromArgb(45, Color.LimeGreen), ""));
-                        }
+                            m.StateTimer = 0;
+                            m.X = (float)(rand.NextDouble() * (maxX - minX) + minX);
+                            m.Y = (float)(rand.NextDouble() * (maxY - minY) + minY);
+                            effects.Add(new Effect("spark", m.X, m.Y, m.X, m.Y, 20, Color.Cyan, "LINK_JUMP"));
 
-                        float dx = player.X - m.X; float dy = player.Y - m.Y;
-                        float distance = (float)Math.Sqrt(dx * dx + dy * dy);
-                        if (distance <= 130f)
-                        {
-                            playerCurrentSpeedModifier = 0.6f; // * [ÀÌµ¿¼Óµµ 40% ÀúÇÏ]
-                            if (tick % 30 == 0) // * [¸ÅÃÊ 2%¾¿ µ¶ ¿¬»ê Ã³¸®]
+                            float baseAngle = (float)Math.Atan2(player.Y - m.Y, player.X - m.X);
+                            for (int k = 0; k < 6; k++)
                             {
-                                int poisonDamage = (int)(player.MaxHp * 0.02);
-                                player.Hp -= poisonDamage;
-                                effects.Add(new Effect("text", player.X + 25, player.Y - 80, player.X + 25, player.Y - 80, 20, Color.LimeGreen, "-" + poisonDamage));
+                                float angle = baseAngle + (float)(k * Math.PI * 2 / 6);
+
+                                float bulletLength = 600f;
+                                float bEndX = m.X + (float)Math.Cos(angle) * bulletLength;
+                                float bEndY = m.Y + (float)Math.Sin(angle) * bulletLength;
+
+                                effects.Add(new Effect("projectile", m.X, m.Y, bEndX, bEndY, 50, Color.Cyan, "TELEPORT_BULLET"));
                             }
                         }
                     }
 
-                    // * [7. IRQ Conflict Àü¿ë º¸Á¶ Àü°İ ½ºÆÄÅ© ÄÚµå ÆĞÅÏ]
-                    else if (allocatedPattern == "IRQ_Lightning_Strike")
-                    {
-                        m.StateTimer++;
-                        if (tick % 12 == 0) { m.VX = (float)(rand.NextDouble() * 3.0 - 1.5); m.VY = (float)(rand.NextDouble() * 2.0 - 1.0); }
-                        m.X += m.VX; m.Y += m.VY;
-
-                        if (m.StateTimer >= 90)
-                        {
-                            m.StateTimer = 0; float rangeRadius = 140f;
-                            for (int k = 0; k < 9; k++)
-                            {
-                                double angle = k * Math.PI * 2 / 9;
-                                float tX = m.X + (float)Math.Cos(angle) * rangeRadius;
-                                float tY = m.Y + (float)Math.Sin(angle) * rangeRadius;
-                                effects.Add(new Effect("projectile", m.X, m.Y, tX, tY, 22, Color.Gold, "SPARK_LINE"));
-                            }
-                        }
-                    }
-
-                    // ==========================================================
-                    // ÀÌ¸§ ¹Ì½º¸ÅÄ¡·Î None¿¡ ºüÁø ¸÷µéÀ» À§ÇÑ ±âº» ÃßÀû ¹«ºê¸ÕÆ® ¿£Áø
-                    // ==========================================================
+                    // íŒ¨í„´ ê°€ë“œë¥¼ ë°›ì§€ ëª»í•˜ëŠ” ë‚˜ë¨¸ì§€ ì˜ˆì™¸ ì¡ëª¹ë“¤ì„ ìœ„í•œ ìœ ì—°í•œ ë°±ì—… ì¶”ì ì„ 
                     if (allocatedPattern == "None")
                     {
                         m.VX += Math.Sign(player.X - m.X) * 0.15f;
@@ -257,7 +175,6 @@ namespace DebugHeroFileDungeonRPG
                         m.X += m.VX; m.Y += m.VY;
                     }
 
-                    // * [°øÅë ¿Ü°û º®¸é Ãæµ¹ Á¦µ¿]
                     if (m.X < minX) { m.X = minX; m.VX = Math.Abs(m.VX); }
                     if (m.X > maxX) { m.X = maxX; m.VX = -Math.Abs(m.VX); }
                     if (m.Y < minY) { m.Y = minY; m.VY = Math.Abs(m.VY); }
@@ -265,7 +182,6 @@ namespace DebugHeroFileDungeonRPG
                 }
                 else
                 {
-                    // * [º¸½º ¿À¸®Áö³Î ÆĞÅÏ ¸µÅ© ÀÛµ¿ º¸Á¸ ±¸¿ª]
                     float towardX = player.X - m.X;
                     float towardY = player.Y - m.Y;
                     float distance = (float)Math.Sqrt(towardX * towardX + towardY * towardY);
@@ -280,27 +196,64 @@ namespace DebugHeroFileDungeonRPG
                 }
 
                 if (m.HitFlash > 0) m.HitFlash--;
-                // ÀÏ¹İ ¸ö»§ Ãæµ¹ ÁÖ±â Á¶Á¤ ¹× °è¼ö ´ëÆø »óÇâ
-                if (m.Bounds.IntersectsWith(player.Bounds) && tick % 20 == 0)
+
+                if (tick % 24 == 0)
                 {
-                    //  ¸ó½ºÅÍ °ø°İ·ÂÀÇ ¹«·Á 2.5¹è¸¦ ´ÙÀÌ·ºÆ®·Î °üÅë ´ë¹ÌÁö·Î ÁÖÀÔ!
-                    int damage = Math.Max(25, (int)(m.Attack * 2.5f));
-                    if (player.DefenseTicks > 0) damage = Math.Max(5, damage / 2); // ¹æ¾î ½Ã °æ°¨À² Ãà¼Ò
+                    bool isHit = false;
+                    double hitDamagePercent = 0.0;
 
-                    player.Hp -= damage;
-                    player.SystemStability = Math.Max(0, player.SystemStability - 3); // ¾ÈÁ¤¼º ÆÄ±« Áö¼ö »óÇâ
-
-                    effects.Add(new Effect("text", player.X, player.Y - 70, player.X, player.Y - 70, 34, Color.OrangeRed, "CRITICAL -" + damage));
-                    effects.Add(new Effect("spark", player.X, player.Y - 32, player.X, player.Y - 32, 22, Color.Red, ""));
-
-                    if (player.Hp <= 0)
+                    if (m.Bounds.IntersectsWith(player.Bounds))
                     {
-                        // player.Hp = player.MaxHp º¹±¸ ÄÚµå¸¦ ¿ÏÀüÈ÷ Á¦°ÅÇÏ¿© Áï½Ã 0 ÀÌÇÏ »óÅÂ·Î Å¸ÀÌ¸Ó Æ½¿¡ Àü´Ş, 
-                        // MainForm ÃÖÇÏ´Ü ¿¹¿Ü ÇÊÅÍ¸¦ ÅëÇØ ¹ÙÅÁÈ­¸éÀ¸·Î Áï°¢ ¿µ±¸ »çÃâ(ÅğÀå)µÇ°Ô ¿¬µ¿ÇÕ´Ï´Ù.
-                        player.Hp = 0;
+                        isHit = true;
+                        hitDamagePercent = rand.Next(7, 16) / 100.0;
+                    }
+                    else
+                    {
+                        for (int k = 0; k < effects.Count; k++)
+                        {
+                            Effect eff = effects[k];
+                            if (eff.Kind == "projectile")
+                            {
+                                float progress = 1f - eff.Ticks / (float)Math.Max(1, eff.MaxTicks);
+                                float effCurrX = eff.X + (eff.X2 - eff.X) * progress;
+                                float effCurrY = eff.Y + (eff.Y2 - eff.Y) * progress;
+
+                                if (player.Bounds.Contains(effCurrX, effCurrY))
+                                {
+                                    if (eff.Text == "BULLET" || eff.Text == "TRASH" || eff.Text == "SPARK_LINE" || eff.Text == "TELEPORT_BULLET")
+                                    {
+                                        isHit = true;
+                                        eff.Ticks = 0;
+                                        hitDamagePercent = rand.Next(7, 16) / 100.0;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (isHit)
+                    {
+                        int damage = (int)(player.MaxHp * hitDamagePercent);
+                        if (player.DefenseTicks > 0) damage = Math.Max(1, damage / 3);
+
+                        player.Hp -= damage;
+                        player.SystemStability = Math.Max(0, player.SystemStability - 1);
+
+                        effects.Add(new Effect("text", player.X, player.Y - 70, player.X, player.Y - 70, 34, Color.OrangeRed, "-" + damage));
+                        effects.Add(new Effect("spark", player.X, player.Y - 32, player.X, player.Y - 32, 22, Color.Red, ""));
+
+                        if (player.Hp <= 0)
+                        {
+                            player.Hp = 0;
+                        }
                     }
                 }
             }
+
+            player.MoveVelocityX *= playerCurrentSpeedModifier;
+            player.MoveVelocityY *= playerCurrentSpeedModifier;
+
             result.AllEnemiesDefeated = enemies.Count > 0;
             for (int i = 0; i < enemies.Count; i++) if (enemies[i].Hp > 0) result.AllEnemiesDefeated = false;
             return result;

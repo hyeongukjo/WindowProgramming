@@ -34,6 +34,7 @@ namespace DebugHeroFileDungeonRPG
         private static readonly Dictionary<string, Image> playerMotionSheetCache = new Dictionary<string, Image>();
         private static readonly Dictionary<string, Rectangle> playerActionTrimCache = new Dictionary<string, Rectangle>();
         private static Image playerStillSwordImage;
+        private static Image playerShieldImage;
         private static Image normalMonsterSheet = null;
         // 몬스터 이미지 호출 관련 코드 //
         private static readonly Dictionary<string, Image> strictMonsterCache = new Dictionary<string, Image>();
@@ -247,44 +248,12 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
-        // [근본 해결 2]: 몬스터 이름을 다이렉트로 추적해 대소문자나 출력 디렉토리 유실을 방어하고 png 로딩
+        // * [교정형 자산 로더]: 낡은 이름 비교 명세를 청소하고 오직 e.Kind 파일 이름으로만 스캔 경로를 뚫습니다.
         private static Image LoadStrictMonsterAssetDirect(GameEntity e)
         {
-            if (e == null) return null;
+            if (e == null || string.IsNullOrEmpty(e.Kind)) return null;
 
-            string targetPngName = "moster.png"; // 리소스가 아직 없을 때의 백업 기본값
-            string monsterName = (e.Name ?? "").Trim();
-
-            // 기획안 전 스테이지 적 명칭 1:1 실시간 수동 배정 매핑 테이블
-            // STAGE 01
-            if (monsterName == "Broken_Document.txt") targetPngName = "file_monster.png";
-            else if (monsterName == "Empty_Folder") targetPngName = "folder_monster.png";
-            else if (monsterName == "Broken_Shortcut.lnk") targetPngName = "shortcut_monster.png";
-            else if (monsterName == "Unemptied_Trash.bak") targetPngName = "trash_monster.png";
-
-            // STAGE 03
-            else if (monsterName == "Update Patch 조각") targetPngName = "patch_monster.png";
-            else if (monsterName == "Loading Bar Slime") targetPngName = "slime_monster.png";
-            else if (monsterName == "Restart Reminder") targetPngName = "reminder_monster.png";
-            else if (monsterName == "Failed Update") targetPngName = "failed_monster.png";
-
-            // STAGE 05
-            else if (monsterName == "Packet Minnow") targetPngName = "packet_monster.png";
-            else if (monsterName == "Open Port Buoy") targetPngName = "port_monster.png";
-            else if (monsterName == "Request Crab") targetPngName = "crab_monster.png";
-            else if (monsterName == "Firewall Barnacle") targetPngName = "firewall_monster.png";
-
-            // STAGE 07
-            else if (monsterName == "Broken Key") targetPngName = "key_monster.png";
-            else if (monsterName == "Duplicate Value") targetPngName = "value_monster.png";
-            else if (monsterName == "Orphan Entry") targetPngName = "orphan_monster.png";
-            else if (monsterName == "Recent Trace") targetPngName = "trace_monster.png";
-
-            // STAGE 09
-            else if (monsterName == "Temp Fragment") targetPngName = "temp_monster.png";
-            else if (monsterName == "Cache Dust") targetPngName = "leech_monster.png";
-            else if (monsterName == "Unsent Report") targetPngName = "report_monster.png";
-            else if (monsterName == "Recent Ghost") targetPngName = "ghost_monster.png";
+            string targetPngName = e.Kind.Trim();
 
             lock (strictMonsterLock)
             {
@@ -292,21 +261,14 @@ namespace DebugHeroFileDungeonRPG
                     return cachedImg;
 
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-
-                // 디렉토리 오타나 대소문자 혼선을 완전히 차단하는 유연한 경로 탐색 시도
                 string[] folderNames = { "Assets/Characters/Enemies", "Assets/Characters/Enemise", "Assets/Monsters" };
                 string fullPath = "";
 
                 foreach (var folder in folderNames)
                 {
                     string checkPath = Path.Combine(baseDir, folder.Replace('/', Path.DirectorySeparatorChar), targetPngName);
-                    if (File.Exists(checkPath))
-                    {
-                        fullPath = checkPath;
-                        break;
-                    }
+                    if (File.Exists(checkPath)) { fullPath = checkPath; break; }
                 }
-
                 try
                 {
                     if (!string.IsNullOrEmpty(fullPath) && File.Exists(fullPath))
@@ -315,27 +277,13 @@ namespace DebugHeroFileDungeonRPG
                         strictMonsterCache[targetPngName] = img;
                         return img;
                     }
-                    else
-                    {
-                        // 만약 지정한 특수 파일이 복사 누락 등으로 없으면, 다운 방지를 위해 기본 moster.png를 자동 매핑합니다.
-                        foreach (var folder in folderNames)
-                        {
-                            string fbPath = Path.Combine(baseDir, folder.Replace('/', Path.DirectorySeparatorChar), "moster.png");
-                            if (File.Exists(fbPath))
-                            {
-                                Image img = Image.FromFile(fbPath);
-                                strictMonsterCache[targetPngName] = img;
-                                return img;
-                            }
-                        }
-                    }
                 }
                 catch { }
                 return null;
             }
         }
 
-        // [근본 해결 3]: 단일 통짜 PNG 파일 및 3x3 스프라이트 규격을 자동으로 하이브리드 판정하여 그리는 도트 렌더러
+        // * [Renderer.cs 내부: 3x3 전체 시트 번짐 현상 전면 처단 최종 종결 버전]
         private static void DrawFileMonster(Graphics g, Rectangle r, GameEntity e)
         {
             Image sheet = LoadStrictMonsterAssetDirect(e);
@@ -346,36 +294,67 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
 
-            // 💡 오판의 원인이 되던 비율 체크 조건문을 완전히 제거하고 3x3 분할을 강제 고정합니다.
-            int cols = 3;
-            int rows = 3;
-            int totalFrames = cols * rows;
+            // 💡 [최종 종결 가드 격실]: 팩토리가 주는 에셋 이름이 "Teleport_2.png"일 때 하단의 낡은 연산틀을 차단합니다.
+            if (e.Kind != null && e.Kind.Contains("Teleport_2"))
+            {
+                // 형진님이 명세하신 1024x1024 해상도 기반 오차 없는 완벽한 정수 3분할 세팅
+                const int fixedCellW = 341;
+                const int fixedCellH = 341;
+                const int cols = 3;
 
-            // 각 몬스터 이름 해시코드를 활용해 고유하게 애니메이션 박자를 분산시킵니다.
-            int offset = Math.Abs(((e.Name ?? "").GetHashCode()) % totalFrames);
-            int frame = ((Environment.TickCount / 130) + offset) % totalFrames;
+                int targetFrameIndex = 0;
 
-            // 현재 프레임 번호가 몇 번째 열(col), 몇 번째 행(row)에 있는지 계산
-            int col = frame % cols;
-            int row = frame / cols;
+                // * [StateTimer 기반 애니메이션 동기화]
+                if (e.StateTimer >= 115) // 증발 단계: 2행 3열 (인덱스 5)
+                {
+                    targetFrameIndex = 5;
+                }
+                else if (e.StateTimer >= 0 && e.StateTimer < 10) // 안착 단계: 3행 3열 (인덱스 8)
+                {
+                    targetFrameIndex = 8;
+                }
+                else // 평상시 대기 애니메이션 (0~4번 프레임 순환)
+                {
+                    targetFrameIndex = (Environment.TickCount / 150) % 5;
+                }
 
-            // 이미지의 전체 해상도를 기반으로 정확히 3등분한 1칸의 순수 픽셀 크기 산출
-            int cellW = sheet.Width / cols;
-            int cellH = sheet.Height / rows;
+                int col = targetFrameIndex % cols;
+                int row = targetFrameIndex / cols;
 
-            int sx = col * cellW;
-            int sy = row * cellH;
-            int pad = 2; // 테두리 번짐 방지 패딩
+                // 💡 [진짜 9등분 크롭]: 옆 칸 레이아웃이 절대 침범하지 못하도록 341 단위로 정확히 쪼개냅니다.
+                int srcX = col * fixedCellW;
+                int srcY = row * fixedCellH;
 
-            // 💡 원본 이미지에서 전체가 아닌 '정확히 자른 1칸(src)'만 추출하도록 타겟 지정!
-            Rectangle src = new Rectangle(
-                sx + pad,
-                sy + pad,
-                Math.Max(1, cellW - pad * 2),
-                Math.Max(1, cellH - pad * 2)
-            );
+                // 외곽 테두리선의 압축 노이즈 제거를 위해 사방 3픽셀 안전 가드 마진 수축
+                Rectangle srcRect = new Rectangle(srcX + 3, srcY + 3, fixedCellW - 6, fixedCellH - 6);
 
-            // 145x120 크기로 스케일을 키우면서, DrawEnemy의 UI 중심선(r.X + 32)과 완벽 동기화
+                // 💡 [찌그러짐 원천 차단 그릇]: 145x120의 비대칭 규격을 깨부수고, 완벽한 1:1 정방형 130px 크기 그릇 강제 부여!
+                int displaySize = 130;
+                Rectangle perfectGridDst = new Rectangle(
+                    r.X + (r.Width / 2) - (displaySize / 2),
+                    r.Y + r.Height - displaySize + 12, // 발바닥 지면 완벽 밀착 보정값
+                    displaySize,
+                    displaySize
+                );
+
+                // * 도트 깨짐 및 압축 오차 방지 필터 세팅
+                var oldInterpolation = g.InterpolationMode;
+                var oldPixelOffset = g.PixelOffsetMode;
+                g.InterpolationMode = InterpolationMode.NearestNeighbor;
+                g.PixelOffsetMode = PixelOffsetMode.Half;
+
+                // 🌟 전체 시트 출력을 완전 중단하고, 정밀 분할된 딱 1칸만 드로우!
+                g.DrawImage(sheet, perfectGridDst, srcRect, GraphicsUnit.Pixel);
+
+                // * 엔진 상태 복원 후 즉시 종료하여 하단의 전체 드로우 else 구역을 원천 차단(Bypass)합니다.
+                g.InterpolationMode = oldInterpolation;
+                g.PixelOffsetMode = oldPixelOffset;
+                return;
+            }
+
+            // ==========================================================
+            // 기존의 멀쩡했던 4x4 일반 잡몹들(Dash, Spread 등)의 원본 라우팅 구역
+            // ==========================================================
             int drawW = 145, drawH = 120;
             Rectangle dst = new Rectangle(
                 r.X + 32 - (drawW / 2),
@@ -384,20 +363,38 @@ namespace DebugHeroFileDungeonRPG
                 drawH
             );
 
-            var oldInterpolation = g.InterpolationMode;
-            var oldPixelOffset = g.PixelOffsetMode;
-            var oldSmoothing = g.SmoothingMode;
-
+            var prevInterpolation = g.InterpolationMode;
+            var prevPixelOffset = g.PixelOffsetMode;
+            var prevSmoothing = g.SmoothingMode;
             g.InterpolationMode = InterpolationMode.NearestNeighbor;
             g.PixelOffsetMode = PixelOffsetMode.Half;
             g.SmoothingMode = SmoothingMode.None;
 
-            // 드디어 자른 단일 조각(src)만 화면 목적지(dst)에 출력합니다!
-            g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+            if (e.Kind == "Dash_1.png")
+            {
+                Draw_Image_Interpretation_1(g, sheet, dst, e);
+            }
+            else if (e.Kind == "Dash_2.png")
+            {
+                Draw_Image_Interpretation_2(g, sheet, dst, e);
+            }
+            else if (e.Kind == "Spread_1.png" || e.Kind == "Spread_2.png")
+            {
+                Draw_Image_Interpretation_3(g, sheet, dst, e);
+            }
+            else if (e.Kind == "Teleport_1.png")
+            {
+                Draw_Image_Interpretation_4(g, sheet, dst, e);
+            }
+            else
+            {
+                Rectangle src = new Rectangle(0, 0, sheet.Width, sheet.Height);
+                g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+            }
 
-            g.InterpolationMode = oldInterpolation;
-            g.PixelOffsetMode = oldPixelOffset;
-            g.SmoothingMode = oldSmoothing;
+            g.InterpolationMode = prevInterpolation;
+            g.PixelOffsetMode = prevPixelOffset;
+            g.SmoothingMode = prevSmoothing;
 
             if (e.HitFlash > 0)
             {
@@ -406,6 +403,214 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
+        // * [해석 방식 1]: 4x4 구조 (방패형 - Security_Firewall 전용)
+        private static void Draw_Image_Interpretation_1(Graphics g, Image sheet, Rectangle dst, GameEntity e)
+        {
+            int cols = 4; int rows = 4;
+            int cellW = sheet.Width / cols; int cellH = sheet.Height / rows;
+            int targetFrameIndex = 15; // 기본 대기 프레임
+
+            // * [돌진 상태(1)일 때 0~14번 프레임 루프 재생]
+            if (e.MonsterState == 1)
+            {
+                targetFrameIndex = (Environment.TickCount / 90) % 15;
+            }
+
+            int col = targetFrameIndex % cols; int row = targetFrameIndex / cols; int pad = 2;
+            Rectangle src = new Rectangle(col * cellW + pad, row * cellH + pad, Math.Max(1, cellW - pad * 2), Math.Max(1, cellH - pad * 2));
+            g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+        }
+
+        private static void Draw_Image_Interpretation_2(Graphics g, Image sheet, Rectangle dst, GameEntity e)
+        {
+            int cols = 4; int rows = 2;
+            int cellW = sheet.Width / cols; int cellH = sheet.Height / rows;
+            int targetFrameIndex = 2;
+
+            if (e.MonsterState == 1)
+            {
+                int[] dashSequence = { 0, 1, 3, 4, 5, 6, 7 };
+                int framesPerTick = 5;
+                int currentFramePointer = e.StateTimer / framesPerTick;
+
+                if (currentFramePointer >= dashSequence.Length)
+                {
+                    targetFrameIndex = dashSequence[dashSequence.Length - 1];
+                }
+                else
+                {
+                    targetFrameIndex = dashSequence[currentFramePointer];
+                }
+            }
+            else
+            {
+                targetFrameIndex = 2;
+            }
+
+            int col = targetFrameIndex % cols; int row = targetFrameIndex / cols;
+
+            // 💡 [버그 해결 1: 하얀 선 제거] 
+            // * [자르는 영역의 외곽 경계 찌꺼기가 번져서 아래에 하얀 선이 남지 않도록 내부로 1.5픽셀 마진 수축 연산]
+            int padX = 2;
+            int padY = 2;
+            Rectangle src = new Rectangle(
+                col * cellW + padX,
+                row * cellH + padY,
+                Math.Max(1, cellW - padX * 2),
+                Math.Max(1, cellH - padY * 2 - 1) // * [하단 경계 1픽셀 강제 컷오프 가드]
+            );
+            g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+        }
+        // * [해석 방식 3 최종 종결판 - 원본 이미지 완벽 호환 버전]
+        // * [형진님이 주신 원본의 '0808' 디자인을 100% 그대로 쓰면서 아래칸 찌꺼기만 코드로 칼같이 잘라냅니다]
+        private static void Draw_Image_Interpretation_3(Graphics g, Image sheet, Rectangle dst, GameEntity e)
+        {
+            int cols = 4; int rows = 4;
+
+            // 💡 이미지 전체 해상도를 기반으로 분할하되, 아랫칸 침범을 막기 위해 수동 마진 적용
+            int cellW = sheet.Width / cols;
+            int cellH = sheet.Height / rows;
+
+            int targetFrameIndex = 4; // 1행(0~3) 배제, 2행 첫 칸(4) 시작
+
+            int localAiTick = (Environment.TickCount / 33) % 70;
+
+            if (localAiTick >= 0 && localAiTick < 20)
+            {
+                int[] prepare = { 4, 5, 6 };
+                targetFrameIndex = prepare[(localAiTick / 7) % prepare.Length];
+            }
+            else if (localAiTick >= 20 && localAiTick < 45)
+            {
+                int[] fire = { 7, 8, 9, 10, 11 };
+                targetFrameIndex = fire[((localAiTick - 20) / 5) % fire.Length];
+            }
+            else if (localAiTick >= 45 && localAiTick < 60)
+            {
+                int[] recovery = { 12, 13, 14, 15 };
+                targetFrameIndex = recovery[((localAiTick - 45) / 4) % recovery.Length];
+            }
+            else
+            {
+                targetFrameIndex = 4 + ((localAiTick - 60) / 5) % 2;
+            }
+
+            int col = targetFrameIndex % cols;
+            int row = targetFrameIndex / rows;
+
+            // 💡 [핵심 보정]: 원본의 불균일한 경계를 잡기 위해, 자르는 사각형의 상단은 내리고, 하단은 대폭 깎아냅니다.
+            int startX = col * cellW + 4;               // 좌측 마진 증가
+            int startY = row * cellH + 4;               // 상단 마진을 내려서 윗칸 잔상 제거
+            int cropW = cellW - 8;                      // 가로폭 압축
+            int cropH = cellH - 12;                     // 🌟 높이를 12픽셀이나 바짝 줄여서 아래칸 안테나 절대 침범 불가하도록 가드
+
+            Rectangle src = new Rectangle(startX, startY, Math.Max(1, cropW), Math.Max(1, cropH));
+            g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+        }
+        // * [해석 방식 4 최종 종결 보정판]: 4x4 구조 (유령형 - 사방 마진 가드로 하얀 선 완벽 소멸)
+        // * [소수점 반올림 오차로 인해 아래 행/옆 칸의 이미지 조각이 딸려 올라오는 현상을 물리적으로 완전 가드합니다]
+        private static void Draw_Image_Interpretation_4(Graphics g, Image sheet, Rectangle dst, GameEntity e)
+        {
+            int cols = 4; int rows = 4;
+            int cellW = sheet.Width / cols; int cellH = sheet.Height / rows;
+            int targetFrameIndex = 0;
+
+            // * [EnemyLogicSystem.cs의 120틱 주기 순간이동 타이머와 정밀 동기화]
+            if (e.StateTimer >= 115) // A. 텔레포트 직전 (증발 흔적 프레임)
+            {
+                targetFrameIndex = 14;
+            }
+            else if (e.StateTimer >= 0 && e.StateTimer < 10) // B. 텔레포트 직후 (안착 프레임)
+            {
+                targetFrameIndex = 15;
+            }
+            else // C. 일반 대기 및 이동 애니메이션 (0~13번 프레임 순환)
+            {
+                targetFrameIndex = (Environment.TickCount / 120) % 14;
+            }
+
+            int col = targetFrameIndex % cols; int row = targetFrameIndex / cols;
+
+            // 💡 [버그 해결]: 상하좌우 모든 방향에 대한 가드 마진(Inset) 3픽셀로 확장 강화
+            // * [좌우 여백(padX)과 상하 여백(padY)을 사방으로 3픽셀씩 깊숙하게 깎아내어 경계선 격리]
+            int padX = 3;
+            int padY = 3;
+
+            // * [정밀 크롭 연산]: 셀 본연의 크기에서 사방 마진 영역을 확실하게 빼주어
+            // * [아랫줄 프레임의 데이터 찌꺼기가 단 1픽셀도 위로 침범하여 하얀 선을 만들 수 없도록 차단]
+            int safeCropWidth = cellW - (padX * 2);
+            int safeCropHeight = cellH - (padY * 2);
+
+            Rectangle src = new Rectangle(
+                col * cellW + padX,
+                row * cellH + padY,
+                Math.Max(1, safeCropWidth),
+                Math.Max(1, safeCropHeight)
+            );
+
+            g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
+        }
+        // * [Renderer.cs 내부: 1024x1024 자산 비율 왜곡 전면 수정 버전]
+        private static void Draw_Image_Interpretation_5(Graphics g, Image sheet, Rectangle dst, GameEntity e)
+        {
+            // 💡 [수학적 9등분 공식]: 1024 / 3 = 정확히 341px 픽셀 격리
+            const int cellW = 341;
+            const int cellH = 341;
+            const int cols = 3;
+
+            int targetFrameIndex = 0;
+
+            // * [타이머 기반 프레임 추적 애니메이션]
+            if (e.StateTimer >= 115) // 증발 단계: 2행 3열 (인덱스 5)
+            {
+                targetFrameIndex = 5;
+            }
+            else if (e.StateTimer >= 0 && e.StateTimer < 10) // 안착 단계: 3행 3열 (인덱스 8)
+            {
+                targetFrameIndex = 8;
+            }
+            else // 일반 대기 (0~4번 프레임 순환)
+            {
+                targetFrameIndex = (Environment.TickCount / 150) % 5;
+            }
+
+            int col = targetFrameIndex % cols;
+            int row = targetFrameIndex / cols;
+
+            // 💡 [원본 소스 크롭]: 옆 칸 데이터가 절대 스며들지 못하게 정밀 341px 컷오프
+            int srcX = col * cellW;
+            int srcY = row * cellH;
+
+            // 외곽 경계선 노이즈 방지를 위해 사방 2픽셀씩만 안쪽으로 격리 수축
+            Rectangle srcRect = new Rectangle(srcX + 2, srcY + 2, cellW - 4, cellH - 4);
+
+            // 💡 [진짜 해결책 - 왜곡 그릇 전면 폐기]:
+            // * 위쪽 함수에서 강제로 구겨 넣은 dst.Width(145), dst.Height(120)의 비대칭 규격을 무시합니다!
+            // * 원본 1:1 도트 비율이 완벽하게 유지되도록 가로세로를 동일한 160px 정방형 그릇으로 재조정합니다.
+            int finalDisplaySize = 160;
+
+            // * 체력바 밑 지면에 발바닥이 완벽하게 밀착되도록 중심축 좌표 재계산
+            Rectangle perfectGridDst = new Rectangle(
+                dst.X + (dst.Width / 2) - (finalDisplaySize / 2),
+                dst.Y + dst.Height - finalDisplaySize + 10, // Y축 발바닥 고정 보정값
+                finalDisplaySize,
+                finalDisplaySize
+            );
+
+            // * [도트 깨짐 및 압축 오차 방지 필터 세팅]
+            var oldInterpolation = g.InterpolationMode;
+            var oldPixelOffset = g.PixelOffsetMode;
+
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+
+            // 🌟 교정된 정방형 그릇에 정밀 분할된 1칸 이미지 드로우
+            g.DrawImage(sheet, perfectGridDst, srcRect, GraphicsUnit.Pixel);
+
+            // * 엔진 상태 복원
+            g.InterpolationMode = oldInterpolation;
+            g.PixelOffsetMode = oldPixelOffset;
+        }
         private static Image LoadStageBackgroundImage(int stageIndex, bool bossRoom)
         {
             int assetStage = stageIndex;
@@ -697,24 +902,18 @@ namespace DebugHeroFileDungeonRPG
         }
         private static int GetNpcEmotionTopIgnore(NpcMood mood)
         {
-            // 2행/3행 표정은 윗칸 캐릭터 발 픽셀이 칸 경계에 걸려 들어올 수 있음
-            if (mood == NpcMood.Happy ||
-                mood == NpcMood.Question ||
-                mood == NpcMood.Error ||
-                mood == NpcMood.Bsod ||
-                mood == NpcMood.Damaged)
+            if (mood == NpcMood.Log)
             {
-                return 34;
+                return 15;
             }
 
-            // 4행은 위쪽에 오브젝트가 있음
             if (mood == NpcMood.Progress ||
                 mood == NpcMood.Thinking ||
-                mood == NpcMood.Warning ||
-                mood == NpcMood.Log)
+                mood == NpcMood.Warning)
             {
-                return 14;
+                return 10;
             }
+
 
             return 0;
         }
@@ -1391,7 +1590,92 @@ namespace DebugHeroFileDungeonRPG
 
             return playerStillSwordImage;
         }
+        private static Rectangle GetPlayerShieldSourceRect(Image sheet, int frame)
+        {
+            int columns = 3;
+            int rows = 3;
+            int totalFrames = columns * rows;
 
+            frame %= totalFrames;
+            if (frame < 0) frame = 0;
+
+            int col = frame % columns;
+            int row = frame / columns;
+
+            int x1 = (int)Math.Round(col * sheet.Width / (double)columns);
+            int x2 = (int)Math.Round((col + 1) * sheet.Width / (double)columns);
+            int y1 = (int)Math.Round(row * sheet.Height / (double)rows);
+            int y2 = (int)Math.Round((row + 1) * sheet.Height / (double)rows);
+
+            // 칸 구분선이 같이 잘리는 것 방지
+            int padding = 3;
+
+            return Rectangle.FromLTRB(
+                x1 + padding,
+                y1 + padding,
+                x2 - padding,
+                y2 - padding
+            );
+        }
+        private static Image GetPlayerShieldImage()
+        {
+            if (playerShieldImage != null)
+                return playerShieldImage;
+
+            string path = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "Assets",
+                "Caracters",
+                "Player",
+                "player_shield.png"
+            );
+
+            if (File.Exists(path))
+                playerShieldImage = Image.FromFile(path);
+
+            return playerShieldImage;
+        }
+        private static bool DrawPlayerShieldOverlay(Graphics g, PlayerState p, float drawX, float baseY)
+        {
+            Image shield = GetPlayerShieldImage();
+
+            if (shield == null)
+                return false;
+
+            // DefenseTicks = 100에서 시작한다고 가정
+            // 시간이 지날수록 0~8번 프레임 순서대로 재생
+            int elapsed = Math.Max(0, 100 - p.DefenseTicks);
+            int frame = (elapsed / 4) % 9;
+
+            Rectangle src = GetPlayerShieldSourceRect(shield, frame);
+
+            // 크기 조절
+            float scale = 0.60f;
+
+            int drawW = (int)(src.Width * scale);
+            int drawH = (int)(src.Height * scale);
+
+            // 캐릭터 중심보다 살짝 위에 방어막 중심 배치
+            float shieldCenterY = baseY - 62f;
+
+            Rectangle dst = new Rectangle(
+                (int)(drawX - drawW / 2),
+                (int)(shieldCenterY - drawH / 2),
+                drawW,
+                drawH
+            );
+
+            GraphicsState state = g.Save();
+
+            g.InterpolationMode = InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode = PixelOffsetMode.Half;
+
+            g.DrawImage(shield, dst, src, GraphicsUnit.Pixel);
+
+            g.Restore(state);
+
+            return true;
+        }
         private static void DrawPlayerStillSprite(Graphics g, PlayerState p, float drawX, float baseY, int facing)
         {
             Image img = GetPlayerStillSwordImage();
@@ -1583,11 +1867,11 @@ namespace DebugHeroFileDungeonRPG
                 using (SolidBrush aura = new SolidBrush(Color.FromArgb(walking ? 24 : 18, 70, 180, 255)))
                     g.FillEllipse(aura, (int)drawX - 54, (int)baseY - 112, 108, 120);
             }
-            if (p.DefenseTicks > 0)
+            /*if (p.DefenseTicks > 0)
             {
                 using (Pen shield = new Pen(Color.FromArgb(150, 120, 210, 255), 3f))
                     g.DrawEllipse(shield, drawX - 58, baseY - 120, 116, 130);
-            }
+            }*/
             if (p.ActionState == PlayerActionState.Die)
             {
                 DrawPlayerMotionFrame(g, p, drawX, baseY, facing, "player_gameover.png");
@@ -2053,7 +2337,6 @@ namespace DebugHeroFileDungeonRPG
                     g.FillRectangle(rb, px - sz / 2, py - sz / 2, sz, sz);
             }
         }
-
         public static void DrawEnemy(Graphics g, GameEntity e, float cameraX)
         {
             RectangleF b = e.Bounds;
@@ -2102,40 +2385,53 @@ namespace DebugHeroFileDungeonRPG
         {
             RectangleF b = drop.Bounds;
             Rectangle r = Rectangle.Round(new RectangleF(b.X - cameraX, b.Y, b.Width, b.Height));
-            int glowAlpha = drop.Dragging ? 110 : 70;
-            using (SolidBrush glow = new SolidBrush(Color.FromArgb(glowAlpha, 80, 190, 255)))
-                g.FillEllipse(glow, r.X - 16, r.Y - 14, r.Width + 32, r.Height + 28);
-            using (SolidBrush shadow = new SolidBrush(Color.FromArgb(85, 0, 0, 0)))
-                g.FillEllipse(shadow, r.X + 6, r.Bottom - 8, r.Width - 12, 12);
 
-            Point[] paper =
-            {
-                new Point(r.X + 8, r.Y + 4),
-                new Point(r.Right - 14, r.Y + 4),
-                new Point(r.Right - 4, r.Y + 16),
-                new Point(r.Right - 4, r.Bottom - 10),
-                new Point(r.X + 8, r.Bottom - 10)
-            };
-            using (LinearGradientBrush fill = new LinearGradientBrush(r, Color.White, Color.FromArgb(185, 225, 255), 90f))
-                g.FillPolygon(fill, paper);
-            using (Pen outline = new Pen(Color.FromArgb(40, 105, 210), 2f))
-                g.DrawPolygon(outline, paper);
-            using (SolidBrush fold = new SolidBrush(Color.FromArgb(120, 170, 225)))
-            {
-                Point[] corner =
-                {
-                    new Point(r.Right - 14, r.Y + 4),
-                    new Point(r.Right - 4, r.Y + 16),
-                    new Point(r.Right - 14, r.Y + 16)
-                };
-                g.FillPolygon(fold, corner);
-            }
-            using (Font f = F(7f, FontStyle.Bold))
-            using (SolidBrush text = new SolidBrush(Color.FromArgb(25, 70, 150)))
-            {
-                g.DrawString("WEAPON", f, text, new Rectangle(r.X + 6, r.Y + 20, r.Width - 12, 14), Center());
-                g.DrawString("+" + drop.UpgradeLevel, f, text, new Rectangle(r.X + 6, r.Y + 38, r.Width - 12, 16), Center());
-            }
+            int iconSize = drop.Dragging ? 68 : 60;
+
+            Rectangle iconRect = new Rectangle(
+                (int)(drop.X - cameraX - iconSize / 2),
+                (int)(drop.Y - 38),
+                iconSize,
+                iconSize
+            );
+
+            int glowAlpha = drop.Dragging ? 120 : 75;
+
+            using (SolidBrush glow = new SolidBrush(Color.FromArgb(glowAlpha, 80, 190, 255)))
+                g.FillEllipse(glow, iconRect.X - 14, iconRect.Y - 10, iconRect.Width + 28, iconRect.Height + 20);
+
+            using (SolidBrush shadow = new SolidBrush(Color.FromArgb(85, 0, 0, 0)))
+                g.FillEllipse(shadow, iconRect.X + 8, iconRect.Bottom - 8, iconRect.Width - 16, 12);
+
+            DesktopIconUI.Shared.DrawIconOnly(g, 2, 3, iconRect);
+
+            Rectangle levelBox = new Rectangle(
+                iconRect.Right - 24,
+                iconRect.Bottom - 20,
+                24,
+                18
+            );
+
+            using (SolidBrush bg = new SolidBrush(Color.FromArgb(165, 0, 0, 0)))
+                g.FillRectangle(bg, levelBox);
+
+            using (Font f = F(8f, FontStyle.Bold))
+            using (SolidBrush text = new SolidBrush(Color.White))
+                g.DrawString("+" + drop.UpgradeLevel, f, text, levelBox, Center());
+
+            Rectangle nameBox = new Rectangle(
+                iconRect.X - 24,
+                iconRect.Bottom + 2,
+                iconRect.Width + 48,
+                18
+            );
+
+            using (SolidBrush bg = new SolidBrush(Color.FromArgb(135, 0, 0, 0)))
+                g.FillRectangle(bg, nameBox);
+
+            using (Font f = F(7.5f, FontStyle.Bold))
+            using (SolidBrush text = new SolidBrush(Color.White))
+                g.DrawString("Weapon Patch", f, text, nameBox, Center());
         }
         private static void DrawFallbackFileMonster(Graphics g, Rectangle r, GameEntity e)
         {

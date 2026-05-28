@@ -11,56 +11,45 @@ namespace DebugHeroFileDungeonRPG
             if (st == null || waveIndex < 0 || waveIndex > 3) return list;
 
             int stageNum = st.Index;
-            string monsterName = "Unknown_Enemy";
-            string targetAssetFileName = "moster.png";
 
-            // * [각 스테이지별 기획서 데이터 명세 수동 테이블 매핑]
-            if (stageNum == 1)
-            {
-                string[] names = { "Broken_Document.txt", "Empty_Folder", "Broken_Shortcut.lnk", "Unemptied_Trash.bak" };
-                string[] assets = { "file_monster.png", "folder_monster.png", "shortcut_monster.png", "trash_monster.png" };
-                monsterName = names[waveIndex];
-                targetAssetFileName = assets[waveIndex];
-            }
-            else if (stageNum == 3)
-            {
-                string[] names = { "Unknown Device", "Broken Driver Icon", "IRQ Conflict", "Driver Cache Fragment" };
-                string[] assets = { "patch_monster.png", "slime_monster.png", "reminder_monster.png", "failed_monster.png" };
-                monsterName = names[waveIndex];
-                targetAssetFileName = assets[waveIndex];
-            }
-            else if (stageNum == 5)
-            {
-                string[] names = { "Packet Minnow", "Open Port Buoy", "Request Crab", "Firewall Barnacle" };
-                string[] assets = { "packet_monster.png", "port_monster.png", "crab_monster.png", "firewall_monster.png" };
-                monsterName = names[waveIndex];
-                targetAssetFileName = assets[waveIndex];
-            }
-            else if (stageNum == 7)
-            {
-                string[] names = { "Broken Key", "Duplicate Value", "Orphan Entry", "Recent Trace" };
-                string[] assets = { "key_monster.png", "value_monster.png", "orphan_monster.png", "trace_monster.png" };
-                monsterName = names[waveIndex];
-                targetAssetFileName = assets[waveIndex];
-            }
-            else if (stageNum == 9)
-            {
-                string[] names = { "Temp Fragment", "Cache Leech", "Unsent Report", "Recent Ghost" };
-                string[] assets = { "temp_monster.png", "leech_monster.png", "report_monster.png", "ghost_monster.png" };
-                monsterName = names[waveIndex];
-                targetAssetFileName = assets[waveIndex];
-            }
+            // * [1. 6종의 고유 몬스터 자산 명세 완벽 유지]
+            string[] testAssets = {
+                "Dash_1.png", "Dash_2.png",
+                "Spread_1.png", "Spread_2.png",
+                "Teleport_1.png", "Teleport_2.png"
+            };
 
-            int baseHp = 44 + stageNum * 16;
+            string[] newNames = {
+                "Security_Firewall", "Alert_Popup_Spam",
+                "Runtime_Clock_Buoy", "Runtime_Clock_Buoy",
+                "Registry_Ghost_Key", "Packet_Minnow"
+            };
+
+            // 💡 [2. 규칙적 순서 전면 파괴 - 하이퍼 비선형 랜덤 믹싱 알고리즘]
+            // * [돌진->포탑->텔포의 뻔한 고정 순서 시퀀스를 완전히 깨부숩니다]
+            // * [스테이지와 웨이브 값에 소수 곱 연산과 XOR 비트 노이즈를 믹스하여 불규칙성을 극대화합니다]
+            int hashSeed = (stageNum * 269) ^ (waveIndex * 397);
+            hashSeed = (hashSeed ^ (hashSeed >> 5)) * 7919; // 소수 기반 비선형 난수 유도
+
+            int monsterTypeIndex = Math.Abs(hashSeed) % testAssets.Length;
+
+            string monsterName = newNames[monsterTypeIndex];
+            string targetAssetFileName = testAssets[monsterTypeIndex];
+
+            // * [3. 형진님 마스터 명세]: 기본 수치 150 및 스테이지별 가중치 100 밸런스 완전 사수
+            int baseHp = 150 + stageNum * 100;
             int baseAtk = 4 + stageNum;
-            int hp = baseHp + (waveIndex * 14);
 
-            // * [2. 정예 유닛 자동화 판정: 패턴과 무관하게 4번째 웨이브(index 3)라면 버프 적용]
+            int finalHp = baseHp + (waveIndex * 14);
+            int finalAtk = baseAtk + waveIndex;
+
+            // * [4. 4웨이브 정예 중간 보스 규칙 완벽 사수]
             int spawnCount = (waveIndex == 3) ? 2 : 4;
+
             if (waveIndex == 3)
             {
-                // * [피드백 반영: 4번째 웨이브 몬스터는 체력을 일반의 3배로 대폭 증폭]
-                hp = hp * 3;
+                finalHp = (int)(finalHp * 2.5f);   // * [체력 정확히 2.5배 격상]
+                finalAtk = (int)(finalAtk * 1.5f); // * [공격력 정확히 1.5배 격상]
             }
 
             for (int i = 0; i < spawnCount; i++)
@@ -74,9 +63,9 @@ namespace DebugHeroFileDungeonRPG
                     Y = Math.Max(140, clientHeight - 270 + (i % 2) * 60),
                     VX = (i % 2 == 0 ? 1.1f : -1.1f) * (1.0f + waveIndex * 0.06f),
                     VY = (i % 2 == 0 ? 0.5f : -0.5f) * (1.0f + waveIndex * 0.03f),
-                    Hp = hp + (i * 3),
-                    MaxHp = hp + (i * 3),
-                    Attack = baseAtk + waveIndex,
+                    Hp = finalHp + (i * 3),
+                    MaxHp = finalHp + (i * 3),
+                    Attack = finalAtk,
                     IsBoss = false,
                     RewardGiven = false
                 });
@@ -110,49 +99,5 @@ namespace DebugHeroFileDungeonRPG
         {
             return new List<GameEntity>();
         }
-
-        private static string[] GetPreBossEnemyNames(StageInfo st)
-        {
-            List<string> result = new List<string>();
-            if (st.Enemies != null)
-            {
-                for (int i = 0; i < st.Enemies.Length; i++)
-                {
-                    string name = st.Enemies[i];
-                    if (string.IsNullOrWhiteSpace(name)) continue;
-                    if (!string.IsNullOrWhiteSpace(st.BossName) && name.Trim().Equals(st.BossName.Trim(), StringComparison.OrdinalIgnoreCase)) continue;
-                    result.Add(name);
-                }
-            }
-            if (result.Count >= 3) return result.ToArray();
-            string[] fallback;
-            switch (st.Index)
-            {
-                case 1: fallback = new string[] { "새 폴더 무리", "진짜최종 파일", "깨진 바로가기", "휴지통 과부하" }; break;
-                case 2: fallback = new string[] { "Unknown Device", "Broken Driver Icon", "IRQ Conflict", "Driver Cache Fragment" }; break;
-                case 3: fallback = new string[] { "Update Patch 조각", "Loading Bar Slime", "Restart Reminder", "Failed Update Fragment" }; break;
-                case 4: fallback = new string[] { "Access Denied Hound", "Kernel Fragment", "Protected File", "System Guard" }; break;
-                case 5: fallback = new string[] { "Packet Jelly", "Port Scanner", "Latency Ghost", "Broken Cable" }; break;
-                case 6: fallback = new string[] { "Crash Pixel", "STOP Code", "Blue Fragment", "Frozen Cursor" }; break;
-                case 7: fallback = new string[] { "Key Value Wraith", "Broken Hive", "Registry Lock", "Permission Node" }; break;
-                case 8: fallback = new string[] { "Popup Slime", "Warning Box", "Unhandled Exception", "Close Button Mimic" }; break;
-                case 9: fallback = new string[] { "Temp File", "Cache Dust", "Overload Crumb", "Memory Leak Spark" }; break;
-                default: fallback = new string[] { "Quarantine Guard", "Deleted Fragment", "Recycle Warden", "Trash Cache" }; break;
-            }
-            while (result.Count < 4) result.Add(fallback[result.Count % fallback.Length]);
-            return result.ToArray();
-        }
-
-        private static string StageEnemyExtension(string name)
-        {
-            if (name.Contains("폴더")) return ".folder";
-            if (name.Contains("바로가기")) return ".lnk";
-            if (name.Contains("Update") || name.Contains("Patch")) return ".patch";
-            if (name.Contains("Key") || name.Contains("Value")) return ".reg";
-            if (name.Contains("Report")) return ".tmp";
-            if (name.Contains("Port") || name.Contains("Packet")) return ".net";
-            return ".file";
-        }
     }
 }
-
