@@ -53,6 +53,10 @@ namespace DebugHeroFileDungeonRPG
         public static Image Img_SwordDark = null;
         public static Image Img_SwordCold = null;
         public static Image Img_SkillBarrier = null;
+        public static Image Img_SkillQSheet = null;
+        public static Image Img_SkillRSheet = null;
+        public static Image[] PlayerSkillQFrames = new Image[5];
+        public static Image[] PlayerSkillRFrames = new Image[5];
 
         static Renderer()
         {
@@ -61,7 +65,50 @@ namespace DebugHeroFileDungeonRPG
                 fontCollection = new System.Drawing.Text.PrivateFontCollection();
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
 
-           
+                // ----------------------------------------------------------
+                // ⚔️ [Q 스킬] 1열 스트립 이미지 프리로딩 및 자동 5분할 슬라이싱
+                // ----------------------------------------------------------
+                string qPath = Path.Combine(baseDir, "Assets", "UI", "player_attack_q.png");
+                if (File.Exists(qPath))
+                {
+                    Img_SkillQSheet = Image.FromFile(qPath);
+                    int frameW = Img_SkillQSheet.Width / 5; // 1883 / 5 = 약 376px 동적 계산
+                    int frameH = Img_SkillQSheet.Height;
+
+                    for (int k = 0; k < 5; k++)
+                    {
+                        Bitmap bmp = new Bitmap(frameW, frameH);
+                        using (Graphics g = Graphics.FromImage(bmp))
+                        {
+                            // 1행 스트립이므로 Y좌표는 0 고정, X좌표만 k * frameW로 순차 슬라이싱
+                            g.DrawImage(Img_SkillQSheet, new Rectangle(0, 0, frameW, frameH), new Rectangle(k * frameW, 0, frameW, frameH), GraphicsUnit.Pixel);
+                        }
+                        PlayerSkillQFrames[k] = bmp;
+                    }
+                }
+
+                // ----------------------------------------------------------
+                // ⚔️ [R 스킬] 1열 스트립 이미지 프리로딩 및 자동 5분할 슬라이싱
+                // ----------------------------------------------------------
+                string rPath = Path.Combine(baseDir, "Assets", "UI", "player_attack_r.png");
+                if (File.Exists(rPath))
+                {
+                    Img_SkillRSheet = Image.FromFile(rPath);
+                    int frameW = Img_SkillRSheet.Width / 5; // 1400 / 5 = 280px 동적 계산
+                    int frameH = Img_SkillRSheet.Height;
+
+                    for (int k = 0; k < 5; k++)
+                    {
+                        Bitmap bmp = new Bitmap(frameW, frameH);
+                        using (Graphics g = Graphics.FromImage(bmp))
+                        {
+                            g.DrawImage(Img_SkillRSheet, new Rectangle(0, 0, frameW, frameH), new Rectangle(k * frameW, 0, frameW, frameH), GraphicsUnit.Pixel);
+                        }
+                        PlayerSkillRFrames[k] = bmp;
+                    }
+                }
+
+
                 string alarmPath = Path.Combine(baseDir, "Assets", "UI", "SystemAlarmBlueCancel.png");
                 if (File.Exists(alarmPath)) Img_AlarmBg = Image.FromFile(alarmPath);
 
@@ -1906,6 +1953,52 @@ namespace DebugHeroFileDungeonRPG
         }
         private static void DrawPlayerSkillAction(Graphics g, PlayerState p, float drawX, float baseY, int facing)
         {
+            Image targetFrame = null;
+            int frameIdx = Math.Min(p.ActionFrame, 4); // 5프레임 오버플로우 가드 벨트
+
+            if (p.SkillIndex == 0 && PlayerSkillQFrames[frameIdx] != null) // Q 스킬 매핑
+            {
+                targetFrame = PlayerSkillQFrames[frameIdx];
+            }
+            else if (p.SkillIndex == 3 && PlayerSkillRFrames[frameIdx] != null) // R 스킬 매핑
+            {
+                targetFrame = PlayerSkillRFrames[frameIdx];
+            }
+
+            if (targetFrame != null)
+            {
+                // ==========================================================
+                // 💡 [스케일 분리 주입] R은 기존 크기(0.35f)를 유지하고,
+                // 작아 보였던 Q스킬만 정확히 30% 키운 0.455f 배율을 동적 적용합니다.
+                // ==========================================================
+                float scale = (p.SkillIndex == 0) ? 0.455f : 0.35f;
+
+                int drawW = (int)(targetFrame.Width * scale);
+                int drawH = (int)(targetFrame.Height * scale);
+
+                // 발바닥 위치(baseY)를 기준으로 정중앙에 에셋 안착
+                Rectangle skillDst = new Rectangle((int)(drawX - drawW / 2), (int)(baseY - drawH), drawW, drawH);
+
+                GraphicsState state = g.Save();
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic; // 회전 변환 시 도트 깨짐 방지 필터
+
+                if (facing < 0) // 좌측 반전 렌더링 제어
+                {
+                    using (Bitmap flipped = new Bitmap(targetFrame))
+                    {
+                        flipped.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                        g.DrawImage(flipped, skillDst);
+                    }
+                }
+                else
+                {
+                    g.DrawImage(targetFrame, skillDst);
+                }
+
+                g.Restore(state);
+                return; // 새 모션을 성공적으로 그렸으므로 하단의 구형 5x3 슬라이싱 코드를 원천 스킵하고 탈출!
+            }
+
             Image sheet = GetPlayerActionSheet(p.WeaponLevel);
 
             if (sheet == null)
@@ -1916,16 +2009,16 @@ namespace DebugHeroFileDungeonRPG
 
             Rectangle src = GetPlayerActionSourceRect(sheet, p.SkillIndex, p.ActionFrame);
 
-            float scale = 0.35f;
+            float oldScale = 0.35f;
 
-            int drawW = (int)(src.Width * scale);
-            int drawH = (int)(src.Height * scale);
+            int oldDrawW = (int)(src.Width * oldScale);
+            int oldDrawH = (int)(src.Height * oldScale);
 
             Rectangle dst = new Rectangle(
-                (int)(drawX - drawW / 2),
-                (int)(baseY - drawH),
-                drawW,
-                drawH
+                (int)(drawX - oldDrawW / 2),
+                (int)(baseY - oldDrawH),
+                oldDrawW,
+                oldDrawH
             );
 
             if (facing < 0)

@@ -462,6 +462,8 @@ namespace DebugHeroFileDungeonRPG
             player.Mp -= 45;
             rCooldownTicks = 1500; // 25초 쿨타임 인젝션 (25 * 60 = 1500틱)
 
+            PlayerMovementSystem.StartSkillAnimation(player, 3);
+
             float targetX = player.X + (player.Facing == 0 ? 250f : player.Facing * 250f);
 
             playerSkySwords.Add(new PlayerSkySword

@@ -542,6 +542,12 @@ namespace DebugHeroFileDungeonRPG
         private void CastSkill(int slot)
         {
             if (screen != ScreenMode.Stage) return;
+
+            if (slot == 0 && player.ActionState == PlayerActionState.Skill && player.SkillIndex == 0)
+            {
+                return;
+            }
+           
             int mpCost = slot == 0 ? 0 : slot == 1 ? 8 : slot == 2 ? 16 : 10;
             if (player.Mp < mpCost)
             {
