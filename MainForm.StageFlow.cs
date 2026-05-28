@@ -330,6 +330,14 @@ namespace DebugHeroFileDungeonRPG
             playerShield = 0;           // E 보호막 내구도 리셋
             eShieldDurationTicks = 0;   // E 보호막 유지시간 타이머 리셋
             playerSkySwords.Clear();    // 하늘에 남아있던 R 궁극기 검 객체 리스트 완전 소멸
+            lastPlayerHpForMotion = player.Hp;
+            playerHitMotionCooldown = 0;
+            playerDeathSequenceActive = false;
+            playerDeathSequenceTicks = 0;
+            player.ActionState = PlayerActionState.Idle;
+            player.ActionFrame = 0;
+            player.ActionTick = 0;
+            player.SkillIndex = -1;
             player.X = 180;
             player.Y = ClientSize.Height - 118;
             player.TargetX = player.X;
@@ -410,6 +418,8 @@ namespace DebugHeroFileDungeonRPG
 
             player.Hp = Math.Min(player.MaxHp, player.Hp + Math.Max(20, player.MaxHp / 5));
             player.Mp = Math.Min(player.MaxMp, player.Mp + Math.Max(12, player.MaxMp / 4));
+            lastPlayerHpForMotion = player.Hp;
+            playerHitMotionCooldown = 0;
             player.SystemStability = Math.Min(100, player.SystemStability + 5);
             player.X = 190;
             player.TargetX = player.X;

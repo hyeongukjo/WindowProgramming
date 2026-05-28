@@ -162,7 +162,7 @@ namespace DebugHeroFileDungeonRPG
         {
             D(NpcMood.Basic, "이제 마지막 정리만 남았습니다.\n휴지통을 비우면 복구 절차가 완료됩니다."),
             D(NpcMood.Warning, "삭제된 것들은 사라지지 않습니다.\n보관될 뿐입니다."),
-            D(NpcMood.Damaged, "삭제 대상을 입력하세요.\n정확한 이름을 입력해야 합니다.")
+            //D(NpcMood.Damaged, "삭제 대상을 입력하세요.\n정확한 이름을 입력해야 합니다.")
         }
     },
 };
