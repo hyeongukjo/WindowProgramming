@@ -316,9 +316,9 @@ namespace DebugHeroFileDungeonRPG
             int lineHeight = 18;
 
             DrawCommandLine(g, r.X + 12, y + lineHeight * 0, r.Width - 24, "Q", "Quick Scan", "기본 공격");
-            DrawCommandLine(g, r.X + 12, y + lineHeight * 1, r.Width - 24, "W", "Data Sweep", "범위 정리");
-            DrawCommandLine(g, r.X + 12, y + lineHeight * 2, r.Width - 24, "E", "Error Flash", "오류 섬광");
-            DrawCommandLine(g, r.X + 12, y + lineHeight * 3, r.Width - 24, "R", "Guard Process", "방어 / 안정화");
+            DrawCommandLine(g, r.X + 12, y + lineHeight * 1, r.Width - 24, "W", "OverClock", "오버 클럭 (stage 2 클리어 시 해금)");
+            DrawCommandLine(g, r.X + 12, y + lineHeight * 2, r.Width - 24, "E", "DataSheild", "데이터실드 (stage 5 클리어 시 해금)");
+            DrawCommandLine(g, r.X + 12, y + lineHeight * 3, r.Width - 24, "R", "SysCall", "시스템콜 (stage 8 클리어 시 해금)");
 
             using (Font f = Renderer.F(7.5f, FontStyle.Bold))
             using (SolidBrush b = new SolidBrush(Color.FromArgb(70, 70, 70)))

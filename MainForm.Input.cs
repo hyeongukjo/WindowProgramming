@@ -106,7 +106,7 @@ namespace DebugHeroFileDungeonRPG
                 else if (e.KeyCode == Keys.Down) MovePlayerBy(0, 120);
 
 
-                // 💡 [단축키 매핑] QWER 스킬 라우터 배치
+                // [단축키 매핑] QWER 스킬 라우터 배치
                 if (e.KeyCode == Keys.Q) CastSkill(0); // Q: 기본 공격 (기존 평타 슬롯 0번 가동 및 현상유지)
                 if (e.KeyCode == Keys.W) CastPlayerSkillW();
                 if (e.KeyCode == Keys.E) CastPlayerSkillE();
@@ -410,6 +410,9 @@ namespace DebugHeroFileDungeonRPG
         // ==========================================================
         private void CastPlayerSkillW()
         {
+            // 스킬 해금 조건 검증 검사
+            if (player.ClearedStages < 2) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.Red, "W 스킬 미해금 (Stage 02 클리어 필요)")); TryBeep(320, 70); return; }
+
             if (wCooldownTicks > 0) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 30, Color.Red, $"W 쿨타임 대기 중 ({(wCooldownTicks / 60.0f):0.0}초)")); TryBeep(320, 50); return; }
             if (player.Mp < 15) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.DeepSkyBlue, "MP 부족")); return; }
 
@@ -427,6 +430,9 @@ namespace DebugHeroFileDungeonRPG
         // ==========================================================
         private void CastPlayerSkillE()
         {
+            // 스킬 해금 조건 검증 검사
+            if (player.ClearedStages < 5) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.Red, "E 스킬 미해금 (Stage 05 클리어 필요)")); TryBeep(320, 70); return; }
+
             if (eCooldownTicks > 0) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 30, Color.Red, $"E 쿨타임 대기 중 ({(eCooldownTicks / 60.0f):0.0}초)")); TryBeep(320, 50); return; }
             if (player.Mp < 25) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.DeepSkyBlue, "MP 부족")); return; }
 
@@ -447,6 +453,9 @@ namespace DebugHeroFileDungeonRPG
         // ==========================================================
         private void CastPlayerSkillR()
         {
+            // 스킬 해금 조건 검증 검사
+            if (player.ClearedStages < 8) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.Red, "R 스킬 미해금 (Stage 08 클리어 필요)")); TryBeep(320, 70); return; }
+
             if (rCooldownTicks > 0) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 30, Color.Red, $"R 궁극기 쿨타임 대기 중 ({(rCooldownTicks / 60.0f):0.0}초)")); TryBeep(320, 50); return; }
             if (player.Mp < 45) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.DeepSkyBlue, "MP 부족")); return; }
 

@@ -316,6 +316,9 @@ namespace DebugHeroFileDungeonRPG
                         string reportText = $"▶ 이진 가비지 데이터 소멸 완료\r\n" +
                                             $"▶ 업그레이드 인덱스 파일 : [CORE_UPGRADE.bin]\r\n" +
                                             $"▶ 복구 공헌도 추가 보상 : +{popupBonusCoins} COINS";
+                        if (currentStage == 2) reportText += "\r\n\r\n★ NEW SKILL UNLOCKED: [W 키] 오버클럭 가동 가능!";
+                        else if (currentStage == 5) reportText += "\r\n\r\n★ NEW SKILL UNLOCKED: [E 키] 데이터실드 가동 가능!";
+                        else if (currentStage == 8) reportText += "\r\n\r\n★ NEW SKILL UNLOCKED: [R 키] 시스템콜 가동 가능!";
                         g.DrawString(reportText, subFont, Brushes.Black, winX + 55, winY + 115);
                     }
 
@@ -517,23 +520,28 @@ namespace DebugHeroFileDungeonRPG
                     Renderer.LeftMiddle()
                 );
 
-                int rightColumnX = h.X + 195; // 👈 오른쪽 빈 공간 시작 픽셀 위치
+                g.DrawString(
+                    "Q:기본공격 | W:오버클럭 | E:데이터실드 | R:시스템콜",
+                    f, b, new Rectangle(h.X + 22, h.Y + 206, h.Width - 44, 18), Renderer.LeftMiddle()
+                );
+
+                int rightColumnX = h.X + 195;
                 using (Font skillFont = Renderer.F(8.0f, FontStyle.Bold))
                 {
-                    // 1. W 스킬 상태 (Profile: 이름 옆에 배치)
-                    string wText = wCooldownTicks > 0 ? $"{(wCooldownTicks / 60.0f):0.0}초" : "READY";
-                    Brush wBrush = wCooldownTicks > 0 ? Brushes.Tomato : Brushes.DarkGreen;
+                    // 1. W 스킬 해금 상태 디스플레이
+                    string wText = player.ClearedStages >= 2 ? (wCooldownTicks > 0 ? $"{(wCooldownTicks / 60.0f):0.0}초" : "READY") : "LOCKED";
+                    Brush wBrush = player.ClearedStages >= 2 ? (wCooldownTicks > 0 ? Brushes.Tomato : Brushes.DarkGreen) : Brushes.DarkGray;
                     g.DrawString($"[W 오버클럭] {wText}", skillFont, wBrush, rightColumnX, h.Y + 52);
 
-                    // 2. E 스킬 상태 (Program: Recovery 옆에 배치)
-                    string eText = eCooldownTicks > 0 ? $"{(eCooldownTicks / 60.0f):0.0}초" : "READY";
-                    if (eShieldDurationTicks > 0) eText = $"ACT ({(eShieldDurationTicks / 60.0f):0.0}s)"; // 공간 확보를 위해 글자 축약
-                    Brush eBrush = eShieldDurationTicks > 0 ? Brushes.DeepSkyBlue : (eCooldownTicks > 0 ? Brushes.Tomato : Brushes.DarkGreen);
+                    // 2. E 스킬 해금 상태 디스플레이
+                    string eText = player.ClearedStages >= 5 ? (eCooldownTicks > 0 ? $"{(eCooldownTicks / 60.0f):0.0}초" : "READY") : "LOCKED";
+                    if (player.ClearedStages >= 5 && eShieldDurationTicks > 0) eText = $"ACT ({(eShieldDurationTicks / 60.0f):0.0}s)";
+                    Brush eBrush = player.ClearedStages >= 5 ? (eShieldDurationTicks > 0 ? Brushes.DeepSkyBlue : (eCooldownTicks > 0 ? Brushes.Tomato : Brushes.DarkGreen)) : Brushes.DarkGray;
                     g.DrawString($"[E 데이터실] {eText}", skillFont, eBrush, rightColumnX, h.Y + 72);
 
-                    // 3. R 스킬 상태 (Level / Coin 옆에 배치)
-                    string rText = rCooldownTicks > 0 ? $"{(rCooldownTicks / 60.0f):0.0}초" : "READY";
-                    Brush rBrush = rCooldownTicks > 0 ? Brushes.Tomato : Brushes.DarkViolet;
+                    // 3. R 스킬 해금 상태 디스플레이
+                    string rText = player.ClearedStages >= 8 ? (rCooldownTicks > 0 ? $"{(rCooldownTicks / 60.0f):0.0}초" : "READY") : "LOCKED";
+                    Brush rBrush = player.ClearedStages >= 8 ? (rCooldownTicks > 0 ? Brushes.Tomato : Brushes.DarkViolet) : Brushes.DarkGray;
                     g.DrawString($"[R 시스템콜] {rText}", skillFont, rBrush, rightColumnX, h.Y + 92);
                 }
                 string coolMeter = $"W 쿨: {(wCooldownTicks > 0 ? (wCooldownTicks / 60.0f).ToString("0.0") + "초" : "READY")} | " +
@@ -580,6 +588,9 @@ namespace DebugHeroFileDungeonRPG
             StageInfo st = stages[clearStage - 1];
 
             string body = NpcDialogueData.BuildStageClearText(st, clearStage, stages);
+            if (clearStage == 2) body += "\n\n[시스템 고도화 알림] W 스킬 (OVERCLOCK) 해제 완료";
+            else if (clearStage == 5) body += "\n\n[시스템 고도화 알림] E 스킬 (FIREWALL SHIELD) 해제 완료";
+            else if (clearStage == 8) body += "\n\n[시스템 고도화 알림] R 스킬 (EXECUTE SYSTEM CALL) 해제 완료";
             NpcMood mood = NpcDialogueData.GetStageClearMood(st);
 
             Rectangle clearNotice = SystemWindowUI.Shared.GetStandardNoticeRect(ClientSize);
