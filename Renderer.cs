@@ -103,12 +103,18 @@ namespace DebugHeroFileDungeonRPG
             return new Font("Malgun Gothic", size, style);
         }
 
+        // * [Renderer.cs 내부: 상점 및 UI 글자 아랫부분 잘림 버그 완벽 수정 버전]
+
         public static StringFormat Center()
         {
             StringFormat sf = new StringFormat();
             sf.Alignment = StringAlignment.Center;
             sf.LineAlignment = StringAlignment.Center;
-            sf.Trimming = StringTrimming.EllipsisCharacter;
+            // 💡 [핵심 교정]: 글자가 짤려 나가는 것을 방지하기 위해 
+            // 사각형 경계선에서 글자가 임의로 생략되거나 잘리는 억까 필터(Trimming)를 완전히 해제합니다.
+            sf.Trimming = StringTrimming.None;
+            // 행바꿈 시 글자 윗부분이나 아랫부분이 레이아웃 박스에 걸쳐 잘리지 않도록 가드 주입
+            sf.FormatFlags |= StringFormatFlags.NoClip;
             return sf;
         }
 
@@ -117,7 +123,8 @@ namespace DebugHeroFileDungeonRPG
             StringFormat sf = new StringFormat();
             sf.Alignment = StringAlignment.Near;
             sf.LineAlignment = StringAlignment.Near;
-            sf.Trimming = StringTrimming.EllipsisCharacter;
+            sf.Trimming = StringTrimming.None; // 💡 글자 생략 및 하단부 크롭 강제 비활성화
+            sf.FormatFlags |= StringFormatFlags.NoClip; // 박스 경계선 탈출 허용 (잘림 방지)
             return sf;
         }
 
@@ -126,7 +133,8 @@ namespace DebugHeroFileDungeonRPG
             StringFormat sf = new StringFormat();
             sf.Alignment = StringAlignment.Near;
             sf.LineAlignment = StringAlignment.Center;
-            sf.Trimming = StringTrimming.EllipsisCharacter;
+            sf.Trimming = StringTrimming.None; // 💡 글자 생략 및 하단부 크롭 강제 비활성화
+            sf.FormatFlags |= StringFormatFlags.NoClip; // 박스 경계선 탈출 허용 (잘림 방지)
             return sf;
         }
 

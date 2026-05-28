@@ -13,17 +13,24 @@ namespace DebugHeroFileDungeonRPG
         {
             base.OnPaint(e);
             Graphics g = e.Graphics;
+
             // 전체 화면은 매 프레임 다시 그려지므로 기본 품질을 고속으로 설정합니다.
-            // 주요 배경은 Renderer 내부 캐시를 사용하고, 필요한 부분만 별도로 고품질 처리합니다.
             g.SmoothingMode = SmoothingMode.HighSpeed;
             g.CompositingQuality = CompositingQuality.HighSpeed;
             g.InterpolationMode = InterpolationMode.Low;
             g.PixelOffsetMode = PixelOffsetMode.HighSpeed;
 
+            // -----------------------------------------------------------------------------
+            // 🌟 [최종 글로벌 구원 격실]: 상점 아이템 설명 글씨의 아랫다리가 잘리는 억까를 전면 분쇄합니다!
+            // 💡 ClearTypeGridFit 세팅 하에서 소수점 픽셀이 강제로 버림 처리되어 잘리는 현상을 막기 위해
+            // 텍스트 정밀도 힌트를 안티앨리어싱 가드가 포함된 'AntiAliasGridFit'으로 전격 조정합니다.
+            // -----------------------------------------------------------------------------
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+            // -----------------------------------------------------------------------------
+
             buttons.Clear();
 
             if (screen == ScreenMode.StartMenu) DrawAdminStartMenu(g);
-          
 
             if (screen == ScreenMode.Boot) DrawBoot(g);
             else if (screen == ScreenMode.AssistantIntro) DrawAssistantIntro(g);
@@ -36,8 +43,6 @@ namespace DebugHeroFileDungeonRPG
             else if (screen == ScreenMode.Ending) DrawEnding(g);
             else if (screen == ScreenMode.Help) DrawHelp(g);
 
-            // Stage 화면은 DrawStage 안에서 카메라 좌표 기준으로 이펙트를 이미 그립니다.
-            // 다시 한 번 0카메라로 그리면 렉과 잔상/중복 표시가 생겨서 비-스테이지 화면에서만 처리합니다.
             if (screen != ScreenMode.Stage)
             {
                 for (int i = 0; i < effects.Count; i++) Renderer.DrawEffect(g, effects[i], 0);
@@ -132,8 +137,18 @@ namespace DebugHeroFileDungeonRPG
             TaskbarUI.Shared.Draw(g, ClientRectangle);
         }
 
+        // =============================================================================
+        // 🌟 [상점 UI 두 줄 문장 위아래 뭉개짐 전면 처단 버전]
+        // =============================================================================
         private void DrawShop(Graphics g)
         {
+            // 💡 [핵심 보정 가드]: ClearTypeGridFit 하에서 폰트 오프셋 계산 오차로 
+            // 두 줄 이상 문장의 위아래 행간이 뭉개지는 현상을 방지하기 위해 정밀도를 강제 스위칭합니다.
+            var oldHint = g.TextRenderingHint;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+
+            // 문자열을 그릴 때 그릇 경계선 박스(Rectangle)에 걸려도 위아래 다리를 절대 자르지 못하도록 
+            // 비트 세팅 컨텍스트를 강제로 주입하기 위해 상점 드로우 파이프라인을 실행합니다.
             RecoveryToolsUI.Shared.DrawShop(
                 g,
                 ClientRectangle,
@@ -141,6 +156,9 @@ namespace DebugHeroFileDungeonRPG
                 selectedShopItem,
                 buttons
             );
+
+            // 상점 UI 그리기가 끝나면 기존의 글로벌 그래픽 상태로 안전하게 복원합니다.
+            g.TextRenderingHint = oldHint;
         }
 
         private void DrawDesktopInfoPanel(Graphics g)
@@ -319,7 +337,20 @@ namespace DebugHeroFileDungeonRPG
                         if (currentStage == 2) reportText += "\r\n\r\n★ NEW SKILL UNLOCKED: [W 키] 오버클럭 가동 가능!";
                         else if (currentStage == 5) reportText += "\r\n\r\n★ NEW SKILL UNLOCKED: [E 키] 데이터실드 가동 가능!";
                         else if (currentStage == 8) reportText += "\r\n\r\n★ NEW SKILL UNLOCKED: [R 키] 시스템콜 가동 가능!";
-                        g.DrawString(reportText, subFont, Brushes.Black, winX + 55, winY + 115);
+                        Rectangle reportBoxRect = new Rectangle(winX + 55, winY + 110, winW - 90, 115);
+
+                        using (StringFormat sf = new StringFormat())
+                        {
+                            sf.Alignment = StringAlignment.Near;      // 좌측 정렬
+                            sf.LineAlignment = StringAlignment.Near;  // 상단 정렬
+
+                            // 🌟 핵심 가드: GDI+가 경계선에 글자가 닿았을 때 멋대로 위아래 다리를 크롭하는 연산을 원천 봉쇄합니다.
+                            sf.FormatFlags = StringFormatFlags.NoClip;
+                            sf.Trimming = StringTrimming.None;
+
+                            // 안전하게 확보된 다중 행 격실 내부에 최종 텍스트 렌더링 실행
+                            g.DrawString(reportText, subFont, Brushes.Black, reportBoxRect, sf);
+                        }
                     }
 
                     // 3. 확인 버튼 드로우 및 문자열 배치 (기존 코드 유지)
