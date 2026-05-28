@@ -8,48 +8,72 @@ namespace DebugHeroFileDungeonRPG
         public static List<GameEntity> CreateWaveEnemies(StageInfo st, int waveIndex, int clientHeight)
         {
             List<GameEntity> list = new List<GameEntity>();
-            if (st == null || waveIndex < 0 || waveIndex > 3) return list;
+            // 💡 [지시사항 1 반영]: 웨이브를 딱 2개로 축소합니다. (0웨이브, 1웨이브만 허용)
+            if (st == null || waveIndex < 0 || waveIndex > 1) return list;
 
             int stageNum = st.Index;
+            string monsterName = "UNKNOWN";
+            string targetAssetFileName = "Dash_1.png";
 
-            // * [1. 6종의 고유 몬스터 자산 명세 완벽 유지]
-            string[] testAssets = {
-                "Dash_1.png", "Dash_2.png",
-                "Spread_1.png", "Spread_2.png",
-                "Teleport_1.png", "Teleport_2.png"
-            };
+            // 💡 [지시사항 2 반영]: 스테이지별 / 웨이브별 등장 개체 및 규칙 완벽 하드코딩 고정
+            if (waveIndex == 0)
+            {
+                // 1웨이브 일반 몬스터 배치 명세
+                if (stageNum == 1 || stageNum == 3 || stageNum == 5 || stageNum == 7)
+                {
+                    monsterName = "Registry_Ghost_Key";
+                    targetAssetFileName = "Teleport_1.png";
+                }
+                else if (stageNum == 9)
+                {
+                    monsterName = "Runtime_Clock_Buoy";
+                    targetAssetFileName = "Spread_1.png";
+                }
+            }
+            else if (waveIndex == 1)
+            {
+                // 2웨이브: 지정된 몬스터들이 보스급(기존 4웨이브 정예 중간보스 스펙)으로 등장
+                if (stageNum == 1)
+                {
+                    monsterName = "Security_Firewall";
+                    targetAssetFileName = "Dash_1.png";
+                }
+                else if (stageNum == 3)
+                {
+                    monsterName = "Alert_Popup_Spam";
+                    targetAssetFileName = "Dash_2.png";
+                }
+                else if (stageNum == 5)
+                {
+                    monsterName = "Runtime_Clock_Buoy";
+                    targetAssetFileName = "Spread_1.png";
+                }
+                else if (stageNum == 7)
+                {
+                    monsterName = "Runtime_Clock_Buoy_Elite";
+                    targetAssetFileName = "Spread_2.png";
+                }
+                else if (stageNum == 9)
+                {
+                    monsterName = "Packet_Minnow";
+                    targetAssetFileName = "Teleport_2.png"; // 3x3 고해상도 PNG 지정
+                }
+            }
 
-            string[] newNames = {
-                "Security_Firewall", "Alert_Popup_Spam",
-                "Runtime_Clock_Buoy", "Runtime_Clock_Buoy",
-                "Registry_Ghost_Key", "Packet_Minnow"
-            };
-
-            // 💡 [2. 규칙적 순서 전면 파괴 - 하이퍼 비선형 랜덤 믹싱 알고리즘]
-            // * [돌진->포탑->텔포의 뻔한 고정 순서 시퀀스를 완전히 깨부숩니다]
-            // * [스테이지와 웨이브 값에 소수 곱 연산과 XOR 비트 노이즈를 믹스하여 불규칙성을 극대화합니다]
-            int hashSeed = (stageNum * 269) ^ (waveIndex * 397);
-            hashSeed = (hashSeed ^ (hashSeed >> 5)) * 7919; // 소수 기반 비선형 난수 유도
-
-            int monsterTypeIndex = Math.Abs(hashSeed) % testAssets.Length;
-
-            string monsterName = newNames[monsterTypeIndex];
-            string targetAssetFileName = testAssets[monsterTypeIndex];
-
-            // * [3. 형진님 마스터 명세]: 기본 수치 150 및 스테이지별 가중치 100 밸런스 완전 사수
+            // * 형진님 스펙 명세: 기본 수치 150 및 스테이지별 가중치 100 밸런스 완전 유지
             int baseHp = 150 + stageNum * 100;
             int baseAtk = 4 + stageNum;
 
             int finalHp = baseHp + (waveIndex * 14);
             int finalAtk = baseAtk + waveIndex;
 
-            // * [4. 4웨이브 정예 중간 보스 규칙 완벽 사수]
-            int spawnCount = (waveIndex == 3) ? 2 : 4;
+            // 💡 [지시사항 1 후반부 반영]: 1웨이브는 4마리 스폰, 2웨이브는 기존 4웨이브 정예 기믹 수치 주입
+            int spawnCount = (waveIndex == 1) ? 2 : 4;
 
-            if (waveIndex == 3)
+            if (waveIndex == 1)
             {
-                finalHp = (int)(finalHp * 2.5f);   // * [체력 정확히 2.5배 격상]
-                finalAtk = (int)(finalAtk * 1.5f); // * [공격력 정확히 1.5배 격상]
+                finalHp = (int)(finalHp * 2.5f);   // 2웨이브 정예 중간보스급 HP 2.5배 격상
+                finalAtk = (int)(finalAtk * 1.5f); // 2웨이브 정예 중간보스급 ATK 1.5배 격상
             }
 
             for (int i = 0; i < spawnCount; i++)
@@ -66,7 +90,7 @@ namespace DebugHeroFileDungeonRPG
                     Hp = finalHp + (i * 3),
                     MaxHp = finalHp + (i * 3),
                     Attack = finalAtk,
-                    IsBoss = false,
+                    IsBoss = false, // 대형 게이지를 띄우지 않는 일반 배치형 정예 보스 룰 고수
                     RewardGiven = false
                 });
             }
@@ -75,6 +99,7 @@ namespace DebugHeroFileDungeonRPG
 
         public static GameEntity CreateBoss(StageInfo st, float x, int clientHeight, int totalStages)
         {
+            // 메인 거대 보스방용 팩토리 링크 유지 (일반 웨이브 규칙에 영향 없음)
             if (st == null) return null;
             int bossHp = 950 + st.Index * 280;
             int bossAttack = 10 + st.Index * 3;

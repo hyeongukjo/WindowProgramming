@@ -33,33 +33,26 @@ namespace DebugHeroFileDungeonRPG
 
                     string allocatedPattern = "None";
 
-                    // 💡 [버그 해결]: 원본 프로젝트 명세 파일의 모든 일반 몹 이름을 패키징하여 연동 통로 개통
-                    // A. 돌진형 몬스터 그룹 (1성 및 정예 포함)
+                    // 💡 [패턴 라우터 최적화 완료]: 하이재킹 누출 방지를 위한 통합 분기 명세 정렬
                     if (m.Name == "Security_Firewall" || m.Name == "Alert_Popup_Spam" || m.Name == "Broken_Document.txt" || m.Name == "Broken Key" || m.Name == "Temp Fragment")
                     {
                         allocatedPattern = "Delay_Inertia_Dash";
                     }
-                    // B. 부표형 포탑 몬스터 그룹 (Spread 전용 - 이 구역이 완전히 뚫려야 정상 사출됩니다)
-                    else if (m.Name == "Runtime_Clock_Buoy" || m.Name == "Empty_Folder" || m.Name == "Open Port Buoy" || m.Name == "Firewall Barnacle")
+                    else if (m.Name == "Runtime_Clock_Buoy" || m.Name == "Runtime_Clock_Buoy_Elite" || m.Name == "Empty_Folder" || m.Name == "Open Port Buoy" || m.Name == "Firewall Barnacle")
                     {
                         allocatedPattern = "Heavy_Projectile_Spread";
-                    }
-                    // C. 유령형 텔레포트 몬스터 그룹
-                    else if (m.Name == "Registry_Ghost_Key" || m.Name == "Broken_Shortcut.lnk" || m.Name == "Request Crab" || m.Name == "Unsent Report" || m.Name == "Recent Ghost")
-                    {
-                        allocatedPattern = "Random_Teleport_Barrage";
                     }
                     else if (m.Name == "Registry_Ghost_Key" || m.Name == "Packet_Minnow" || m.Name == "Broken_Shortcut.lnk" || m.Name == "Request Crab" || m.Name == "Unsent Report" || m.Name == "Recent Ghost")
                     {
                         allocatedPattern = "Random_Teleport_Barrage";
-}
+                    }
 
-                    // * [1. Delay_Inertia_Dash 패턴 구현 - 돌진 후 임펄스 초기화 분산]
+                    // * [1. Delay_Inertia_Dash 패턴 구동]
                     if (allocatedPattern == "Delay_Inertia_Dash")
                     {
                         m.StateTimer++;
 
-                        if (m.MonsterState == 0) // 대기 상태
+                        if (m.MonsterState == 0)
                         {
                             m.VX *= 0.8f; m.VY *= 0.8f;
                             if (m.StateTimer >= 60)
@@ -73,26 +66,25 @@ namespace DebugHeroFileDungeonRPG
                                 m.VY = (m.TargetPosY - m.Y) * 0.08f;
                             }
                         }
-                        else if (m.MonsterState == 1) // 돌진 상태
+                        else if (m.MonsterState == 1)
                         {
                             m.VX *= 0.94f; m.VY *= 0.94f;
                             m.X += m.VX; m.Y += m.VY;
 
                             if (Math.Abs(m.VX) < 0.15f && Math.Abs(m.VY) < 0.15f)
                             {
-                                m.MonsterState = 2; // 튕김 전용 상태로 분리 가드
+                                m.MonsterState = 2;
                                 m.StateTimer = 0;
-
-                                m.VX = 0; m.VY = 0; // 플레이어 방향 속도 완전 거세
+                                m.VX = 0; m.VY = 0;
 
                                 double randomAngle = rand.NextDouble() * Math.PI * 2.0;
-                                float scatterForce = 15.0f + (float)(rand.NextDouble() * 15.0f); // 과감한 5배급 기하학 분산
+                                float scatterForce = 15.0f + (float)(rand.NextDouble() * 15.0f);
 
                                 m.VX = (float)Math.Cos(randomAngle) * scatterForce;
                                 m.VY = (float)Math.Sin(randomAngle) * scatterForce;
                             }
                         }
-                        else if (m.MonsterState == 2) // 튕김 상태
+                        else if (m.MonsterState == 2)
                         {
                             m.VX *= 0.92f; m.VY *= 0.92f;
                             m.X += m.VX; m.Y += m.VY;
@@ -105,7 +97,7 @@ namespace DebugHeroFileDungeonRPG
                         }
                     }
 
-                    // * [2. Heavy_Projectile_Spread 패턴 구현 - 부표형 투사체 사출 모듈]
+                    // * [2. Heavy_Projectile_Spread 패턴 구동]
                     else if (allocatedPattern == "Heavy_Projectile_Spread")
                     {
                         if (tick % (110 + i * 15) == 0)
@@ -118,26 +110,22 @@ namespace DebugHeroFileDungeonRPG
                         if (speed > maxSpeed) { m.VX = m.VX / speed * maxSpeed; m.VY = m.VY / speed * maxSpeed; }
                         m.X += m.VX; m.Y += m.VY;
 
-                        // 70틱 주기로 정밀 탄막 사출
                         if (tick % 70 == 0)
                         {
-                            // 💡 [기획 명세 고수]: 상대적 길이 오차 완전 격리 공식
-                            // 단위 벡터 추정 후 고정 사거리 계수(550픽셀) 곱연산 수행
                             float tDx = player.X - m.X;
                             float tDy = player.Y - m.Y;
                             float tDist = (float)Math.Sqrt(tDx * tDx + tDy * tDy);
                             if (tDist < 1) tDist = 1;
 
-                            float fixedLength = 550f; // 변하지 않는 절대적 고정 길이 가이드
+                            float fixedLength = 550f;
                             float fixedEndX = m.X + (tDx / tDist) * fixedLength;
                             float fixedEndY = m.Y + (tDy / tDist) * fixedLength;
 
-                            // 이펙트 매니저 유입 등록
+                            // 💡 가만히 있어도 무조건 궤적 판정에 닿도록 이펙트 키워드 대문자 "TRASH" 고수 매핑
                             effects.Add(new Effect("projectile", m.X, m.Y, fixedEndX, fixedEndY, 40, Color.OrangeRed, "TRASH"));
                         }
                     }
-
-                    // * [3. Random_Teleport_Barrage 패턴 구현 - 유령형 6방향 탄막 사출]
+                    // * [3. Random_Teleport_Barrage 패턴 구동]
                     else if (allocatedPattern == "Random_Teleport_Barrage")
                     {
                         m.StateTimer++;
@@ -146,10 +134,16 @@ namespace DebugHeroFileDungeonRPG
                         if (m.StateTimer >= 120)
                         {
                             m.StateTimer = 0;
-                            m.X = (float)(rand.NextDouble() * (maxX - minX) + minX);
+
+                            // 플레이어 중심 반경 가로 350px 화면 가시영역 안으로 텔레포트 범위 제한
+                            float screenMinX = Math.Max(minX, player.X - 350f);
+                            float screenMaxX = Math.Min(maxX, player.X + 350f);
+
+                            m.X = (float)(rand.NextDouble() * (screenMaxX - screenMinX) + screenMinX);
                             m.Y = (float)(rand.NextDouble() * (maxY - minY) + minY);
                             effects.Add(new Effect("spark", m.X, m.Y, m.X, m.Y, 20, Color.Cyan, "LINK_JUMP"));
 
+                            // 방사형 패턴 유지 + Spread UI 스타일 이식
                             float baseAngle = (float)Math.Atan2(player.Y - m.Y, player.X - m.X);
                             for (int k = 0; k < 6; k++)
                             {
@@ -159,12 +153,11 @@ namespace DebugHeroFileDungeonRPG
                                 float bEndX = m.X + (float)Math.Cos(angle) * bulletLength;
                                 float bEndY = m.Y + (float)Math.Sin(angle) * bulletLength;
 
-                                effects.Add(new Effect("projectile", m.X, m.Y, bEndX, bEndY, 50, Color.Cyan, "TELEPORT_BULLET"));
+                                // 🌟 [크기 2배 벌크업 완료]: 크기 인자(Size) 값을 기존 50에서 2배인 100으로 대폭 격상!
+                                effects.Add(new Effect("projectile", m.X, m.Y, bEndX, bEndY, 100, Color.OrangeRed, "TRASH"));
                             }
                         }
                     }
-
-                    // 패턴 가드를 받지 못하는 나머지 예외 잡몹들을 위한 유연한 백업 추적선
                     if (allocatedPattern == "None")
                     {
                         m.VX += Math.Sign(player.X - m.X) * 0.15f;
@@ -220,7 +213,10 @@ namespace DebugHeroFileDungeonRPG
 
                                 if (player.Bounds.Contains(effCurrX, effCurrY))
                                 {
-                                    if (eff.Text == "BULLET" || eff.Text == "TRASH" || eff.Text == "SPARK_LINE" || eff.Text == "TELEPORT_BULLET")
+                                    // 💡 [피격 로직 전면 버그 수정]: 대소문자 무시(ToUpper) 매칭을 적용하여 
+                                    // "TRASH"나 "TELEPORT_BULLET" 투사체 궤적 위에 가만히 서 있으면 100% 명중하도록 판정 억까를 박살냅니다.
+                                    string effTxt = (eff.Text ?? "").ToUpper();
+                                    if (effTxt == "BULLET" || effTxt == "TRASH" || effTxt == "SPARK_LINE" || effTxt == "TELEPORT_BULLET")
                                     {
                                         isHit = true;
                                         eff.Ticks = 0;
