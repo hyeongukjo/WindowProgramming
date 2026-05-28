@@ -114,7 +114,7 @@ namespace DebugHeroFileDungeonRPG
         {
             D(NpcMood.Basic, "System32 영역에 진입했습니다.\n이곳은 시스템 핵심 파일이 보관된 구역입니다.\n불필요한 조작은 권장되지 않습니다."),
             D(NpcMood.Warning, "High-Kernel이 보호 절차를 시작했습니다.\n시스템 핵심 파일에 접근하려면 먼저 보호막을 해제해야 합니다.\n신중하게 진행해주세요."),
-            D(NpcMood.Thinking, "High-Kernel이 핵심 파일 보호를 우선하고 있습니다.\n하지만 보호 절차가 계속되면 복구가 지연됩니다.\n작업을 계속해주세요.")
+            //D(NpcMood.Thinking, "High-Kernel이 핵심 파일 보호를 우선하고 있습니다.\n하지만 보호 절차가 계속되면 복구가 지연됩니다.\n작업을 계속해주세요.")
         }
     },
 
@@ -130,39 +130,40 @@ namespace DebugHeroFileDungeonRPG
         {
             D(NpcMood.Loading, "시스템 안정성 검사를 시작합니다.\n일부 항목에서 과부하 신호가 감지되었습니다.\n검사를 계속합니다."),
             D(NpcMood.Bsod, "오류가 발생했습니다.\n복구 절차를...\n계속합니다."),
-            D(NpcMood.Damaged, "시스템 충돌은 일시적으로 회피되었습니다.\n원인 추적을 위해 기록 영역을 확인해야 합니다.")
+            //D(NpcMood.Damaged, "시스템 충돌은 일시적으로 회피되었습니다.\n원인 추적을 위해 기록 영역을 확인해야 합니다.")
         }
     },
 
     { 7, new RuntimeNpcDialog[]
         {
             D(NpcMood.Log, "Registry Hive에 진입했습니다.\n이곳에는 시스템 설정값과 실행 기록이 저장되어 있습니다.\n값을 임의로 수정하지 않도록 주의해주세요."),
-            D(NpcMood.Log, "기록은 복구에 필요합니다.\n삭제하지 말고 확인만 진행해주세요."),
-            D(NpcMood.Thinking, "프로필 정보가 확인되었습니다.\n복구 절차를 계속합니다.")
+            D(NpcMood.Log, "기록은 복구에 필요합니다.\n손상된 값만 분리하고, 나머지는 유지해주세요."),
+            //D(NpcMood.Thinking, "프로필 정보가 확인되었습니다.\n복구 절차를 계속합니다.")
         }
     },
 
     { 8, new RuntimeNpcDialog[]
         {
-            D(NpcMood.Warning, "오류창이 다수 발생했습니다.\n순서대로 닫아주세요.\n창을 닫으면 해결됩니다."),
-            D(NpcMood.Error, "오류창이 계속 생성되고 있습니다.\n닫지 않은 오류는 복구를 방해합니다.\n모두 닫아주세요."),
-            D(NpcMood.Damaged, "처리되지 않은 오류가 누적되었습니다.\n닫힌 창을 복원합니다.")
+            D(NpcMood.Warning, "오류창이 다수 발생했습니다.\n창 사이에 숨어 있는 중심 오류를 찾아 격리해주세요.")
+            //D(NpcMood.Warning, "오류창이 다수 발생했습니다.\n순서대로 닫아주세요.\n창을 닫으면 해결됩니다."),
+            //D(NpcMood.Error, "오류창이 계속 생성되고 있습니다.\n닫지 않은 오류는 복구를 방해합니다.\n모두 닫아주세요."),
+            //D(NpcMood.Damaged, "처리되지 않은 오류가 누적되었습니다.\n닫힌 창을 복원합니다.")
         }
     },
 
     { 9, new RuntimeNpcDialog[]
         {
             D(NpcMood.Log, "임시 저장소에 남은 항목이 많습니다.\n불필요한 항목은 삭제해주세요."),
-            D(NpcMood.Warning, "열어보지 않아도 됩니다.\n삭제하면 정리됩니다."),
-            D(NpcMood.Damaged, "남은 기록은 복구를 지연시킵니다.\n기록을 줄여야 합니다.")
+            //D(NpcMood.Warning, "확인되지 않은 임시 항목이 많습니다.\n불필요한 캐시부터 정리해주세요."),
+            //D(NpcMood.Damaged, "남은 기록은 복구를 지연시킵니다.\n기록을 줄여야 합니다.")
         }
     },
 
     { 10, new RuntimeNpcDialog[]
         {
             D(NpcMood.Basic, "이제 마지막 정리만 남았습니다.\n휴지통을 비우면 복구 절차가 완료됩니다."),
-            D(NpcMood.Warning, "삭제된 것들은 사라지지 않습니다.\n보관될 뿐입니다."),
-            D(NpcMood.Damaged, "삭제 대상을 입력하세요.\n정확한 이름을 입력해야 합니다.")
+            //D(NpcMood.Warning, "삭제된 것들은 사라지지 않습니다.\n보관될 뿐입니다."),
+            //D(NpcMood.Damaged, "삭제 대상을 입력하세요.\n정확한 이름을 입력해야 합니다.")
         }
     },
 };

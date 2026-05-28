@@ -734,6 +734,7 @@ namespace DebugHeroFileDungeonRPG
                 buttons.Add(new UiButton(row, actionId));
         }
 
+        // * [RecoveryToolsUI.cs 내부: 2줄 설명글 위아래 겹침 및 잘림 현상 전면 처단 최종 완결판]
         private void DrawDescriptionBox(Graphics g, Rectangle r, string selectedItem)
         {
             DrawGroupBox(g, r, "선택 항목 설명");
@@ -771,33 +772,37 @@ namespace DebugHeroFileDungeonRPG
                 g.DrawLine(line, inner.X + 18, lineY, inner.Right - 18, lineY);
             }
 
-            string[] descLines = info.Description.Split('\n');
+            // =============================================================================
+            // 🌟 [교정 격실]: 22px, 24px로 쪼개져 텍스트를 파쇄하던 낡은 이중 박스를 영구 폐기합니다!
+            // =============================================================================
+            // 💡 위아래 문장이 겹치지 않고 자연스러운 행간 여유를 가지며 자동으로 줄바꿈 되도록,
+            // 가로세로를 통째로 아우르는 높이 65px짜리 거대 통합 설명 상자를 신설합니다.
+            Rectangle unifiedDescRect = new Rectangle(
+                inner.X + 20,
+                lineY + 12,
+                inner.Width - 40,
+                65
+            );
 
-            using (Font line1Font = Renderer.F(9.6f, FontStyle.Bold))
-            using (Font line2Font = Renderer.F(10.2f, FontStyle.Bold))
+            // 폰트 크기를 표준 규격인 10f 수준으로 단일 통일하여 해상도 엇박자를 방지합니다.
+            using (Font descFont = Renderer.F(10.0f, FontStyle.Bold))
             using (SolidBrush bodyBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
-            using (StringFormat sf = LeftMiddle())
             {
-                Rectangle line1Rect = new Rectangle(
-                    inner.X + 20,
-                    lineY + 10,
-                    inner.Width - 40,
-                    22
-                );
+                // 줄바꿈 정렬 시 윗줄과 아랫줄이 절대 간섭하지 못하도록 정방향 전용 포맷터 빌드
+                using (StringFormat descLayoutFormat = new StringFormat())
+                {
+                    descLayoutFormat.Alignment = StringAlignment.Near;     // 좌측 정렬
+                    descLayoutFormat.LineAlignment = StringAlignment.Near; // 상단 정렬
 
-                Rectangle line2Rect = new Rectangle(
-                    inner.X + 20,
-                    lineY + 32,
-                    inner.Width - 40,
-                    24
-                );
+                    // 영역 초과 스트레스 억까 및 외곽선 크롭 가드를 전면 해제
+                    descLayoutFormat.FormatFlags = StringFormatFlags.NoClip;
+                    descLayoutFormat.Trimming = StringTrimming.None;
 
-                if (descLines.Length > 0)
-                    g.DrawString(descLines[0], line1Font, bodyBrush, line1Rect, sf);
-
-                if (descLines.Length > 1)
-                    g.DrawString(descLines[1], line2Font, bodyBrush, line2Rect, sf);
+                    // 🌟 쪼개진 파편 드로우를 중단하고, 2줄 전체 문장을 통합 상자 안에서 깨끗하게 한 번에 렌더링!
+                    g.DrawString(info.Description, descFont, bodyBrush, unifiedDescRect, descLayoutFormat);
+                }
             }
+            // =============================================================================
         }
 
         private ShopItemInfo GetShopItemInfo(string selectedItem)
