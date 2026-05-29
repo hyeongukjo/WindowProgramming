@@ -78,6 +78,13 @@ namespace DebugHeroFileDungeonRPG
         public Color Accent;
         public Color BackColor;
         public NpcMood NpcMood;
+        private int stageTime; 
+        // 1스테이지 시작부터 엔딩까지 실시간 프레임을 카운트할 마스터 타이머 변수
+        private int totalGameTime = 0;
+
+        // 메인 전광판 연출을 위한 5개 보스층 캐시 배열 인젝션
+        private string[] stageRankJsonCache = { "[]", "[]", "[]", "[]", "[]" };
+        private readonly int[] trackingBossStages = { 2, 4, 6, 8, 10 };
         public bool IsBossStage { get { return Kind == StageKind.Boss || Kind == StageKind.Final; } }
         public string PlanFile { get { return "StagePlans\\STAGE" + Index.ToString("00") + ".txt"; } }
     }
@@ -141,6 +148,7 @@ namespace DebugHeroFileDungeonRPG
         public float WalkCycle = 0f;
         public int LastMoveTicks = 0;
         public int DefenseTicks = 0;
+        public int TotalDeaths = 0;
 
         // ==========================================================
         // 테스트버젼
