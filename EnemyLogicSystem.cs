@@ -195,13 +195,31 @@ namespace DebugHeroFileDungeonRPG
                     bool isHit = false;
                     double hitDamagePercent = 0.0;
 
-                    if (m.Bounds.IntersectsWith(player.Bounds))
+                    // =============================================================================
+                    // 🌟 [최종 정밀 교정]: 캐릭터 상체 및 가방 몸통 부위(image_1e0083.png) 피격 동기화 격실
+                    // =============================================================================
+                    // 💡 골반과 발바닥 쪽에 쏠려있던 충돌 그릇을 플레이어 Y축 기준 위로 18픽셀 올리고(-18f),
+                    // 형진님이 표시하신 몸통 두께에 완벽히 밀착하도록 가로 46px, 세로 54px 크기로 재조립합니다.
+                    float hitBoxW = 46f;
+                    float hitBoxH = 54f;
+                    float yOffset = 18f; // 🌟 가슴과 가방 부위로 충돌 상자를 끌어올리는 마법의 오프셋
+
+                    RectangleF playerAdjustedHitBox = new RectangleF(
+                        player.X - (hitBoxW / 2f),
+                        player.Y - (hitBoxH / 2f) - yOffset, // 🎯 Y축 상단 보정을 통해 명치/가슴 판정 일치 완료
+                        hitBoxW,
+                        hitBoxH
+                    );
+
+                    // 1. 몬스터 본체와의 상체 피격 체크
+                    if (m.Bounds.IntersectsWith(Rectangle.Round(playerAdjustedHitBox)))
                     {
                         isHit = true;
                         hitDamagePercent = rand.Next(7, 16) / 100.0;
                     }
                     else
                     {
+                        // 2. 적 에너지 구체(energy_ball / projectile_teleport) 투사체와 상체 피격 체크
                         for (int k = 0; k < effects.Count; k++)
                         {
                             Effect eff = effects[k];
@@ -211,10 +229,9 @@ namespace DebugHeroFileDungeonRPG
                                 float effCurrX = eff.X + (eff.X2 - eff.X) * progress;
                                 float effCurrY = eff.Y + (eff.Y2 - eff.Y) * progress;
 
-                                if (player.Bounds.Contains(effCurrX, effCurrY))
+                                // 오프셋이 적용된 상체 가상 박스 범위 검사
+                                if (playerAdjustedHitBox.Contains(effCurrX, effCurrY))
                                 {
-                                    // 💡 [피격 로직 전면 버그 수정]: 대소문자 무시(ToUpper) 매칭을 적용하여 
-                                    // "TRASH"나 "TELEPORT_BULLET" 투사체 궤적 위에 가만히 서 있으면 100% 명중하도록 판정 억까를 박살냅니다.
                                     string effTxt = (eff.Text ?? "").ToUpper();
                                     if (effTxt == "BULLET" || effTxt == "TRASH" || effTxt == "SPARK_LINE" || effTxt == "TELEPORT_BULLET")
                                     {
@@ -227,6 +244,7 @@ namespace DebugHeroFileDungeonRPG
                             }
                         }
                     }
+                    // =============================================================================
 
                     if (isHit)
                     {
