@@ -196,22 +196,22 @@ namespace DebugHeroFileDungeonRPG
                     double hitDamagePercent = 0.0;
 
                     // =============================================================================
-                    // 🌟 [최종 정밀 교정]: 캐릭터 상체 및 가방 몸통 부위(image_1e0083.png) 피격 동기화 격실
+                    // 🌟 [최종 정밀 복구]: 캐릭터 상체 부위 피격 동기화 및 투사체 면적 박스 판정 격실
                     // =============================================================================
-                    // 💡 골반과 발바닥 쪽에 쏠려있던 충돌 그릇을 플레이어 Y축 기준 위로 18픽셀 올리고(-18f),
-                    // 형진님이 표시하신 몸통 두께에 완벽히 밀착하도록 가로 46px, 세로 54px 크기로 재조립합니다.
+                    // 💡 골반과 발바닥 쪽에 쏠려있던 충돌 상자를 플레이어 Y축 기준 위로 18px 올리고(-18f),
+                    // 실제 몸통 두께와 가방 범위에 밀착하도록 가로 46px, 세로 54px 크기로 조립합니다.
                     float hitBoxW = 46f;
                     float hitBoxH = 54f;
-                    float yOffset = 18f; // 🌟 가슴과 가방 부위로 충돌 상자를 끌어올리는 마법의 오프셋
+                    float yOffset = 18f;
 
                     RectangleF playerAdjustedHitBox = new RectangleF(
                         player.X - (hitBoxW / 2f),
-                        player.Y - (hitBoxH / 2f) - yOffset, // 🎯 Y축 상단 보정을 통해 명치/가슴 판정 일치 완료
+                        player.Y - (hitBoxH / 2f) - yOffset,
                         hitBoxW,
                         hitBoxH
                     );
 
-                    // 1. 몬스터 본체와의 상체 피격 체크
+                    // 1. 몬스터 본체와의 상체 몸통 피격 체크
                     if (m.Bounds.IntersectsWith(Rectangle.Round(playerAdjustedHitBox)))
                     {
                         isHit = true;
@@ -219,7 +219,7 @@ namespace DebugHeroFileDungeonRPG
                     }
                     else
                     {
-                        // 2. 적 에너지 구체(energy_ball / projectile_teleport) 투사체와 상체 피격 체크
+                        // 2. 적 에너지 구체 투사체와 상체 몸통 피격 체크
                         for (int k = 0; k < effects.Count; k++)
                         {
                             Effect eff = effects[k];
@@ -229,6 +229,7 @@ namespace DebugHeroFileDungeonRPG
                                 float effCurrX = eff.X + (eff.X2 - eff.X) * progress;
                                 float effCurrY = eff.Y + (eff.Y2 - eff.Y) * progress;
 
+                                // 💡 투사체 정중앙 점 하나가 아닌, 지름 16px(반경 8px)짜리 실체 판정 사각형을 형성합니다.
                                 float bulletRadius = 8f;
                                 RectangleF bulletHitBox = new RectangleF(
                                     effCurrX - bulletRadius,
@@ -237,7 +238,7 @@ namespace DebugHeroFileDungeonRPG
                                     bulletRadius * 2f
                                 );
 
-                                // 낡은 Contains 대신, 두 사각형이 공중에서 '교차(IntersectsWith)'했는지 정밀 연산합니다.
+                                // 🎯 [판정 일치]: 두 사각형 면적이 공중에서 교차(IntersectsWith)했는지 정밀 연산하여 관통을 차단합니다.
                                 if (playerAdjustedHitBox.IntersectsWith(Rectangle.Round(bulletHitBox)))
                                 {
                                     string effTxt = (eff.Text ?? "").ToUpper();
@@ -245,7 +246,7 @@ namespace DebugHeroFileDungeonRPG
                                     {
                                         isHit = true;
                                         eff.Ticks = 0; // 맞은 총알은 화면에서 즉시 소멸
-                                        player.InvincibleTicks = 45; // 피격 후 0.75초간 무적 타임 작동
+                                        player.InvincibleTicks = 45; // 피격 후 무적 시간 부여
                                         hitDamagePercent = rand.Next(7, 16) / 100.0;
                                         break;
                                     }
