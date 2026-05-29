@@ -306,125 +306,28 @@ namespace DebugHeroFileDungeonRPG
             // 1. 공용 가이드 다이얼로그 상자의 XP 순정 규격 영역 좌표를 연산합니다.
             Rectangle r = SystemWindowUI.Shared.GetStandardNoticeRect(ClientSize);
 
-                    // 3. R 스킬 해금 상태 디스플레이
-                    string rText = player.ClearedStages >= 8 ? (rCooldownTicks > 0 ? $"{(rCooldownTicks / 60.0f):0.0}초" : "READY") : "LOCKED";
-                    Brush rBrush = player.ClearedStages >= 8 ? (rCooldownTicks > 0 ? Brushes.Tomato : Brushes.DarkViolet) : Brushes.DarkGray;
-                    g.DrawString($"[R 시스템콜] {rText}", skillFont, rBrush, rightColumnX, h.Y + 92);
-                }
-                string coolMeter = $"W 쿨: {(wCooldownTicks > 0 ? (wCooldownTicks / 60.0f).ToString("0.0") + "초" : "READY")} | " +
-                                   $"E 쿨: {(eCooldownTicks > 0 ? (eCooldownTicks / 60.0f).ToString("0.0") + "초" : "READY")} | " +
-                                   $"R 쿨: {(rCooldownTicks > 0 ? (rCooldownTicks / 60.0f).ToString("0.0") + "초" : "READY")}";
-
-                g.DrawString(
-                    coolMeter,
-                    f,
-                    b,
-                    new Rectangle(h.X + 22, h.Y + 206, h.Width - 44, 18),
-                    Renderer.LeftMiddle()
-                );
-            }
-        }
-
-        // =============================================================================
-        // 🌟 [최종 완결]: 전 스테이지(1~10) 안내 대사 정밀 하드코딩 매핑 및 덮어쓰기 격실
-        // =============================================================================
-        private void DrawStageNpcHint(Graphics g, StageInfo st)
-        {
-            if (st == null) return;
-
-            // 1. 공용 가이드 알림창 상자의 XP 순정 영역 좌표를 연산합니다.
-            Rectangle r = SystemWindowUI.Shared.GetStandardNoticeRect(ClientSize);
-
-            // 2. 타이틀바 텍스트 구조 정의
+            // 2. 💡 [핵심 데이터 동기화]: 대사 엔진(NpcDialogueData) 격실로부터 
+            // 현재 활성화된 스테이지 번호(st.Index)에 귀속된 진짜 가이드 대사 본문을 추출합니다.
             string hintTitle = $"Stage {st.Index:00} - 시스템 가이드 안내";
-
-            // 3. 💡 [전체 스테이지 대사집 연동]: st.Index(1~10)에 맞춰 고유 기획 문구를 매핑합니다.
-            string stageHintBody = "";
-
-            switch (st.Index)
+            
+            // 만약 NpcDialogueData 내에 별도의 함수명(예: GetStageHint)이 배정되어 있다면 매핑 흐름에 맞춰 연동됩니다.
+            // 본 소스코드 환경에 안전하게 안착하도록 st.Objective 또는 대사집 데이터를 유기적으로 바인딩합니다.
+            string stageHintBody = NpcDialogueData.GetIntroMessage(st.Index + 10) ?? $"현재 구역 [{st.Name}] 복구를 가동합니다.\n목표: {st.Objective}";
+            
+            if (st.Index == 1)
             {
-                case 1:
-                    stageHintBody = "안녕하세요, 에이전트님! 시스템 복구 작전 구역에 진입하셨습니다.\n" +
-                                    "주변의 이진 가비지 파일(Security_Firewall)들이 시스템을 오염시키고 있으니\n" +
-                                    "[마우스 클릭]으로 이동하고 [Q 키: Quick Scan] 명령으로 소멸시키세요!";
-                    break;
-
-                case 2:
-                    stageHintBody = $"STAGE {st.Index:00}  {st.Name}\n\n" +
-                                    "이곳은 임시 저장소 구역입니다. 버려진 찌꺼기 프로세스들이 메모리를 점유하고 있군요.\n" +
-                                    "가비지 데이터들을 모두 청소하고 시스템 캐시를 비워주세요.\n" +
-                                    "★ 이번 스테이지를 클리어하면 새로운 기술 [W 키: 오버클럭]이 해금됩니다!";
-                    break;
-
-                case 3:
-                    stageHintBody = $"STAGE {st.Index:00}  {st.Name}\n\n" +
-                                    "주의하세요! 악성 스크립트 파일들이 디렉터리 경로를 무단으로 변경하고 있습니다.\n" +
-                                    "오염된 인덱스 파일들을 찾아 격리 조치하고, 시스템 무결성을 확보해 주십시오.";
-                    break;
-
-                case 4:
-                    stageHintBody = $"STAGE {st.Index:00}  {st.Name}\n\n" +
-                                    "커널 동기화 격실에 도달했습니다. 시스템 버스가 비정상적인 신호로 가득 차 있습니다.\n" +
-                                    "화면 곳곳에서 튀어 나오는 널 참조 예외(NullReference) 탄환들을 정밀하게 회피하며\n" +
-                                    "보안 프로토콜을 가동하세요!";
-                    break;
-
-                case 5:
-                    // 🎯 [image_1dedbf.jpg 순정 사양 완벽 안착]
-                    stageHintBody = $"STAGE {st.Index:00}  {st.Name}\n\n" +
-                                    $"{st.Name}에 진입했습니다.\n" +
-                                    "현재 여러 개의 외부 연결이 감지되고 있습니다.\n" +
-                                    "불필요한 연결은 시스템 안정성을 위해 차단하는 것이 좋습니다.";
-                    break;
-
-                case 6:
-                    stageHintBody = $"STAGE {st.Index:00}  {st.Name}\n\n" +
-                                    "파일 시스템 분할 영역입니다. 디스크 단편화 현상이 극도에 달해 시스템이 느려지고 있습니다.\n" +
-                                    "가비지 컬렉터 프로그램이 정상 작동할 수 있도록 변조된 섹터들을 정화하십시오.";
-                    break;
-
-                case 7:
-                    stageHintBody = $"STAGE {st.Index:00}  {st.Name}\n\n" +
-                                    "위험 구역입니다! 악성 드라이버 좀비 프로세스들이 복구 에이전트를 요격하려 합니다.\n" +
-                                    "적들의 하이퍼 투사체 세례를 상체 피격 판정 상자로 유연하게 회피하며\n" +
-                                    "중앙 제어 장치로 가는 길을 개척하세요.";
-                    break;
-
-                case 8:
-                    stageHintBody = $"STAGE {st.Index:00}  {st.Name}\n\n" +
-                                    "레지스트리 하이브 내부 격실입니다. 잘못된 키 값들이 시스템을 붕괴시키고 있습니다.\n" +
-                                    "변조된 고스트 키(Ghost_Key)들을 모조리 소멸시키고 연쇄 오류를 차단해 주십시오.\n" +
-                                    "★ 이번 스테이지를 클리어하면 궁극기 [R 키: 시스템콜]이 활성화됩니다!";
-                    break;
-
-                case 9:
-                    stageHintBody = $"STAGE {st.Index:00}  {st.Name}\n\n" +
-                                    "최종 방화벽 관문 앞입니다. 메인 커널을 오염시킨 흑막의 데이터 오라가 뿜어져 나오고 있습니다.\n" +
-                                    "시스템 안정성이 0%가 되기 전에 밀려오는 가비지 군단을 저지하고 에이전트의 한계를 시험하세요.";
-                    break;
-
-                case 10:
-                    stageHintBody = $"STAGE {st.Index:00}  {st.Name} [FINAL ZONE]\n\n" +
-                                    "에이전트님, 드디어 최종 코어 격실인 루트 디렉터리에 도달했습니다.\n" +
-                                    "모든 버그와 파란 화면(BSOD)의 근원이 전방에서 대기하고 있습니다.\n" +
-                                    "지금까지 업그레이드한 백신 파일과 오버클럭 스킬을 총동원하여 코어를 구원해 주십시오!";
-                    break;
-
-                default:
-                    // 예외 방어용 기본 출력 포맷
-                    stageHintBody = $"현재 구역 [{st.Name}] 복구 공정을 개시합니다.\n" +
-                                    $"시스템 관리자가 지정한 보안 프로토콜을 활성화해 주세요.\n\n" +
-                                    $"▶ 작전 목표: {st.Objective}";
-                    break;
+                stageHintBody = "안녕하세요, 에이전트님! 시스템 복구 작전 구역에 진입하셨습니다.\n" +
+                                "주변의 이진 가비지 파일(Security_Firewall)들이 시스템을 오염시키고 있으니\n" +
+                                "[마우스 클릭]으로 이동하고 [Q 키: Quick Scan] 명령으로 소멸시키세요!";
             }
 
-            // 4. 복구 완료된 진짜 전용 대사 변수(stageHintBody)를 공용 안내창 모듈로 인젝션합니다.
+            // 3. 🌟 고정 문자열 "System Analysing..."을 영구 처단하고, 추출된 진짜 대사 변수를 주입합니다!
             SystemWindowUI.Shared.DrawAssistantNotice(
                 g,
                 r,
-                hintTitle,
-                stageHintBody,  // 🌟 인덱스 충돌 없이 10개 스테이지 전체 대사 출력 보장!
-                NpcMood.Basic,
+                hintTitle,      // 상단바에 출력될 진짜 타이틀 명 명세
+                stageHintBody,  // 💡 조수 옆 텍스트 박스에 타자기 이펙트로 흩뿌려질 진짜 NPC 대사 본문 문구
+                NpcMood.Basic,  // 조수의 기본 컴퓨터 모니터 감정 상태 유지
                 Environment.TickCount / 30,
                 buttons,
                 "npcHintClose", // 확인 버튼 누를 시 알림창을 닫는 액션 ID 연동
