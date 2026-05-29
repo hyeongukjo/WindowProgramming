@@ -228,7 +228,41 @@ namespace DebugHeroFileDungeonRPG
 
         private void MainForm_MouseDown(object sender, MouseEventArgs e)
         {
+            //if (playerDeathSequenceActive) return;
+            //for (int i = 0; i < buttons.Count; i++)
+            //{
+            //    if (buttons[i].Bounds.Contains(e.Location))
+            //    {
+            //        HandleAction(buttons[i].Action);
+            //        return;
+            //    }
+            //}
             if (playerDeathSequenceActive) return;
+
+
+            if (screen == ScreenMode.Desktop && showLeaderboardWindow)
+            {
+                Point mousePos = e.Location;
+
+                for (int i = 0; i < buttons.Count; i++)
+                {
+                    // 오직 리더보드 창의 [X] 닫기 버튼을 눌렀을 때만 반응하여 창을 닫습니다.
+                    if (buttons[i].Action == leaderboardCloseKey && buttons[i].Bounds.Contains(mousePos))
+                    {
+                        showLeaderboardWindow = false; // 창 닫기
+                        TryBeep(750, 50);
+                        Invalidate();
+                        return;
+                    }
+                }
+
+                // 닫기 버튼이 아닌 창 내부나 창 뒤의 아이콘, 상점 등 다른 모든 클릭은 원천 차단합니다.
+                return;
+            }
+            // =============================================================================
+
+
+            // 일반 버튼 클릭 처리 (리더보드 창이 닫혀있을 때만 이 아래 코드가 작동합니다)
             for (int i = 0; i < buttons.Count; i++)
             {
                 if (buttons[i].Bounds.Contains(e.Location))
@@ -237,6 +271,30 @@ namespace DebugHeroFileDungeonRPG
                     return;
                 }
             }
+
+
+            if (screen == ScreenMode.Desktop)
+            {
+                Point mousePos = e.Location;
+
+                // 최초 진입 안내창 가드
+                if (firstDesktopNotice)
+                {
+                    return;
+                }
+
+                // 내 컴퓨터 고정 아이콘 클릭 영역 감지 (X: 15~115, Y: 15~115)
+                Rectangle myComputerIconBounds = new Rectangle(15, 15, 95, 95);
+                if (myComputerIconBounds.Contains(mousePos))
+                {
+                    showLeaderboardWindow = true; // 창 활성화!
+                    UpdateAllBossRankings();      // 열리는 순간 서버에서 실시간 랭킹 즉시 강제 리프레시
+                    TryBeep(880, 60);
+                    Invalidate();
+                    return;
+                }
+            }
+
             if (screen == ScreenMode.Stage)
             {
                 if (e.Button == MouseButtons.Left)
@@ -363,6 +421,7 @@ namespace DebugHeroFileDungeonRPG
             }
             player.ProfileName = profileInput.Trim();
             screen = ScreenMode.Desktop;
+            UpdateAllBossRankings();
             TryBeep(920, 60);
         }
 

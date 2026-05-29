@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace DebugHeroFileDungeonRPG
@@ -21,7 +22,22 @@ namespace DebugHeroFileDungeonRPG
 
         //private ScreenMode screen = ScreenMode.Boot;
         private readonly PlayerState player = new PlayerState();
-        private ScreenMode screen = ScreenMode.StartMenu;
+        private ScreenMode _screen = ScreenMode.StartMenu;
+        private ScreenMode screen
+        {
+            get => _screen;
+            set
+            {
+                bool isChanged = _screen != value;
+                _screen = value;
+
+              
+                if (isChanged && _screen == ScreenMode.Desktop)
+                {
+                    UpdateAllBossRankings(); // 즉시 서버 최신 랭킹판 강제 동기화 트리거
+                }
+            }
+        }
         private int tick;
         private int bootTicks;
         private int introIndex;
@@ -34,6 +50,11 @@ namespace DebugHeroFileDungeonRPG
         private int clearStage = 0;
         private float cameraX;
         private int stageTime;
+        private int totalGameTime = 0;
+        private bool showLeaderboardWindow = false;
+        private readonly string leaderboardCloseKey = "leaderboardWinClose";
+        private string[] stageRankJsonCache = { "[]", "[]", "[]", "[]", "[]" };
+        private readonly int[] trackingBossStages = { 2, 4, 6, 8, 10 };
         private string endingTitle = "";
         private string endingBody = "";
         private bool firstDesktopNotice = true;
@@ -190,10 +211,7 @@ namespace DebugHeroFileDungeonRPG
                         EndStage10Cutscene(); // 영상 시간이 끝나면 자동으로 보스전 이관
                     }
                 }
-                // ==========================================================
-                // 💡 [여기에 주입] 컷씬 상영 중일 때는 아래의 무한 Invalidate()를 스킵!
-                // 이 return; 한 줄이 없어서 C# 도화지가 비디오 오버레이 창을 계속 덮어썼던 것입니다.
-                // ==========================================================
+            
                 return;
                 // ==========================================================
             }
@@ -224,6 +242,13 @@ namespace DebugHeroFileDungeonRPG
 
                 UpdateStage();
             }
+
+
+            if (screen == ScreenMode.Desktop && tick % 180 == 0)
+            {
+                UpdateAllBossRankings();
+            }
+
 
             // 일반 인게임 상태에서만 도화지를 새로 고침 (컷씬 모드일 땐 위에서 return되어 실행 안 됨)
             Invalidate();
@@ -286,6 +311,8 @@ namespace DebugHeroFileDungeonRPG
                 player.Hp = 0;
                 playerDeathSequenceActive = true;
                 playerDeathSequenceTicks = 0;
+
+                player.TotalDeaths++;
 
                 player.ActionState = PlayerActionState.Die; // 상태를 사망으로 강제 전환
                 player.ActionFrame = 0;                     // 프레임 리셋
@@ -368,6 +395,18 @@ namespace DebugHeroFileDungeonRPG
         private void TryBeep(int f, int d)
         {
             try { Console.Beep(f, d); } catch { }
+        }
+
+        private async void UpdateAllBossRankings()
+        {
+            Task<string>[] tasks = new Task<string>[5];
+            for (int i = 0; i < 5; i++)
+            {
+                tasks[i] = SupabaseManager.GetStageRankingsAsync(trackingBossStages[i]);
+            }
+
+            stageRankJsonCache = await Task.WhenAll(tasks);
+            Invalidate(); // 도화지 실시간 다시 그리기 트리거
         }
     }
 }
