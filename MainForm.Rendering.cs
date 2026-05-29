@@ -111,8 +111,145 @@ namespace DebugHeroFileDungeonRPG
             // 좌측 하단 영역의 휴지통 아이템 상점 아이콘 그리기 시스템 연동
             DesktopIconUI.Shared.DrawRecoveryToolsShortcut(g, ClientRectangle, player.Coins, buttons);
 
+            // =============================================================================
+            // 랭킹 리더보드
+            // =============================================================================
+            if (showLeaderboardWindow)
+            {
+                // 배경 블러/어둡게 효과 주입 (몰입도 향상)
+                using (SolidBrush dimBrush = new SolidBrush(Color.FromArgb(110, 0, 0, 0)))
+                    g.FillRectangle(dimBrush, ClientRectangle);
+
+                // 화면 꽉 차는 메인 다이얼로그 윈도우 크기 설정 (안전 마진 사방 60px 확보)
+                int winW = w - 120;
+                int winH = h - 160;
+                int winX = 60;
+                int winY = 60;
+                Rectangle winBounds = new Rectangle(winX, winY, winW, winH);
+
+                // 윈도우 메인 몸체 본체 그리기 (XP 실버/그레이 베이스)
+                g.FillRectangle(Brushes.LightGray, winBounds);
+                g.DrawRectangle(Pens.DimGray, winBounds);
+
+                // A. 상단 파란색 시스템 타이틀바 그리기 (Gradient 주입)
+                Rectangle titleBar = new Rectangle(winX, winY, winW, 32);
+                using (var brush = new LinearGradientBrush(titleBar, Color.FromArgb(0, 75, 215), Color.FromArgb(0, 115, 245), 0f))
+                    g.FillRectangle(brush, titleBar);
+
+                using (Font tFont = Renderer.F(11f, FontStyle.Bold))
+                    g.DrawString("💻 내 컴퓨터 - 시스템 실시간 통합 리더보드 [중앙 클라우드 채널 동기화 완료]", tFont, Brushes.White, winX + 10, winY + 7);
+
+                // B. 우측 상단 [X] 닫기 버튼 UI 생성 및 바인딩
+                Rectangle closeBtn = new Rectangle(winX + winW - 38, winY + 6, 30, 20);
+                g.FillRectangle(Brushes.Crimson, closeBtn);
+                g.DrawRectangle(Pens.White, closeBtn);
+                using (Font xFont = Renderer.F(9f, FontStyle.Bold))
+                    g.DrawString("X", xFont, Brushes.White, closeBtn, Renderer.Center());
+
+                // 💡 [인수 변환 에러 해결]: bounds 가 앞으로 오도록 순서 보정 매핑
+                buttons.Add(new UiButton(closeBtn, leaderboardCloseKey));
+
+                // C. 대형 5열(Column) 보스방 정보판 구조 분할 그리기
+                int paddingX = 25;
+                int contentY = winY + 55;
+                int availableW = winW - (paddingX * 2);
+                int colW = (availableW - (18 * 4)) / 5; // 5개 구획 분할 폭 계산
+                int colH = winH - 85;
+
+                using (Font headerFont = Renderer.F(11.5f, FontStyle.Bold))
+                using (Font rankFont = Renderer.F(9.5f, FontStyle.Regular))
+                using (Font emptyFont = Renderer.F(10f, FontStyle.Italic))
+                {
+                    for (int i = 0; i < 5; i++)
+                    {
+                        int colX = winX + paddingX + i * (colW + 18);
+                        int targetStage = trackingBossStages[i];
+
+                        // 보스별 내부 전광판 사각형 구역화
+                        Rectangle colBox = new Rectangle(colX, contentY, colW, colH);
+
+                        // 💡 [오타 보정 패치]: Brushes 억까를 분쇄하고 안전한 다크 네이비 테마 단색 브러시 주입
+                        using (SolidBrush boxBrush = new SolidBrush(Color.FromArgb(40, 50, 65)))
+                        {
+                            g.FillRectangle(boxBrush, colBox);
+                        }
+                        g.DrawRectangle(Pens.Gold, colBox);
+
+                        // 보스 대형 타이틀 바 배경 그리기
+                        Rectangle colHeader = new Rectangle(colX, contentY, colW, 30);
+                        g.FillRectangle(Brushes.MidnightBlue, colHeader);
+                        g.DrawRectangle(Pens.Gold, colHeader);
+                        g.DrawString($"STAGE {targetStage:02} TOP 5", headerFont, Brushes.Gold, colHeader, Renderer.Center());
+
+                        // JSON 파싱 알고리즘 수행
+                        var objMatches = System.Text.RegularExpressions.Regex.Matches(stageRankJsonCache[i], @"\{([^}]+)\}");
+                        var rankList = new System.Collections.Generic.List<(string Name, int Ticks, int Deaths, int Secs)>();
+
+                        for (int m = 0; m < objMatches.Count; m++)
+                        {
+                            string jsonObjectString = objMatches[m].Value;
+
+                            // 💡 [정규식 구문 오류 전면 해결]: 깨진 잔상 문자열을 걷어내고 순수한 리터럴 식으로 복구
+                            var nameMatch = System.Text.RegularExpressions.Regex.Match(jsonObjectString, @"""user_name"":""([^""]+)""");
+                            var timeMatch = System.Text.RegularExpressions.Regex.Match(jsonObjectString, @"""clear_time_ticks"":(\d+)");
+                            var deathMatch = System.Text.RegularExpressions.Regex.Match(jsonObjectString, @"""death_count"":(\d+)");
+
+                            if (nameMatch.Success && timeMatch.Success && deathMatch.Success)
+                            {
+                                string uName = nameMatch.Groups[1].Value;
+                                int rawTicks = int.Parse(timeMatch.Groups[1].Value);
+                                int rawDeaths = int.Parse(deathMatch.Groups[1].Value);
+                                int secs = rawTicks / 60; // 초 단위 마킹
+                                rankList.Add((uName, rawTicks, rawDeaths, secs));
+                            }
+                        }
+
+                        // 우선순위 룰 적용 퀵 정렬
+                        rankList.Sort((a, b) => {
+                            if (a.Secs != b.Secs) return a.Secs.CompareTo(b.Secs);
+                            return a.Deaths.CompareTo(b.Deaths);
+                        });
+
+                        int loopLimit = Math.Min(5, rankList.Count);
+                        int assignedRank = 1;
+
+                        for (int r = 0; r < loopLimit; r++)
+                        {
+                            var curr = rankList[r];
+                            if (r > 0)
+                            {
+                                var prev = rankList[r - 1];
+                                if (curr.Secs == prev.Secs && curr.Deaths == prev.Deaths) { }
+                                else { assignedRank = r + 1; }
+                            }
+                            else { assignedRank = 1; }
+
+                            float displaySeconds = curr.Ticks / 60.0f;
+                            string rowText = $"  {assignedRank}위  {curr.Name}\n  {displaySeconds:0.0}초 /  {curr.Deaths}데스";
+
+                            // 큼직하고 알아보기 쉽게 행 간격을 넓혀 렌더링
+                            g.DrawString(rowText, rankFont, Brushes.White, colX + 12, contentY + 45 + (r * 48));
+                            using (Pen linePen = new Pen(Color.FromArgb(80, 255, 255, 255), 1f))
+                                g.DrawLine(linePen, colX + 10, contentY + 86 + (r * 48), colX + colW - 10, contentY + 86 + (r * 48));
+                        }
+
+                        if (loopLimit == 0)
+                        {
+                            g.DrawString("도전자 대기 중...\n\n오직 피지컬로\n이 자리를 쟁취하세요.", emptyFont, Brushes.DarkGray, colX + 20, contentY + 80);
+                        }
+                    }
+                }
+            }
+            // =============================================================================
+
             // 3. 하단 작업 표시줄
             TaskbarUI.Shared.Draw(g, ClientRectangle);
+
+            // Internet Explorer - Old Google 창
+            if (showOldGoogleWindow)
+            {
+                DrawOldGoogleWindow(g);
+            }
 
             // 4. 최초 진입 안내창
             if (firstDesktopNotice)
@@ -872,7 +1009,8 @@ namespace DebugHeroFileDungeonRPG
        
         private void DrawAdminStartMenu(Graphics g)
         {
-            
+           
+
             StartMenuScreen.Draw(g, ClientRectangle, buttons, GameSaveSystem.HasSave());
         }
 

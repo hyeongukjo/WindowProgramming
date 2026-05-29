@@ -72,7 +72,29 @@ namespace DebugHeroFileDungeonRPG
 
                     return;
                 }
+                if (showOldGoogleWindow)
+                {
+                    if (e.KeyCode == Keys.Escape)
+                    {
+                        CloseOldGoogleWindow();
+                        return;
+                    }
 
+                    if (e.KeyCode == Keys.Back && oldGoogleSearchFocused && oldGoogleSearchText.Length > 0)
+                    {
+                        oldGoogleSearchText = oldGoogleSearchText.Substring(0, oldGoogleSearchText.Length - 1);
+                        Invalidate();
+                        return;
+                    }
+
+                    if (e.KeyCode == Keys.Enter)
+                    {
+                        SubmitOldGoogleSearch();
+                        return;
+                    }
+
+                    return;
+                }
                 if (e.KeyCode == Keys.Right || e.KeyCode == Keys.Down) selectedStage = Math.Min(unlockedStage, selectedStage + 1);
                 if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Up) selectedStage = Math.Max(1, selectedStage - 1);
                 if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.E) StartStage(selectedStage);
@@ -156,6 +178,17 @@ namespace DebugHeroFileDungeonRPG
 
         private void MainForm_KeyPress(object sender, KeyPressEventArgs e)
         {
+            if (screen == ScreenMode.Desktop && showOldGoogleWindow && oldGoogleSearchFocused)
+            {
+                if (!char.IsControl(e.KeyChar) && oldGoogleSearchText.Length < 48)
+                {
+                    oldGoogleSearchText += e.KeyChar;
+                    e.Handled = true;
+                    Invalidate();
+                }
+
+                return;
+            }
             if (screen == ScreenMode.ProfileSetup)
             {
                 if (!char.IsControl(e.KeyChar) && profileInput.Length < 16)
@@ -229,6 +262,59 @@ namespace DebugHeroFileDungeonRPG
         private void MainForm_MouseDown(object sender, MouseEventArgs e)
         {
             if (playerDeathSequenceActive) return;
+
+            // ==========================================================
+            // 리더보드 창이 열려 있을 때
+            // - 리더보드 X 버튼만 허용
+            // - 그 외 클릭은 전부 막음
+            // ==========================================================
+            if (screen == ScreenMode.Desktop && showLeaderboardWindow)
+            {
+                Point mousePos = e.Location;
+
+                for (int i = 0; i < buttons.Count; i++)
+                {
+                    if (buttons[i].Action == leaderboardCloseKey &&
+                        buttons[i].Bounds.Contains(mousePos))
+                    {
+                        showLeaderboardWindow = false;
+                        TryBeep(750, 50);
+                        Invalidate();
+                        return;
+                    }
+                }
+
+                return;
+            }
+
+            // ==========================================================
+            // Old Google 창이 열려 있을 때
+            // - Google 창의 X 버튼만 허용
+            // - Google 검색창 클릭만 허용
+            // - 뒤에 있는 Stage 버튼 / 상점 버튼 / 바탕화면 아이콘 클릭은 전부 막음
+            // ==========================================================
+            if (screen == ScreenMode.Desktop && IsOldGoogleWindowVisible())
+            {
+                for (int i = 0; i < buttons.Count; i++)
+                {
+                    if (!buttons[i].Bounds.Contains(e.Location))
+                        continue;
+
+                    if (buttons[i].Action == OldGoogleCloseKey ||
+                        buttons[i].Action == OldGoogleSearchFocusKey)
+                    {
+                        HandleAction(buttons[i].Action);
+                        return;
+                    }
+                }
+
+                return;
+            }
+
+            // ==========================================================
+            // 일반 버튼 클릭 처리
+            // - Old Google 창이 닫혀 있을 때만 실행됨
+            // ==========================================================
             for (int i = 0; i < buttons.Count; i++)
             {
                 if (buttons[i].Bounds.Contains(e.Location))
@@ -237,6 +323,42 @@ namespace DebugHeroFileDungeonRPG
                     return;
                 }
             }
+
+            // ==========================================================
+            // 바탕화면 아이콘 클릭 처리
+            // ==========================================================
+            if (screen == ScreenMode.Desktop)
+            {
+                Point mousePos = e.Location;
+
+                // 최초 진입 안내창이 떠 있으면 바탕화면 클릭 무시
+                if (firstDesktopNotice)
+                {
+                    return;
+                }
+
+                // Internet Explorer 아이콘 클릭
+                if (GetInternetExplorerIconBounds().Contains(mousePos))
+                {
+                    OpenOldGoogleWindow();
+                    return;
+                }
+
+                // 내 컴퓨터 아이콘 클릭
+                Rectangle myComputerIconBounds = new Rectangle(15, 15, 95, 95);
+                if (myComputerIconBounds.Contains(mousePos))
+                {
+                    showLeaderboardWindow = true;
+                    UpdateAllBossRankings();
+                    TryBeep(880, 60);
+                    Invalidate();
+                    return;
+                }
+            }
+
+            // ==========================================================
+            // 스테이지 화면 클릭 처리
+            // ==========================================================
             if (screen == ScreenMode.Stage)
             {
                 if (e.Button == MouseButtons.Left)
@@ -249,10 +371,12 @@ namespace DebugHeroFileDungeonRPG
                         return;
                     }
                 }
+
                 if (stageBossPhase && bossRuntime.HandleClick(e.Location))
                 {
                     return;
                 }
+
                 if (e.Button == MouseButtons.Right)
                 {
                     int mapWidth = GetStageMapWidth(stages[currentStage - 1]);
@@ -309,6 +433,21 @@ namespace DebugHeroFileDungeonRPG
         {
             if (action == "introNext") AdvanceIntro();
             else if (action == "desktopNoticeOk" || action == "desktopNoticeClose") { firstDesktopNotice = false; }
+
+            else if (action == OldGoogleCloseKey)
+            {
+                CloseOldGoogleWindow();
+            }
+            else if (action == OldGoogleSearchFocusKey)
+            {
+                oldGoogleSearchFocused = true;
+                if (!string.IsNullOrWhiteSpace(oldGoogleLastQuery))
+                {
+                    oldGoogleSearchText = "";
+                }
+                Invalidate();
+            }
+
             else if (action == "npcHintClose") AdvanceStageNpcHint();
             else if (action == "profileOk") ConfirmProfile();
             else if (action == "openShop") screen = ScreenMode.Shop;
@@ -363,6 +502,7 @@ namespace DebugHeroFileDungeonRPG
             }
             player.ProfileName = profileInput.Trim();
             screen = ScreenMode.Desktop;
+            UpdateAllBossRankings();
             TryBeep(920, 60);
         }
 

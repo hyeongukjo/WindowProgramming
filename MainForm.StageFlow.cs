@@ -33,6 +33,7 @@ namespace DebugHeroFileDungeonRPG
         private void UpdateStage()
         {
             stageTime++;
+            totalGameTime++;
             StageInfo st = stages[currentStage - 1];
             int mapWidth = GetStageMapWidth(st);
 
@@ -375,6 +376,11 @@ namespace DebugHeroFileDungeonRPG
             cameraX = 0;
             stageNpcHintClosed = false;
 
+            if (stageIndex == 1)
+            {
+                totalGameTime = 0;
+            }
+
             enemies.AddRange(StageEnemyFactory.CreatePreBossEnemies(st, ClientSize.Height, random));
             effects.Add(new Effect("text", player.X + 220, player.Y - 110, player.X + 220, player.Y - 110, 80, Color.FromArgb(220, 255, 255), "몬스터 정리 후 보스방 자동 진입"));
             firstDesktopNotice = false;
@@ -411,6 +417,15 @@ namespace DebugHeroFileDungeonRPG
         private void ClearCurrentStage()
         {
             clearStage = currentStage;
+            if (clearStage == 2 || clearStage == 4 || clearStage == 6 || clearStage == 8 || clearStage == 10)
+            {
+                _ = SupabaseManager.SendClearLogAsync(
+                    player.ProfileName,
+                    clearStage,
+                    totalGameTime, // 1스테이지부터 해당 보스를 잡기까지 누적된 총 시간 (틱 수)
+                    player.TotalDeaths // 누적 사망(재도전) 수
+                );
+            }
             player.ClearedStages = Math.Max(player.ClearedStages, clearStage);
             player.Level++;
             player.Exp += 50 + stages[clearStage - 1].Index * 20;
