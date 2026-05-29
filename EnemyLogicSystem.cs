@@ -26,14 +26,14 @@ namespace DebugHeroFileDungeonRPG
 
                 if (!m.IsBoss)
                 {
-                    float minX = 170f;
-                    float maxX = Math.Max(minX, mapWidth - 130f);
-                    float minY = 124f;
-                    float maxY = Math.Max(minY, client.Height - 82f);
+                    // 💡 [탑다운 대전환]: 기존 2.5D 바닥 제약을 제거하고, Y축 상하 사방을 전면 개방합니다.
+                    float minX = 64f;
+                    float maxX = Math.Max(minX, mapWidth - 64f);
+                    float minY = 64f;
+                    float maxY = Math.Max(minY, client.Height - 64f); // 🌟 바닥선 억압 차단
 
                     string allocatedPattern = "None";
 
-                    // 💡 [패턴 라우터 최적화 완료]: 하이재킹 누출 방지를 위한 통합 분기 명세 정렬
                     if (m.Name == "Security_Firewall" || m.Name == "Alert_Popup_Spam" || m.Name == "Broken_Document.txt" || m.Name == "Broken Key" || m.Name == "Temp Fragment")
                     {
                         allocatedPattern = "Delay_Inertia_Dash";
@@ -121,7 +121,6 @@ namespace DebugHeroFileDungeonRPG
                             float fixedEndX = m.X + (tDx / tDist) * fixedLength;
                             float fixedEndY = m.Y + (tDy / tDist) * fixedLength;
 
-                            // 💡 가만히 있어도 무조건 궤적 판정에 닿도록 이펙트 키워드 대문자 "TRASH" 고수 매핑
                             effects.Add(new Effect("projectile", m.X, m.Y, fixedEndX, fixedEndY, 40, Color.OrangeRed, "TRASH"));
                         }
                     }
@@ -135,7 +134,6 @@ namespace DebugHeroFileDungeonRPG
                         {
                             m.StateTimer = 0;
 
-                            // 플레이어 중심 반경 가로 350px 화면 가시영역 안으로 텔레포트 범위 제한
                             float screenMinX = Math.Max(minX, player.X - 350f);
                             float screenMaxX = Math.Min(maxX, player.X + 350f);
 
@@ -143,7 +141,6 @@ namespace DebugHeroFileDungeonRPG
                             m.Y = (float)(rand.NextDouble() * (maxY - minY) + minY);
                             effects.Add(new Effect("spark", m.X, m.Y, m.X, m.Y, 20, Color.Cyan, "LINK_JUMP"));
 
-                            // 방사형 패턴 유지 + Spread UI 스타일 이식
                             float baseAngle = (float)Math.Atan2(player.Y - m.Y, player.X - m.X);
                             for (int k = 0; k < 6; k++)
                             {
@@ -153,8 +150,8 @@ namespace DebugHeroFileDungeonRPG
                                 float bEndX = m.X + (float)Math.Cos(angle) * bulletLength;
                                 float bEndY = m.Y + (float)Math.Sin(angle) * bulletLength;
 
-                                // 🌟 [크기 2배 벌크업 완료]: 크기 인자(Size) 값을 기존 50에서 2배인 100으로 대폭 격상!
-                                effects.Add(new Effect("projectile", m.X, m.Y, bEndX, bEndY, 100, Color.OrangeRed, "TRASH"));
+                                // 🌟 [식별 코드 주입]: 텔레포트 패턴 투사체임을 명시하여 projectile_teleport 자산을 당겨오도록 세팅합니다.
+                                effects.Add(new Effect("projectile", m.X, m.Y, bEndX, bEndY, 100, Color.OrangeRed, "TELEPORT_BULLET"));
                             }
                         }
                     }
@@ -175,16 +172,19 @@ namespace DebugHeroFileDungeonRPG
                 }
                 else
                 {
+                    // 💡 [보스 탑다운 연산 고정]: 보스 개체 역시 바닥 격리 한계를 풀고 플레이어를 전방위 추격합니다.
                     float towardX = player.X - m.X;
                     float towardY = player.Y - m.Y;
                     float distance = (float)Math.Sqrt(towardX * towardX + towardY * towardY);
-                    if (distance > 110)
+                    if (distance > 10)
                     {
                         float speed = 1.0f + st.Index * 0.06f;
                         m.X += towardX / distance * speed;
                         m.Y += towardY / distance * speed;
                     }
-                    m.Y = Math.Max(150f, Math.Min(client.Height - 92f, m.Y));
+
+                    // Y축 상하 바운더리 리미트 확장 완료
+                    m.Y = Math.Max(64f, Math.Min(client.Height - 64f, m.Y));
                     if (bossPhase) bossRuntime.Update(currentStage, m, player, effects, client, mapWidth);
                 }
 
@@ -229,14 +229,23 @@ namespace DebugHeroFileDungeonRPG
                                 float effCurrX = eff.X + (eff.X2 - eff.X) * progress;
                                 float effCurrY = eff.Y + (eff.Y2 - eff.Y) * progress;
 
-                                // 오프셋이 적용된 상체 가상 박스 범위 검사
-                                if (playerAdjustedHitBox.Contains(effCurrX, effCurrY))
+                                float bulletRadius = 8f;
+                                RectangleF bulletHitBox = new RectangleF(
+                                    effCurrX - bulletRadius,
+                                    effCurrY - bulletRadius,
+                                    bulletRadius * 2f,
+                                    bulletRadius * 2f
+                                );
+
+                                // 낡은 Contains 대신, 두 사각형이 공중에서 '교차(IntersectsWith)'했는지 정밀 연산합니다.
+                                if (playerAdjustedHitBox.IntersectsWith(Rectangle.Round(bulletHitBox)))
                                 {
                                     string effTxt = (eff.Text ?? "").ToUpper();
                                     if (effTxt == "BULLET" || effTxt == "TRASH" || effTxt == "SPARK_LINE" || effTxt == "TELEPORT_BULLET")
                                     {
                                         isHit = true;
-                                        eff.Ticks = 0;
+                                        eff.Ticks = 0; // 맞은 총알은 화면에서 즉시 소멸
+                                        player.InvincibleTicks = 45; // 피격 후 0.75초간 무적 타임 작동
                                         hitDamagePercent = rand.Next(7, 16) / 100.0;
                                         break;
                                     }
@@ -254,8 +263,8 @@ namespace DebugHeroFileDungeonRPG
                         player.Hp -= damage;
                         player.SystemStability = Math.Max(0, player.SystemStability - 1);
 
-                        effects.Add(new Effect("text", player.X, player.Y - 70, player.X, player.Y - 70, 34, Color.OrangeRed, "-" + damage));
-                        effects.Add(new Effect("spark", player.X, player.Y - 32, player.X, player.Y - 32, 22, Color.Red, ""));
+                        effects.Add(new Effect("text", player.X, player.Y - 40, player.X, player.Y - 40, 34, Color.OrangeRed, "-" + damage));
+                        effects.Add(new Effect("spark", player.X, player.Y, player.X, player.Y, 22, Color.Red, ""));
 
                         if (player.Hp <= 0)
                         {
