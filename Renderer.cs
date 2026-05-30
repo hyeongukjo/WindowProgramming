@@ -3289,11 +3289,19 @@ namespace DebugHeroFileDungeonRPG
             }
             else if (e.Kind == "text")
             {
+              
+                if (alpha < 220)
+                {
+                    return;
+                }
+
                 using (Font f = F(13f, FontStyle.Bold))
                 using (SolidBrush shadow = new SolidBrush(Color.FromArgb(ClampAlpha(alpha - 80), 0, 0, 0)))
                 using (SolidBrush b = new SolidBrush(Color.FromArgb(alpha, e.Color)))
                 {
-                    RectangleF rr = new RectangleF(x1 - 70, e.Y - progress * 34, 140, 28);
+                    
+                    RectangleF rr = new RectangleF(x1 - 70, e.Y, 140, 28);
+
                     g.DrawString(e.Text, f, shadow, new RectangleF(rr.X + 1, rr.Y + 1, rr.Width, rr.Height), Center());
                     g.DrawString(e.Text, f, b, rr, Center());
                 }
