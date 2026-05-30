@@ -663,7 +663,7 @@ namespace DebugHeroFileDungeonRPG
                 {
                     SizeF size = g.MeasureString(letters[i], logoFont);
                     totalW += size.Width - fontSize * 0.14f;
-                }
+            }
 
                 float drawX = area.X + area.Width / 2f - totalW / 2f;
                 float drawY = area.Y;
@@ -673,7 +673,7 @@ namespace DebugHeroFileDungeonRPG
                     using (SolidBrush brush = new SolidBrush(colors[i]))
                     {
                         g.DrawString(letters[i], logoFont, brush, drawX, drawY);
-                    }
+        }
 
                     SizeF size = g.MeasureString(letters[i], logoFont);
                     drawX += size.Width - fontSize * 0.14f;
