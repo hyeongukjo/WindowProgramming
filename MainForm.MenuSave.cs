@@ -75,6 +75,9 @@ namespace DebugHeroFileDungeonRPG
         private void HandlePermanentDeath()
         {
             GameSaveSystem.DeleteSave();
+            player.Hp = player.MaxHp;
+            player.Mp = player.MaxMp;
+
             effects.Clear();
             enemies.Clear();
             weaponDrops.Clear();
@@ -83,10 +86,13 @@ namespace DebugHeroFileDungeonRPG
             stageBossPhase = false;
             stage1BossPhase = false;
             clearStage = 0;
-            screen = ScreenMode.StartMenu;
-            ResetForNewGame();
-            TryBeep(240, 140);
-            MessageBox.Show("복구 프로세스가 종료되었습니다. 저장 기록이 삭제되어 처음부터 다시 시작해야 합니다.", "PROCESS TERMINATED", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+            // 데이터 유실 없이 현재 자산을 그대로 하드 세이브
+            SaveCurrentGame();
+            screen = ScreenMode.Desktop;
+
+            TryBeep(600, 150);
+            MessageBox.Show("복구 프로세스가 종료되었습니다. 진행 상황(코인, 포션, 스테이지)이 안전하게 보존되어 바탕화면으로 사출됩니다.", "SYSTEM RESTORE", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void ResetForNewGame()
@@ -130,14 +136,14 @@ namespace DebugHeroFileDungeonRPG
             player.WalkCycle = 0;
             player.LastMoveTicks = 0;
             player.DefenseTicks = 0;
-            player.Hp = 10000;
-            player.MaxHp = 10000;
-            player.Mp = 60000;
-            player.MaxMp = 60000;
+            player.MaxHp = 100;
+            player.Hp = 100;
+            player.MaxMp = 100;
+            player.Mp = 100;
             player.SystemStability = 100;
             player.CpuLoad = 15;
             player.Coins = 0;
-            player.HpPotions = 2;
+            player.HpPotions = 3;
             player.MpPotions = 2;
             player.Level = 1;
             player.WeaponLevel = 1;

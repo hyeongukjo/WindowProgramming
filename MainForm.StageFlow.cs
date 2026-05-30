@@ -401,6 +401,7 @@ namespace DebugHeroFileDungeonRPG
                 enemies.AddRange(StageEnemyFactory.CreateWaveEnemies(st, currentWaveIndex, ClientSize.Height));
               
             }
+            SaveCurrentGame();
 
             TryBeep(600, 80);
         }
@@ -430,12 +431,18 @@ namespace DebugHeroFileDungeonRPG
             player.Level++;
             player.Exp += 50 + stages[clearStage - 1].Index * 20;
 
+            int stageClearBonus = clearStage * 100;
+            player.Coins += stageClearBonus;
+
             lastClearWasBoss = (clearStage % 2 == 0);
             if (clearStage < stages.Count) unlockedStage = Math.Max(unlockedStage, clearStage + 1);
 
             currentStage = 0;
             enemies.Clear();
             screen = ScreenMode.StageClearDialog;
+
+            SaveCurrentGame();
+
             TryBeep(720, 90);
         }
 
@@ -628,16 +635,23 @@ namespace DebugHeroFileDungeonRPG
             player.Facing = dir;
 
             float originX = GetMovingAttackOriginX(dir);
-            int damage = slot == 0 ? 30 + player.Level * 8 : slot == 1 ? 22 + player.Level * 6 : 74 + player.Level * 14;
-            damage += (player.WeaponLevel - 1) * (slot == 2 ? 18 : slot == 1 ? 9 : 7);
-            // ==========================================================
-            // [W 버프 공격력 연동] 평타(Q) 및 스킬 공격 대미지 1.5배 증폭 인젝션
-            // ==========================================================
+            // =============================================================================
+            // ⚔️ [실전 패치] 무기 강화 효율이 칼같이 작동하는 소울류 정석 하드코어 밸런스 폼
+            // =============================================================================
+            int damage = 0;
+            if (slot == 0) damage = 10 + (player.WeaponLevel * 3); // Q 평타 대미지 공식
+            else if (slot == 1) damage = 15 + (player.WeaponLevel * 4); // 정예용 스킬 1 대미지
+            else if (slot == 2) damage = 25 + (player.WeaponLevel * 6); // 정예용 스킬 2 대미지
+            else damage = 10;
+
+            // [W 버프 공격력 연동] 오버클럭 상태일 때 최종 피해량 1.5배 증폭
             if (wBuffTicks > 0)
             {
                 damage = (int)(damage * 1.5f);
             }
-            damage *= 30; //테스트 데미지 증가
+
+            // 💡 버그의 주범이었던 테스트용 'damage *= 30;' 코드를 영구 삭제 처리했습니다.
+            // =============================================================================
             Color color = slot == 0 ? Color.FromArgb(80, 190, 255) : slot == 1 ? Color.FromArgb(80, 255, 130) : Color.FromArgb(255, 210, 60);
             float startX = originX + dir * 34;
             float endX = originX + dir * range;

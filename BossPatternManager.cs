@@ -153,6 +153,14 @@ namespace DebugHeroFileDungeonRPG
         public int PlayerSlowTicks = 0;
         public int PlayerBurnTicks = 0;
 
+        public bool Is75Cleared = false;
+        public bool Is50Cleared = false;
+        public bool Is25Cleared = false;
+        public bool Is10Cleared = false;
+        public bool Is1Cleared = false;
+
+        private bool isBossHpInitialized = false;
+
         public void Reset()
         {
             Projectiles.Clear();
@@ -202,16 +210,68 @@ namespace DebugHeroFileDungeonRPG
             //5번 보스 초기화
             IsBinny75Used = false; IsBinny50Used = false; IsBinny10Used = false; IsBinny1Used = false;
             IsBlackholeActive = false; IsScannerActive = false; IsDPSCheckActive = false; IsIllusionActive = false; BinnyClone = null; IsMainDead = false; IsCloneDead = false;
+
+            Is75Cleared = false; Is50Cleared = false; Is25Cleared = false; Is10Cleared = false; Is1Cleared = false;
+
+            isBossHpInitialized = false;
         }
 
         public void Update(GameEntity boss, PlayerState player, List<Effect> effects, float mapWidth)
         {
-          
-            if (boss == null || boss.Hp <= 0)
+            if (boss == null) return;
+
+            if (!isBossHpInitialized)
+            {
+                isBossHpInitialized = true;
+                if (boss.Name.Contains("Driver-K")) { boss.MaxHp = 400; boss.Hp = 400; }
+                else if (boss.Name.Contains("High-Kernel")) { boss.MaxHp = 1000; boss.Hp = 1000; }
+                else if (boss.Name.Contains("BSOD")) { boss.MaxHp = 2000; boss.Hp = 2000; }
+                else if (boss.Name.Contains("Exception Queen") || boss.Name.Contains("Exception_Queen")) { boss.MaxHp = 4000; boss.Hp = 4000; }
+                else if (boss.Name.Contains("Illegal_Binny") || boss.Name.Contains("Binny")) { boss.MaxHp = 40000; boss.Hp = 40000; } // 24시간 통곡의 벽
+            }
+
+            // A. 보스가 특수 기믹 패턴 시전 중 상태라면 무조건 100% 무적 처리 (체력 복구)
+            if (boss.IsCastingPattern)
+            {
+                float hpRatio = (float)boss.Hp / boss.MaxHp;
+
+                if (!Is75Cleared && hpRatio < 0.75f) boss.Hp = (int)(boss.MaxHp * 0.75f);
+                else if (!Is50Cleared && hpRatio < 0.50f) boss.Hp = (int)(boss.MaxHp * 0.50f);
+                else if (!Is25Cleared && hpRatio < 0.25f) boss.Hp = (int)(boss.MaxHp * 0.25f);
+                else if (!Is10Cleared && hpRatio < 0.10f && !boss.Name.Contains("Driver-K")) boss.Hp = (int)(boss.MaxHp * 0.10f);
+                else if (!Is1Cleared && hpRatio < 0.01f && boss.Name.Contains("Binny")) boss.Hp = (int)(boss.MaxHp * 0.01f);
+            }
+            else
+            {
+                // B. 기믹 전용 상태 플래그(IsCastingPattern)가 유저의 파쇄로 꺼진 '그 순간' 게이트 개방 허가
+                if (boss.Hp == (int)(boss.MaxHp * 0.75f) && !Is75Cleared) Is75Cleared = true;
+                if (boss.Hp == (int)(boss.MaxHp * 0.50f) && !Is50Cleared) Is50Cleared = true;
+                if (boss.Hp == (int)(boss.MaxHp * 0.25f) && !Is25Cleared) Is25Cleared = true;
+                if (boss.Hp == (int)(boss.MaxHp * 0.10f) && !Is10Cleared) Is10Cleared = true;
+                if (boss.Hp == (int)(boss.MaxHp * 0.01f) && !Is1Cleared) Is1Cleared = true;
+            }
+
+            // C. 평상시 상태일 때, 과도한 폭딜이 들어와 페이즈 장벽을 넘어가려 하면 데미지를 컷팅하고 체력 강제 락 고정
+            if (!boss.IsCastingPattern)
+            {
+                float currentHpRatio = (float)boss.Hp / boss.MaxHp;
+
+                if (!Is75Cleared && currentHpRatio < 0.75f) boss.Hp = (int)(boss.MaxHp * 0.75f);
+                else if (!Is50Cleared && currentHpRatio < 0.50f) boss.Hp = (int)(boss.MaxHp * 0.50f);
+                else if (!Is25Cleared && currentHpRatio < 0.25f) boss.Hp = (int)(boss.MaxHp * 0.25f);
+                else if (!Is10Cleared && currentHpRatio < 0.10f && !boss.Name.Contains("Driver-K")) boss.Hp = (int)(boss.MaxHp * 0.10f);
+                else if (!Is1Cleared && currentHpRatio < 0.01f && boss.Name.Contains("Binny")) boss.Hp = (int)(boss.MaxHp * 0.01f);
+            }
+
+            // -----------------------------------------------------------------------------
+            // 🚨 [판정선 하향 조정] 가드 연산이 다 끝난 뒤, 게이트가 열려있고 진짜 체력이 0일 때만 사망 처리!
+            // -----------------------------------------------------------------------------
+            if (boss.Hp <= 0)
             {
                 if (IsIllusionActive) UpdateIllusion(boss, player, effects);
                 return;
             }
+            // =============================================================================
 
             PlayerPos = new PointF(player.X, player.Y);
 
@@ -291,13 +351,16 @@ namespace DebugHeroFileDungeonRPG
                 BinnyShield = 1500;
             }
 
-            // 4. 1% 패턴 (기존 코드 유지 구역)
+            // 4. 1% 패턴 (기존 코드 유지 구역에서 공격력 공식 정밀 세키로 룰 연동)
             if (hpPercent <= 1 && !IsBinny1Used && !IsDPSCheckActive)
             {
                 IsIllusionActive = true;
                 IsBinny1Used = true;
-                int calculatedPlayerAttack = 30 + player.Level * 8 + (player.WeaponLevel - 1) * 7;
+
+                
+                int calculatedPlayerAttack = 10 + (player.WeaponLevel * 3);
                 int fifteenHitsHp = calculatedPlayerAttack * 15;
+
                 boss.Hp = fifteenHitsHp;
                 boss.MaxHp = fifteenHitsHp;
                 BinnyClone = new BossClone { Hp = fifteenHitsHp, MaxHp = fifteenHitsHp };
@@ -306,7 +369,6 @@ namespace DebugHeroFileDungeonRPG
                 BinnyClone.Y = player.Y;
                 boss.Y = player.Y;
 
-             
                 IllusionTimer = 360;  // 12초 제한시간 정상 가동 (30 FPS * 12 = 360틱)
                 DualDeathTimer = -1;  // 3초 동시 처치 링크 타이머 대기
                 IsMainDead = false;   // 본체 생존 등록

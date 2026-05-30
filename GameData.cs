@@ -151,24 +151,28 @@ namespace DebugHeroFileDungeonRPG
         public int TotalDeaths = 0;
 
         // ==========================================================
-        // 테스트버젼
+        // [실전 패치] 하드코어 밸런스 시스템
         // ==========================================================
-        private int _hp = 10000;
+        private int _hp = 100;
         public int Hp
         {
             get { return _hp; }
-            set { _hp = MaxHp; } // 💡 어떤 차감 연산이 들어와도 무조건 최대 체력 유지!
+           
+            // 실시간 대미지가 정량 차감되도록 정식 프로퍼티 수식으로 교정합니다.
+            set { _hp = Math.Max(0, Math.Min(value, MaxHp)); }
         }
-        public int MaxHp = 10000;
+        public int MaxHp = 100; // 최대 체력 100 제한 (보스 기믹 % 대미지와 1:1 동기화)
         // ==========================================================
 
-        public int Mp = 60000;  // 💡 스테이지 시작 시 만땅으로 차오르므로 무한 스킬 가능
-        public int MaxMp = 60000;
+        public int Mp = 100;    // 최대 마나 100 제한 (마나 조절 실패 시 스킬 봉인)
+        public int MaxMp = 100;
         public int SystemStability = 100;
         public int CpuLoad = 15;
-        public int Coins = 1000000;      // 테스트용 넉넉한 자금
-        public int HpPotions = 20000000; // 테스트용 포션
+
+        public int Coins = 0;        // 테스트용 자금 전면 수거 -> 0코인 시작
+        public int HpPotions = 3;    // 소울류 정석: 초기 에스트(포션) 3개 제한
         public int MpPotions = 2;
+
         public int Level = 1;
         public int WeaponLevel = 1;
         public int Exp = 0;
