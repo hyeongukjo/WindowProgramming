@@ -116,6 +116,9 @@
     <None Update="Assets\UI\button.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Assets\UI\Desktop_Popup.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Assets\UI\HP.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -3316,47 +3316,34 @@ namespace DebugHeroFileDungeonRPG
         {
             if (boss == null || boss.Hp <= 0) return;
 
-            // --------------------------------------------------
-            // 1. [상단 고정 레이드 스타일 거대 보스 HP 바] (가로 700px)
-            // --------------------------------------------------
-            Rectangle hpBarRect = new Rectangle(clientSize.Width / 2 - 350, 45, 700, 24);
-            // 묵직한 다크 레드 메탈 색상으로 보스 라이프 게이지 렌더링
+            
+            int barX = 180;   // 💡 보스 체력바의 시작 가로 좌표 (더 왼쪽/오른쪽으로 옮기려면 이 숫자를 수정하세요)
+            int barY = 45;   // 보스 체력바의 세로 위치
+            int barW = 700;  // 보스 체력바의 가로 길이
+            int barH = 24;   // 보스 체력바의 세로 높이
+
+            Rectangle hpBarRect = new Rectangle(barX, barY, barW, barH);
+
+            // 보스 전용 묵직한 레드 색상으로 라이프 게이지 그리기
             DrawBar(g, hpBarRect, boss.Hp, boss.MaxHp, Color.FromArgb(210, 35, 35));
 
-            // 거대 테두리 선 보정
+            // 외곽 테두리 선 마감
             using (Pen p = new Pen(Color.FromArgb(200, 20, 20, 20), 2f))
+            {
                 g.DrawRectangle(p, hpBarRect);
+            }
 
-            // 한글 표기 변환 세팅 및 데이터 로드
+            // 보스 한글 이름 치환 및 텍스트 구성
             string krName = GetBossKoreanName(boss.Name);
             string hpText = $"{krName}  [ HP : {boss.Hp} / {boss.MaxHp} ]";
 
             using (Font f = F(11.5f, FontStyle.Bold))
             using (SolidBrush sb = new SolidBrush(Color.White))
             {
-                // 가시성 극대화를 위한 백그라운드 블랙 드롭 섀도우 연출
-                g.DrawString(hpText, f, Brushes.Black, hpBarRect.X + 2, hpBarRect.Y + 2, Center());
+               
+                // 메인 흰색 텍스트 출력
                 g.DrawString(hpText, f, sb, hpBarRect, Center());
             }
-
-            // --------------------------------------------------
-            // 2. [중앙 최하단 스킬 쿨타임 UI 표기] (초 단위 실시간 스캔)
-            // --------------------------------------------------
-            // 현재 MainForm.cs에서 timer.Interval = 33(30 FPS)으로 리미트가 걸려 있으므로,
-            // 1초는 정확히 30틱입니다. 30.0f로 나누어 리얼타임 초 단위 소수점 디스플레이를 가동합니다.
-            //if (boss.AttackCooldown > 0)
-            //{
-            //    float cooldownSeconds = boss.AttackCooldown / 30.0f;
-            //    string coolText = $"⚡ 시스템 브레이크 특수 패턴 재충전 중: {cooldownSeconds:0.0}초";
-            //    Rectangle coolRect = new Rectangle(clientSize.Width / 2 - 220, clientSize.Height - 88, 440, 26);
-
-            //    using (SolidBrush bg = new SolidBrush(Color.FromArgb(170, 10, 15, 25))) g.FillRectangle(bg, coolRect);
-            //    using (Pen p = new Pen(Color.FromArgb(240, 180, 40), 1.5f)) g.DrawRectangle(p, coolRect);
-            //    using (Font f = F(9.5f, FontStyle.Bold))
-            //    {
-            //        g.DrawString(coolText, f, Brushes.Gold, coolRect, Center());
-            //    }
-            //}
         }
     }
    
