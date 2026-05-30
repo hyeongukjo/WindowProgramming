@@ -274,18 +274,37 @@ namespace DebugHeroFileDungeonRPG
                         if (currentStage % 2 == 0) return;
 
                         // ---------------------------------------------------------------------------------
-                        // [홀수층 전용 무리 시퀀스 및 즉시 보상 제어]
+                        // [지시사항 반영]: 2웨이브(인덱스 1) 클리어 즉시 5초 딜레이 없이 3웨이브 보상 직행 처리
                         // ---------------------------------------------------------------------------------
                         if (enemies.Count == 0 && !isWaveWaiting && weaponDrops.Count == 0)
                         {
-                            if (currentWaveIndex < 3)
+                            // 💡 현재 2웨이브(인덱스 1) 무리를 모두 정화했다면, 더 이상 기다리지 않고 즉시 보상 스폰 단계로 스위칭!
+                            if (currentWaveIndex == 1)
+                            {
+                                currentWaveIndex = 3;  // 기존의 최종 보상 획득 조건(>=3)을 강제로 트리거
+                                waveDelayTicks = 0;    // 5초 지연(150틱)을 즉시 0으로 소거하여 딜레이 파쇄
+                                isWaveWaiting = false; // 대기 없이 아래 보상 스폰 로직을 즉시 실행하도록 설정
+
+                                // 🌟 3웨이브에는 아무것도 추가하지 않고 즉시 보상 파일 스폰
+                                WeaponUpgradeFile drop = new WeaponUpgradeFile
+                                {
+                                    X = player.X + 250,
+                                    Y = player.Y - 15,
+                                    StageIndex = currentStage,
+                                    UpgradeLevel = player.WeaponLevel + 1
+                                };
+                                weaponDrops.Add(drop);
+                                TryBeep(880, 150); // 보상 출현 기분 좋은 Beep 음 연출
+                            }
+                            // 💡 1웨이브(인덱스 0) 클리어 시에는 정상적으로 5초 뒤 2웨이브가 소환되도록 유지
+                            else if (currentWaveIndex < 1)
                             {
                                 isWaveWaiting = true;
-                                waveDelayTicks = 150;
-                                // 💡 [요청 반영 삭제]: 일반 스테이지 "무리 정화 완료" 알림 문구 삭제
+                                waveDelayTicks = 150; // 5초 대기 시간 할당
                             }
                             else
                             {
+                                // 방어 코드: 예외적인 인덱스 상태일 때 기존 보상 트리거 유지
                                 if (weaponDrops.Count == 0)
                                 {
                                     WeaponUpgradeFile drop = new WeaponUpgradeFile
@@ -296,12 +315,11 @@ namespace DebugHeroFileDungeonRPG
                                         UpgradeLevel = player.WeaponLevel + 1
                                     };
                                     weaponDrops.Add(drop);
-                                    // [요청 반영 삭제]: 일반 스테이지 "모든 무리 정화! UPGRADE" 알림 문구 삭제
                                 }
                             }
                         }
 
-                        // 5초 타이머 카운트다운 처리 및 다음 웨이브 호출
+                        // 5초 타이머 카운트다운 처리 및 다음 웨이브 호출 (1웨이브 클리어 직후에만 정상 작동함)
                         if (isWaveWaiting)
                         {
                             waveDelayTicks--;
@@ -310,8 +328,8 @@ namespace DebugHeroFileDungeonRPG
                                 isWaveWaiting = false;
                                 currentWaveIndex++;
 
+                                // StageEnemyFactory에서 설계한 2웨이브(인덱스 1)의 적들을 정상 스폰
                                 enemies.AddRange(StageEnemyFactory.CreateWaveEnemies(st, currentWaveIndex, ClientSize.Height));
-                                // [요청 반영 삭제]: 일반 스테이지 "X 무리 출현! 시스템 정화" 알림 문구 삭제
                                 TryBeep(640, 70);
                             }
                         }

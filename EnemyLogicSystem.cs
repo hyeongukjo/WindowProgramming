@@ -19,6 +19,18 @@ namespace DebugHeroFileDungeonRPG
             EnemyUpdateResult result = new EnemyUpdateResult();
             float playerCurrentSpeedModifier = 1.0f;
 
+            // 💡 플레이어의 피격 판정 확장 범위 정의 (가로 40px, 세로 115px)
+            RectangleF extendedPlayerBounds = new RectangleF(
+                player.X - 20f,
+                player.Y - 110f, // 머리 꼭대기 위치
+                40f,
+                115f            // 발바닥까지의 높이
+            );
+
+            // 🌟 [지시사항 반영]: 확장된 피격 범위 상자의 '완벽한 정중앙 좌표'를 산출합니다.
+            float playerCenterX = extendedPlayerBounds.X + (extendedPlayerBounds.Width / 2f);
+            float playerCenterY = extendedPlayerBounds.Y + (extendedPlayerBounds.Height / 2f);
+
             for (int i = 0; i < enemies.Count; i++)
             {
                 GameEntity m = enemies[i];
@@ -29,6 +41,9 @@ namespace DebugHeroFileDungeonRPG
 
                 if (m.Hp <= 0) continue;
 
+                // 몬스터 피격 판정 범위
+                RectangleF extendedMonsterBounds = new RectangleF(m.X - 25f, m.Y - 50f, 50f, 60f);
+
                 if (!m.IsBoss)
                 {
                     float minX = 170f;
@@ -38,7 +53,6 @@ namespace DebugHeroFileDungeonRPG
 
                     string allocatedPattern = "None";
 
-                    // 💡 [패턴 라우터 최적화 완료]: 하이재킹 누출 방지를 위한 통합 분기 명세 정렬
                     if (m.Name == "Security_Firewall" || m.Name == "Alert_Popup_Spam" || m.Name == "Broken_Document.txt" || m.Name == "Broken Key" || m.Name == "Temp Fragment")
                     {
                         allocatedPattern = "Delay_Inertia_Dash";
@@ -52,21 +66,26 @@ namespace DebugHeroFileDungeonRPG
                         allocatedPattern = "Random_Teleport_Barrage";
                     }
 
-                    // * [1. Delay_Inertia_Dash 패턴 구동]
+                    // =================================================================
+                    // * [1. Delay_Inertia_Dash 패턴 구동 - 대시형 몹 조준 보정]
+                    // =================================================================
                     if (allocatedPattern == "Delay_Inertia_Dash")
                     {
                         m.StateTimer++;
-
                         if (m.MonsterState == 0)
                         {
                             m.VX *= 0.8f; m.VY *= 0.8f;
                             if (m.StateTimer >= 60)
                             {
                                 m.MonsterState = 1; m.StateTimer = 0;
-                                float dx = player.X - m.X; float dy = player.Y - m.Y;
+
+                                // 💡 [지시사항 반영]: 돌진하는 목표 좌표를 기존 player.X/Y에서 '피격범위 정중앙'으로 교체
+                                float dx = playerCenterX - m.X;
+                                float dy = playerCenterY - m.Y;
+
                                 float dist = (float)Math.Sqrt(dx * dx + dy * dy); if (dist < 1) dist = 1;
-                                m.TargetPosX = player.X + (dx / dist) * 180f;
-                                m.TargetPosY = player.Y + (dy / dist) * 180f;
+                                m.TargetPosX = playerCenterX + (dx / dist) * 180f;
+                                m.TargetPosY = playerCenterY + (dy / dist) * 180f;
                                 m.VX = (m.TargetPosX - m.X) * 0.08f;
                                 m.VY = (m.TargetPosY - m.Y) * 0.08f;
                             }
@@ -78,13 +97,10 @@ namespace DebugHeroFileDungeonRPG
 
                             if (Math.Abs(m.VX) < 0.15f && Math.Abs(m.VY) < 0.15f)
                             {
-                                m.MonsterState = 2;
-                                m.StateTimer = 0;
+                                m.MonsterState = 2; m.StateTimer = 0;
                                 m.VX = 0; m.VY = 0;
-
                                 double randomAngle = rand.NextDouble() * Math.PI * 2.0;
                                 float scatterForce = 15.0f + (float)(rand.NextDouble() * 15.0f);
-
                                 m.VX = (float)Math.Cos(randomAngle) * scatterForce;
                                 m.VY = (float)Math.Sin(randomAngle) * scatterForce;
                             }
@@ -93,82 +109,80 @@ namespace DebugHeroFileDungeonRPG
                         {
                             m.VX *= 0.92f; m.VY *= 0.92f;
                             m.X += m.VX; m.Y += m.VY;
-
-                            if (Math.Abs(m.VX) < 0.3f && Math.Abs(m.VY) < 0.3f)
-                            {
-                                m.MonsterState = 0;
-                                m.StateTimer = 0;
-                            }
+                            if (Math.Abs(m.VX) < 0.3f && Math.Abs(m.VY) < 0.3f) { m.MonsterState = 0; m.StateTimer = 0; }
                         }
                     }
 
-                    // * [2. Heavy_Projectile_Spread 패턴 구동]
+                    // =================================================================
+                    // * [2. Heavy_Projectile_Spread 패턴 구동 - 스프레드 투사체 조준 보정]
+                    // =================================================================
                     else if (allocatedPattern == "Heavy_Projectile_Spread")
                     {
                         if (tick % (110 + i * 15) == 0)
                         {
-                            m.VX += Math.Sign(player.X - m.X) * 0.12f;
-                            m.VY += Math.Sign(player.Y - m.Y) * 0.08f;
+                            // 기본 자석 추적도 중앙점을 향해 부드럽게 이동하도록 보정
+                            m.VX += Math.Sign(playerCenterX - m.X) * 0.12f;
+                            m.VY += Math.Sign(playerCenterY - m.Y) * 0.08f;
                         }
                         float maxSpeed = 0.9f;
                         float speed = (float)Math.Sqrt(m.VX * m.VX + m.VY * m.VY);
                         if (speed > maxSpeed) { m.VX = m.VX / speed * maxSpeed; m.VY = m.VY / speed * maxSpeed; }
                         m.X += m.VX; m.Y += m.VY;
 
-                        if (tick % 70 == 0)
+                        if (tick % 140 == 0) // 주기는 지시사항에 맞춰 140틱 유지
                         {
-                            float tDx = player.X - m.X;
-                            float tDy = player.Y - m.Y;
-                            float tDist = (float)Math.Sqrt(tDx * tDx + tDy * tDy);
-                            if (tDist < 1) tDist = 1;
+                            // 💡 [지시사항 반영]: 발사되는 투사체의 궤적 벡터 타겟을 '피격범위 정중앙'으로 교체
+                            float tDx = playerCenterX - m.X;
+                            float tDy = playerCenterY - m.Y;
+                            float tDist = (float)Math.Sqrt(tDx * tDx + tDy * tDy); if (tDist < 1) tDist = 1;
 
                             float fixedLength = 550f;
                             float fixedEndX = m.X + (tDx / tDist) * fixedLength;
                             float fixedEndY = m.Y + (tDy / tDist) * fixedLength;
 
-                            // 💡 가만히 있어도 무조건 궤적 판정에 닿도록 이펙트 키워드 대문자 "TRASH" 고수 매핑
                             effects.Add(new Effect("projectile", m.X, m.Y, fixedEndX, fixedEndY, 40, Color.OrangeRed, "TRASH"));
                         }
                     }
-                    // * [3. Random_Teleport_Barrage 패턴 구동]
+
+                    // =================================================================
+                    // * [3. Random_Teleport_Barrage 패턴 구동 - 텔레포트 몹 미사일 조준 보정]
+                    // =================================================================
                     else if (allocatedPattern == "Random_Teleport_Barrage")
                     {
                         m.StateTimer++;
                         m.X += m.VX * 0.4f; m.Y += m.VY * 0.4f;
 
-                        if (m.StateTimer >= 120)
+                        if (m.StateTimer >= 180) // 동기화된 180틱 주기 유지
                         {
                             m.StateTimer = 0;
-
-                            // 플레이어 중심 반경 가로 350px 화면 가시영역 안으로 텔레포트 범위 제한
-                            float screenMinX = Math.Max(minX, player.X - 350f);
-                            float screenMaxX = Math.Min(maxX, player.X + 350f);
+                            float screenMinX = Math.Max(minX, playerCenterX - 350f);
+                            float screenMaxX = Math.Min(maxX, playerCenterX + 350f);
 
                             m.X = (float)(rand.NextDouble() * (screenMaxX - screenMinX) + screenMinX);
                             m.Y = (float)(rand.NextDouble() * (maxY - minY) + minY);
                             effects.Add(new Effect("spark", m.X, m.Y, m.X, m.Y, 20, Color.Cyan, "LINK_JUMP"));
 
-                            // 방사형 패턴 유지 + Spread UI 스타일 이식
-                            float baseAngle = (float)Math.Atan2(player.Y - m.Y, player.X - m.X);
-                            for (int k = 0; k < 6; k++)
-                            {
-                                float angle = baseAngle + (float)(k * Math.PI * 2 / 6);
+                            // 💡 [지시사항 반영]: 발사 각도 산출의 베이스 타겟을 '피격범위 정중앙'으로 교체
+                            float baseAngle = (float)Math.Atan2(playerCenterY - m.Y, playerCenterX - m.X);
 
+                            for (int k = 0; k < 3; k++) // 투사체 수 3개 유지
+                            {
+                                float angle = baseAngle + (float)(k * Math.PI * 2 / 3);
                                 float bulletLength = 600f;
                                 float bEndX = m.X + (float)Math.Cos(angle) * bulletLength;
                                 float bEndY = m.Y + (float)Math.Sin(angle) * bulletLength;
 
-                                // 🌟 [크기 2배 벌크업 완료]: 크기 인자(Size) 값을 기존 50에서 2배인 100으로 대폭 격상!
                                 effects.Add(new Effect("projectile", m.X, m.Y, bEndX, bEndY, 100, Color.OrangeRed, "TRASH"));
                             }
                         }
                     }
+
+                    // 기본 패턴 없는 유도 몬스터 보정
                     if (allocatedPattern == "None")
                     {
-                        m.VX += Math.Sign(player.X - m.X) * 0.15f;
-                        m.VY += Math.Sign(player.Y - m.Y) * 0.10f;
-                        float maxSpeed = 1.3f;
-                        float speed = (float)Math.Sqrt(m.VX * m.VX + m.VY * m.VY);
+                        m.VX += Math.Sign(playerCenterX - m.X) * 0.15f;
+                        m.VY += Math.Sign(playerCenterY - m.Y) * 0.10f;
+                        float maxSpeed = 1.3f; float speed = (float)Math.Sqrt(m.VX * m.VX + m.VY * m.VY);
                         if (speed > maxSpeed) { m.VX = m.VX / speed * maxSpeed; m.VY = m.VY / speed * maxSpeed; }
                         m.X += m.VX; m.Y += m.VY;
                     }
@@ -180,14 +194,14 @@ namespace DebugHeroFileDungeonRPG
                 }
                 else
                 {
-                    float towardX = player.X - m.X;
-                    float towardY = player.Y - m.Y;
+                    // 보스 몬스터 추적 가이드 보정
+                    float towardX = playerCenterX - m.X;
+                    float towardY = playerCenterY - m.Y;
                     float distance = (float)Math.Sqrt(towardX * towardX + towardY * towardY);
                     if (distance > 110)
                     {
                         float speed = 1.0f + st.Index * 0.06f;
-                        m.X += towardX / distance * speed;
-                        m.Y += towardY / distance * speed;
+                        m.X += towardX / distance * speed; m.Y += towardY / distance * speed;
                     }
                     m.Y = Math.Max(150f, Math.Min(client.Height - 92f, m.Y));
                     if (bossPhase) bossRuntime.Update(currentStage, m, player, effects, client, mapWidth);
@@ -195,15 +209,15 @@ namespace DebugHeroFileDungeonRPG
 
                 if (m.HitFlash > 0) m.HitFlash--;
 
+                // --- 충돌 및 피격 엔진 연산 세션 (24틱 주기) ---
                 if (tick % 24 == 0)
                 {
                     bool isHit = false;
-                    double hitDamagePercent = 0.0;
+                    double hitDamagePercent = rand.Next(7, 16) / 100.0;
 
-                    if (m.Bounds.IntersectsWith(player.Bounds))
+                    if (extendedMonsterBounds.IntersectsWith(extendedPlayerBounds))
                     {
                         isHit = true;
-                        hitDamagePercent = rand.Next(7, 16) / 100.0;
                     }
                     else
                     {
@@ -216,16 +230,24 @@ namespace DebugHeroFileDungeonRPG
                                 float effCurrX = eff.X + (eff.X2 - eff.X) * progress;
                                 float effCurrY = eff.Y + (eff.Y2 - eff.Y) * progress;
 
-                                if (player.Bounds.Contains(effCurrX, effCurrY))
+                                string effTxt = (eff.Text ?? "").ToUpper();
+                                if (effTxt == "BULLET" || effTxt == "TRASH" || effTxt == "SPARK_LINE" || effTxt == "TELEPORT_BULLET")
                                 {
-                                    // 💡 [피격 로직 전면 버그 수정]: 대소문자 무시(ToUpper) 매칭을 적용하여 
-                                    // "TRASH"나 "TELEPORT_BULLET" 투사체 궤적 위에 가만히 서 있으면 100% 명중하도록 판정 억까를 박살냅니다.
-                                    string effTxt = (eff.Text ?? "").ToUpper();
-                                    if (effTxt == "BULLET" || effTxt == "TRASH" || effTxt == "SPARK_LINE" || effTxt == "TELEPORT_BULLET")
+                                    // 지시된 십자형 정밀 슬롯 콜렉션 마스크 연산 구역
+                                    RectangleF coreBox = new RectangleF(effCurrX - 15f, effCurrY - 15f, 30f, 30f);
+                                    RectangleF wingH1 = new RectangleF(effCurrX - 13f, effCurrY - 0.5f, 26f, 1f);
+                                    RectangleF wingV1 = new RectangleF(effCurrX - 0.5f, effCurrY - 13f, 1f, 26f);
+                                    RectangleF wingH2 = new RectangleF(effCurrX - 11f, effCurrY - 0.5f, 22f, 1f);
+                                    RectangleF wingV2 = new RectangleF(effCurrX - 0.5f, effCurrY - 11f, 1f, 22f);
+
+                                    if (coreBox.IntersectsWith(extendedPlayerBounds) ||
+                                        wingH1.IntersectsWith(extendedPlayerBounds) ||
+                                        wingV1.IntersectsWith(extendedPlayerBounds) ||
+                                        wingH2.IntersectsWith(extendedPlayerBounds) ||
+                                        wingV2.IntersectsWith(extendedPlayerBounds))
                                     {
                                         isHit = true;
                                         eff.Ticks = 0;
-                                        hitDamagePercent = rand.Next(7, 16) / 100.0;
                                         break;
                                     }
                                 }
@@ -240,14 +262,10 @@ namespace DebugHeroFileDungeonRPG
 
                         player.Hp -= damage;
                         player.SystemStability = Math.Max(0, player.SystemStability - 1);
-
                         effects.Add(new Effect("text", player.X, player.Y - 70, player.X, player.Y - 70, 34, Color.OrangeRed, "-" + damage));
                         effects.Add(new Effect("spark", player.X, player.Y - 32, player.X, player.Y - 32, 22, Color.Red, ""));
 
-                        if (player.Hp <= 0)
-                        {
-                            player.Hp = 0;
-                        }
+                        if (player.Hp <= 0) player.Hp = 0;
                     }
                 }
             }

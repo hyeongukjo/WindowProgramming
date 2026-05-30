@@ -53,6 +53,9 @@
     <None Update="Assets\Characters\Enemise\Dash_2.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="Assets\Characters\Enemise\energy.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Assets\Characters\Enemise\folder_monster.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
