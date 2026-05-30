@@ -364,12 +364,16 @@ namespace DebugHeroFileDungeonRPG
             playerHitMotionCooldown = 0;
 
             player.Hp = player.MaxHp;
+            player.Mp = player.MaxMp; 
             lastPlayerHpForMotion = player.Hp;
 
             player.ActionState = PlayerActionState.Idle;
             player.ActionFrame = 0;
             player.ActionTick = 0;
             player.SkillIndex = -1;
+
+            
+            SaveCurrentGame();
 
             screen = ScreenMode.Desktop;
         }

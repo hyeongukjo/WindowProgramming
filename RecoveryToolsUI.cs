@@ -106,41 +106,32 @@ namespace DebugHeroFileDungeonRPG
             if (buttons != null)
                 buttons.Add(new UiButton(iconRect, "openShop"));
         }
+        // =============================================================================
+        // 📐 [대개조 완료] 순수 WinForms 엔진 기반 우측 정보창 동적 확장 시스템
+        // =============================================================================
         public void DrawDesktopStatusPanel(
-    Graphics g,
-    Rectangle client,
-    PlayerState player,
-    int unlockedStage,
-    int totalStages)
+             Graphics g,
+             Rectangle client,
+             PlayerState player,
+             int unlockedStage,
+             int totalStages)
         {
-            int panelWidth = 358;
+            // 가로 45%, 세로 하단 5% 마진 동적 계산 수식 유지
+            int panelWidth = (int)(client.Width * 0.45f);
+            int topY = 55;
+            int taskbarH = 45;
+            int safetyMarginY = (int)(client.Height * 0.05f);
 
-            int topY = 48;
-            int margin = 12;
-            int titleAreaHeight = 30;
-            int gap = 2;
-            int bottomPadding = 30;
-
-            int programH = 64;
-            int itemH = 128;
-            int commandH = 132;
-            int progressH = 78;
-
-            int panelHeight =
-                titleAreaHeight +
-                programH + gap +
-                itemH + gap +
-                commandH + gap +
-                progressH +
-                bottomPadding;
+            int panelHeight = client.Height - topY - taskbarH - safetyMarginY;
 
             Rectangle win = new Rectangle(
-                client.Width - panelWidth - 24,
+                client.Width - panelWidth - 35,
                 topY,
                 panelWidth,
                 panelHeight
             );
 
+            // 네이티브 블루 테마 시스템 프레임 드로우
             SystemWindowUI.Shared.DrawSystemPanelFrame(
                 g,
                 win,
@@ -154,7 +145,19 @@ namespace DebugHeroFileDungeonRPG
                 76
             );
 
-            int y = win.Y + titleAreaHeight;
+            int titleAreaHeight = 30;
+            int margin = 16;
+            int gap = 12;
+
+            int totalAvailableH = panelHeight - titleAreaHeight - (gap * 3) - 35;
+
+            // 4개 그룹 박스의 세로 해상도 비율 재배치
+            int programH = (int)(totalAvailableH * 0.16f); // 프로그램 상태 (16%)
+            int itemH = (int)(totalAvailableH * 0.19f); // 보유 도구 (30% -> 18%로 콤팩트하게 축소)
+            int commandH = (int)(totalAvailableH * 0.36f); // 복구 명령 (36%)
+            int iconDescH = totalAvailableH - programH - itemH - commandH; // 아이콘 기능 설명 (18% -> 30%로 거의 2배 확장!)
+
+            int y = win.Y + titleAreaHeight + 10;
             int innerWidth = win.Width - margin * 2;
 
             Rectangle programBox = new Rectangle(win.X + margin, y, innerWidth, programH);
@@ -166,19 +169,23 @@ namespace DebugHeroFileDungeonRPG
             Rectangle commandBox = new Rectangle(win.X + margin, y, innerWidth, commandH);
             y = commandBox.Bottom + gap;
 
-            Rectangle progressBox = new Rectangle(win.X + margin, y, innerWidth, progressH);
+            // [구조 치환]: 구 progressBox 자리에 iconDescBox 레이아웃 대입
+            Rectangle iconDescBox = new Rectangle(win.X + margin, y, innerWidth, iconDescH);
 
+            // 하위 연동 렌더러 파이프라인 호출
             DrawDesktopProgramBox(g, programBox, player);
             DrawDesktopItemBox(g, itemBox, player);
             DrawDesktopCommandBox(g, commandBox);
-            DrawDesktopProgressBox(g, progressBox, player, unlockedStage, totalStages);
+            DrawDesktopIconDescBox(g, iconDescBox); // 新 스코어 가이드 설명 박스 가동
         }
 
         private void DrawDesktopProgramBox(Graphics g, Rectangle r, PlayerState player)
         {
             DrawGroupBox(g, r, "프로그램 상태");
 
-            using (Font f = Renderer.F(8.4f, FontStyle.Bold))
+            
+            using (Font fontProfile = Renderer.F(18f, FontStyle.Bold)) // 1. 프로필 이름 크기 
+            using (Font fontLevel = Renderer.F(12f, FontStyle.Bold))   // 2. 레벨, 무기레벨 크기
             using (SolidBrush textBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
             using (SolidBrush blueBrush = new SolidBrush(Color.FromArgb(0, 62, 160)))
             using (StringFormat sf = LeftMiddle())
@@ -187,83 +194,47 @@ namespace DebugHeroFileDungeonRPG
                     ? "ProfileName"
                     : player.ProfileName;
 
+                // 늘어난 상자 높이에 맞춰 줄 간격을 행간 비율로 균등 분할 계산
+                int contentH = r.Height - 31;
+                int lineHeight = contentH / 2;
+
+                // 프로필 이름 그리기 
                 g.DrawString(
                     "Profile: " + profileName,
-                    f,
+                    fontProfile,
                     textBrush,
-                    new Rectangle(r.X + 12, r.Y + 31, r.Width - 24, 17),
+                    new Rectangle(r.X + 16, r.Y + 31, r.Width - 32, lineHeight),
                     sf
                 );
 
+                // 레벨 및 무기레벨 그리기 
                 g.DrawString(
                     "Level " + player.Level + "    Weapon +" + player.WeaponLevel,
-                    f,
+                    fontLevel,
                     blueBrush,
-                    new Rectangle(r.X + 12, r.Y + 49, r.Width - 24, 17),
+                    new Rectangle(r.X + 16, r.Y + 31 + lineHeight, r.Width - 32, lineHeight),
                     sf
                 );
             }
         }
 
-        private void DrawDesktopItemRow(
-    Graphics g,
-    Rectangle row,
-    Image iconImage,
-    Rectangle iconSource,
-    string itemName,
-    int count,
-    string shortcutText)
-        {
-            Rectangle icon = new Rectangle(row.X + 2, row.Y + 1, 32, 32);
-            DrawItemIcon(g, iconImage, iconSource, icon);
-
-            using (Font f = Renderer.F(8.1f, FontStyle.Bold))
-            using (SolidBrush textBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
-            using (SolidBrush blueBrush = new SolidBrush(Color.FromArgb(0, 62, 160)))
-            using (StringFormat left = LeftMiddle())
-            using (StringFormat right = RightMiddle())
-            {
-                g.DrawString(
-                    itemName,
-                    f,
-                    textBrush,
-                    new Rectangle(icon.Right + 7, row.Y, 130, row.Height),
-                    left
-                );
-
-                g.DrawString(
-                    "x" + count,
-                    f,
-                    blueBrush,
-                    new Rectangle(row.Right - 82, row.Y, 34, row.Height),
-                    right
-                );
-
-                g.DrawString(
-                    shortcutText,
-                    f,
-                    textBrush,
-                    new Rectangle(row.Right - 44, row.Y, 44, row.Height),
-                    right
-                );
-            }
-        }
         private void DrawDesktopItemBox(Graphics g, Rectangle r, PlayerState player)
         {
             DrawGroupBox(g, r, "보유 도구");
 
-            int rowY = r.Y + 33;
-            int rowHeight = 34;
+            int startY = r.Y + 33;
+            int contentH = r.Height - 33;
+            int rowHeight = contentH / 3; // 3개 아이템 행 높이 균등 분할
 
             DrawDesktopCoinRow(
                 g,
-                new Rectangle(r.X + 10, rowY, r.Width - 20, rowHeight),
+                new Rectangle(r.X + 10, startY, r.Width - 20, rowHeight),
                 player.Coins
             );
 
             DrawDesktopItemRow(
                 g,
-                new Rectangle(r.X + 10, rowY + rowHeight, r.Width - 20, rowHeight),
+                new Rectangle(r.X + 10, startY + rowHeight, r.Width - 20, rowHeight),
                 recoveryKitImage,
                 recoveryKitSource,
                 "Recovery Kit",
@@ -273,7 +244,7 @@ namespace DebugHeroFileDungeonRPG
 
             DrawDesktopItemRow(
                 g,
-                new Rectangle(r.X + 10, rowY + rowHeight * 2, r.Width - 20, rowHeight),
+                new Rectangle(r.X + 10, startY + rowHeight * 2, r.Width - 20, rowHeight),
                 memoryKitImage,
                 memoryKitSource,
                 "Memory Kit",
@@ -284,17 +255,18 @@ namespace DebugHeroFileDungeonRPG
 
         private void DrawDesktopCoinRow(Graphics g, Rectangle row, int coins)
         {
-            using (Font f = Renderer.F(8.8f, FontStyle.Bold))
+            // 코인 문자열 크기 제어
+            using (Font f = Renderer.F(15f, FontStyle.Bold))
             using (SolidBrush textBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
             using (SolidBrush blueBrush = new SolidBrush(Color.FromArgb(0, 62, 160)))
             using (StringFormat left = LeftMiddle())
             using (StringFormat right = RightMiddle())
             {
                 g.DrawString(
-                    "Recovered Coin",
+                    "보유 코인",
                     f,
                     textBrush,
-                    new Rectangle(row.X + 4, row.Y, 170, row.Height),
+                    new Rectangle(row.X + 6, row.Y, row.Width / 2, row.Height),
                     left
                 );
 
@@ -302,7 +274,54 @@ namespace DebugHeroFileDungeonRPG
                     coins.ToString(),
                     f,
                     blueBrush,
-                    new Rectangle(row.Right - 90, row.Y, 86, row.Height),
+                    new Rectangle(row.X + row.Width / 2, row.Y, row.Width / 2 - 6, row.Height),
+                    right
+                );
+            }
+        }
+
+        private void DrawDesktopItemRow(
+            Graphics g,
+            Rectangle row,
+            Image iconImage,
+            Rectangle iconSource,
+            string itemName,
+            int count,
+            string shortcutText)
+        {
+            // 늘어난 행 높이에 맞춰 아이콘 이미지를 수직 중앙 정렬 처리
+            int iconSize = 32;
+            Rectangle icon = new Rectangle(row.X + 4, row.Y + (row.Height - iconSize) / 2, iconSize, iconSize);
+            DrawItemIcon(g, iconImage, iconSource, icon);
+
+            // 💡 [글자 크기 수정 구역] 아이템 리스트 글자 크기 제어
+            using (Font f = Renderer.F(10f, FontStyle.Bold))
+            using (SolidBrush textBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
+            using (SolidBrush blueBrush = new SolidBrush(Color.FromArgb(0, 62, 160)))
+            using (StringFormat left = LeftMiddle())
+            using (StringFormat right = RightMiddle())
+            {
+                g.DrawString(
+                    itemName,
+                    f,
+                    textBrush,
+                    new Rectangle(icon.Right + 12, row.Y, row.Width - 160, row.Height),
+                    left
+                );
+
+                g.DrawString(
+                    "x" + count,
+                    f,
+                    blueBrush,
+                    new Rectangle(row.Right - 110, row.Y, 45, row.Height),
+                    right
+                );
+
+                g.DrawString(
+                    shortcutText,
+                    f,
+                    textBrush,
+                    new Rectangle(row.Right - 55, row.Y, 50, row.Height),
                     right
                 );
             }
@@ -310,88 +329,89 @@ namespace DebugHeroFileDungeonRPG
 
         private void DrawDesktopCommandBox(Graphics g, Rectangle r)
         {
-            DrawGroupBox(g, r, "복구 명령");
+            DrawGroupBox(g, r, "스킬 정보");
 
-            int y = r.Y + 34;
-            int lineHeight = 18;
+            int startY = r.Y + 34;
+            int contentH = r.Height - 34;
+            int lineHeight = contentH / 5; // 5개 텍스트 가이드 라인 균등 분할
 
-            DrawCommandLine(g, r.X + 12, y + lineHeight * 0, r.Width - 24, "Q", "Quick Scan", "기본 공격");
-            DrawCommandLine(g, r.X + 12, y + lineHeight * 1, r.Width - 24, "W", "OverClock", "오버 클럭 (stage 2 클리어 시 해금)");
-            DrawCommandLine(g, r.X + 12, y + lineHeight * 2, r.Width - 24, "E", "DataSheild", "데이터실드 (stage 5 클리어 시 해금)");
-            DrawCommandLine(g, r.X + 12, y + lineHeight * 3, r.Width - 24, "R", "SysCall", "시스템콜 (stage 8 클리어 시 해금)");
+            DrawCommandLine(g, r.X + 12, startY + lineHeight * 0, r.Width - 24, "Q", "Quick Scan", "기본 공격", lineHeight);
+            DrawCommandLine(g, r.X + 12, startY + lineHeight * 1, r.Width - 24, "W", "OverClock", "오버 클럭 (stage 2 클리어 시 해제)", lineHeight);
+            DrawCommandLine(g, r.X + 12, startY + lineHeight * 2, r.Width - 24, "E", "DataSheild", "데이터실드 (stage 5 클리어 시 해제)", lineHeight);
+            DrawCommandLine(g, r.X + 12, startY + lineHeight * 3, r.Width - 24, "R", "SysCall", "시스템콜 (stage 8 클리어 시 해제)", lineHeight);
 
-            using (Font f = Renderer.F(7.5f, FontStyle.Bold))
+            // 💡 [글자 크기 수정 구역] 마우스 조작 가이드 안내 글씨 크기 제어
+            using (Font f = Renderer.F(13f, FontStyle.Bold))
             using (SolidBrush b = new SolidBrush(Color.FromArgb(70, 70, 70)))
             using (StringFormat sf = LeftMiddle())
             {
                 g.DrawString(
-                    "Mouse Click: 이동 / 부드러운 추적",
+                    "마우스 우클릭: 플레이어 이동",
                     f,
                     b,
-                    new Rectangle(r.X + 12, y + lineHeight * 4 + 3, r.Width - 24, 18),
+                    new Rectangle(r.X + 12, startY + lineHeight * 4, r.Width - 24, lineHeight),
                     sf
                 );
             }
         }
 
         private void DrawCommandLine(
-     Graphics g,
-     int x,
-     int y,
-     int width,
-     string key,
-     string commandName,
-     string description)
+             Graphics g,
+             int x,
+             int y,
+             int width,
+             string key,
+             string commandName,
+             string description,
+             int h)
         {
-            using (Font keyFont = Renderer.F(8.2f, FontStyle.Bold))
-            using (Font textFont = Renderer.F(8.0f, FontStyle.Bold))
+            // 💡 [글자 크기 수정 구역] 단축키 명세 폰트 사이즈 제어
+            using (Font keyFont = Renderer.F(13f, FontStyle.Bold))
+            using (Font textFont = Renderer.F(12f, FontStyle.Bold))
             using (SolidBrush keyBrush = new SolidBrush(Color.FromArgb(0, 62, 160)))
             using (SolidBrush textBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
             using (StringFormat left = LeftMiddle())
             {
-                g.DrawString(key + ":",keyFont,keyBrush,new Rectangle(x, y, 24, 19),left);
-                g.DrawString(commandName + "  -  " + description,textFont,textBrush,new Rectangle(x + 28, y, width - 28, 19),left);
+                g.DrawString(key + ":", keyFont, keyBrush, new Rectangle(x, y, 30, h), left);
+                g.DrawString(commandName + "  -  " + description, textFont, textBrush, new Rectangle(x + 32, y, width - 32, h), left);
             }
         }
-        private void DrawDesktopProgressBox(
-    Graphics g,
-    Rectangle r,
-    PlayerState player,
-    int unlockedStage,
-    int totalStages)
-        {
-            DrawGroupBox(g, r, "진행 상태");
 
-            using (Font f = Renderer.F(7.9f, FontStyle.Bold))
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(20, 24, 32)))
+        private void DrawDesktopIconDescBox(Graphics g, Rectangle r)
+        {
+            DrawGroupBox(g, r, "아이콘 기능 설명");
+
+            using (Font boldFont = Renderer.F(14f, FontStyle.Bold))
+            using (Font regularFont = Renderer.F(12f, FontStyle.Regular))
+            using (SolidBrush titleBrush = new SolidBrush(Color.FromArgb(0, 62, 160))) // 아이콘 이름 색상 (블루)
+            using (SolidBrush textBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))   // 설명 글씨 색상 (다크그레이)
             using (StringFormat sf = LeftMiddle())
             {
-                int y = r.Y + 33;
-                int lineHeight = 16;
+                int startY = r.Y + 32;
+                int contentH = r.Height - 37;
+                int lineHeight = contentH / 4; // 4개의 아이콘 간격을 균등 분할 계산
 
-                g.DrawString(
-                    "해금된 파일: " + unlockedStage + " / " + totalStages,
-                    f,
-                    b,
-                    new Rectangle(r.X + 12, y, r.Width - 24, lineHeight),
-                    sf
-                );
+              
+                int titleWidth = 130;         
+                int descStartX = r.X + 150;   
+                int descWidth = r.Width - 165; 
+                // -----------------------------------------------------------------------------
 
-                g.DrawString(
-                    "클리어: " + player.ClearedStages + " / " + totalStages,
-                    f,
-                    b,
-                    new Rectangle(r.X + 12, y + lineHeight, r.Width - 24, lineHeight),
-                    sf
-                );
+                // 1. 내 컴퓨터 설명
+                g.DrawString("• 내 컴퓨터 :", boldFont, titleBrush, new Rectangle(r.X + 14, startY + lineHeight * 0, titleWidth, lineHeight), sf);
+                g.DrawString("실시간 통합 랭킹 리더보드 창 활성화", regularFont, textBrush, new Rectangle(descStartX, startY + lineHeight * 0, descWidth, lineHeight), sf);
 
-                g.DrawString(
-                    "격리된 보스: " + player.QuarantinedBosses,
-                    f,
-                    b,
-                    new Rectangle(r.X + 12, y + lineHeight * 2, r.Width - 24, lineHeight),
-                    sf
-                );
+                // 2. 파일 설명 구역
+                g.DrawString("• 파      일 :", boldFont, titleBrush, new Rectangle(r.X + 14, startY + lineHeight * 1, titleWidth, lineHeight), sf);
+                g.DrawString("(공간 확보 완료 / 추후 기능 설명 추가 예정)", regularFont, Brushes.Gray, new Rectangle(descStartX, startY + lineHeight * 1, descWidth, lineHeight), sf);
+
+                // 3. 인터넷 설명 구역
+                g.DrawString("• 인 터 넷 :", boldFont, titleBrush, new Rectangle(r.X + 14, startY + lineHeight * 2, titleWidth, lineHeight), sf);
+                g.DrawString("(공간 확보 완료 / 추후 기능 설명 추가 예정)", regularFont, Brushes.Gray, new Rectangle(descStartX, startY + lineHeight * 2, descWidth, lineHeight), sf);
+
+                // 4. 휴지통 설명 구역 
+                g.DrawString("• 휴 지 통 :", boldFont, titleBrush, new Rectangle(r.X + 14, startY + lineHeight * 3, titleWidth, lineHeight), sf);
+                g.DrawString("(공간 확보 완료 / 추후 기능 설명 추가 예정)", regularFont, Brushes.Gray, new Rectangle(descStartX, startY + lineHeight * 3, descWidth, lineHeight), sf);
             }
         }
 

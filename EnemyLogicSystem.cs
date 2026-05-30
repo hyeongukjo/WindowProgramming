@@ -22,6 +22,11 @@ namespace DebugHeroFileDungeonRPG
             for (int i = 0; i < enemies.Count; i++)
             {
                 GameEntity m = enemies[i];
+                if (m.IsBoss && m.Hp <= 0 && bossPhase)
+                {
+                    bossRuntime.Update(currentStage, m, player, effects, client, mapWidth);
+                }
+
                 if (m.Hp <= 0) continue;
 
                 if (!m.IsBoss)

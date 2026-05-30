@@ -624,6 +624,7 @@ namespace DebugHeroFileDungeonRPG
             {
                 DrawStageNpcHint(g, st);
             }
+            DrawSkillHotbar(g);
         }
 
         private void DrawStage1BossPatternOverlay(Graphics g)
@@ -644,76 +645,53 @@ namespace DebugHeroFileDungeonRPG
                 hudHeight
             );
 
-            // HUD 전용 이미지 배경 사용
+            // HUD 전용 이미지 배경 프레임 렌더링
             SystemWindowUI.Shared.DrawBlueHudFrame(
                 g,
                 h,
                 "Recovery Program"
             );
 
-            using (Font f = Renderer.F(8.5f, FontStyle.Bold))
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(34, 42, 60)))
+           
+            int labelX = h.X + 25;
+            int barX = h.X + 75;
+            int barW = h.Width - 100; // 350 - 100 = 250px (기존 222px에서 시원하게 확장)
+            int barH = 20;            // 게이지 바 두께 대폭 스케일업
+
+          
+            using (Font labelFont = Renderer.F(13f, FontStyle.Bold))     // HP, MP 라벨 폰트
+            using (Font itemFont = Renderer.F(11.5f, FontStyle.Bold))    // 하단 포션 안내 폰트
+            using (Font valueFont = Renderer.F(9.5f, FontStyle.Bold))    // 바 내부 수치 폰트
+            using (SolidBrush textBrush = new SolidBrush(Color.Black))
+            using (SolidBrush valueBrush = new SolidBrush(Color.White))  // 바 내부 숫자 색상
             {
-                g.DrawString("Profile: " + player.ProfileName, f, b, new Rectangle(h.X + 22, h.Y + 52, h.Width - 44, 18), Renderer.LeftMiddle());
-                g.DrawString("Program: Recovery Program", f, b, new Rectangle(h.X + 22, h.Y + 72, h.Width - 44, 18), Renderer.LeftMiddle());
-                g.DrawString("Level: " + player.Level + "   Weapon: +" + player.WeaponLevel + "   Coin: " + player.Coins, f, b, new Rectangle(h.X + 22, h.Y + 92, h.Width - 44, 18), Renderer.LeftMiddle());
-            }
+                // 1. HP (체력 게이지) 배치 영역
+                int hpY = h.Y + 65;
+                g.DrawString("HP", labelFont, textBrush, labelX, hpY - 2);
+                Renderer.DrawBar(g, new Rectangle(barX, hpY, barW, barH), player.Hp, player.MaxHp, Color.LimeGreen);
 
-            int labelX = h.X + 22;
-            int barX = h.X + 104;
-            int barW = h.Width - 128;
+                // 체력 바 정중앙에 현재 숫자를 크게 표기하여 가시성 버프
+                string hpText = $"{player.Hp} / {player.MaxHp}";
+                g.DrawString(hpText, valueFont, valueBrush, new Rectangle(barX, hpY, barW, barH), Renderer.Center());
 
-            Renderer.DrawBar(g, new Rectangle(barX, h.Y + 122, barW, 12), player.Hp, player.MaxHp, Color.LimeGreen);
-            Renderer.DrawBar(g, new Rectangle(barX, h.Y + 144, barW, 12), player.Mp, player.MaxMp, Color.DeepSkyBlue);
-            Renderer.DrawBar(g, new Rectangle(barX, h.Y + 166, barW, 12), player.SystemStability, 100, Color.FromArgb(75, 150, 255));
 
-            using (Font f = Renderer.F(7.5f, FontStyle.Bold))
-            using (SolidBrush b = new SolidBrush(Color.Black))
-            {
-                g.DrawString("HP", f, b, labelX, h.Y + 117);
-                g.DrawString("MP", f, b, labelX, h.Y + 139);
-                g.DrawString("Stability", f, b, labelX, h.Y + 161);
+                //  2. MP (마나 게이지) 배치 영역
+                int mpY = h.Y + 120;
+                g.DrawString("MP", labelFont, textBrush, labelX, mpY - 2);
+                Renderer.DrawBar(g, new Rectangle(barX, mpY, barW, barH), player.Mp, player.MaxMp, Color.DeepSkyBlue);
 
-                g.DrawString(
-                    "D: HP포션(" + player.HpPotions + ")   F: MP포션(" + player.MpPotions + ")",
-                    f,
-                    b,
-                    new Rectangle(h.X + 22, h.Y + 188, h.Width - 44, 18),
-                    Renderer.LeftMiddle()
-                );
+                // 마나 바 정중앙에 현재 숫자 표기
+                string mpText = $"{player.Mp} / {player.MaxMp}";
+                g.DrawString(mpText, valueFont, valueBrush, new Rectangle(barX, mpY, barW, barH), Renderer.Center());
 
-              
 
-                int rightColumnX = h.X + 195;
-                using (Font skillFont = Renderer.F(8.0f, FontStyle.Bold))
-                {
-                    // 1. W 스킬 해금 상태 디스플레이
-                    string wText = player.ClearedStages >= 2 ? (wCooldownTicks > 0 ? $"{(wCooldownTicks / 60.0f):0.0}초" : "READY") : "LOCKED";
-                    Brush wBrush = player.ClearedStages >= 2 ? (wCooldownTicks > 0 ? Brushes.Tomato : Brushes.DarkGreen) : Brushes.DarkGray;
-                    g.DrawString($"[W 오버클럭] {wText}", skillFont, wBrush, rightColumnX, h.Y + 52);
+                // 🧪 3. 소모품 포션 정보 배치 영역
+                // 주석으로 인해 널널해진 하단 전체 공간을 활용해 정중앙에 크고 명확하게 배치합니다.
+                int itemY = h.Y + 175;
+                Rectangle itemRect = new Rectangle(h.X + 20, itemY, h.Width - 40, 45);
 
-                    // 2. E 스킬 해금 상태 디스플레이
-                    string eText = player.ClearedStages >= 5 ? (eCooldownTicks > 0 ? $"{(eCooldownTicks / 60.0f):0.0}초" : "READY") : "LOCKED";
-                    if (player.ClearedStages >= 5 && eShieldDurationTicks > 0) eText = $"ACT ({(eShieldDurationTicks / 60.0f):0.0}s)";
-                    Brush eBrush = player.ClearedStages >= 5 ? (eShieldDurationTicks > 0 ? Brushes.DeepSkyBlue : (eCooldownTicks > 0 ? Brushes.Tomato : Brushes.DarkGreen)) : Brushes.DarkGray;
-                    g.DrawString($"[E 데이터실] {eText}", skillFont, eBrush, rightColumnX, h.Y + 72);
-
-                    // 3. R 스킬 해금 상태 디스플레이
-                    string rText = player.ClearedStages >= 8 ? (rCooldownTicks > 0 ? $"{(rCooldownTicks / 60.0f):0.0}초" : "READY") : "LOCKED";
-                    Brush rBrush = player.ClearedStages >= 8 ? (rCooldownTicks > 0 ? Brushes.Tomato : Brushes.DarkViolet) : Brushes.DarkGray;
-                    g.DrawString($"[R 시스템콜] {rText}", skillFont, rBrush, rightColumnX, h.Y + 92);
-                }
-                string coolMeter = $"W 쿨: {(wCooldownTicks > 0 ? (wCooldownTicks / 60.0f).ToString("0.0") + "초" : "READY")} | " +
-                                   $"E 쿨: {(eCooldownTicks > 0 ? (eCooldownTicks / 60.0f).ToString("0.0") + "초" : "READY")} | " +
-                                   $"R 쿨: {(rCooldownTicks > 0 ? (rCooldownTicks / 60.0f).ToString("0.0") + "초" : "READY")}";
-
-                g.DrawString(
-                    coolMeter,
-                    f,
-                    b,
-                    new Rectangle(h.X + 22, h.Y + 206, h.Width - 44, 18),
-                    Renderer.LeftMiddle()
-                );
+                string potionStatusText = $"[D] HP 포션: {player.HpPotions}개   |   [F] MP 포션: {player.MpPotions}개";
+                g.DrawString(potionStatusText, itemFont, textBrush, itemRect, Renderer.Center());
             }
         }
 
@@ -1006,6 +984,87 @@ namespace DebugHeroFileDungeonRPG
            
 
             StartMenuScreen.Draw(g, ClientRectangle, buttons, GameSaveSystem.HasSave());
+        }
+
+        private void DrawSkillHotbar(Graphics g)
+        {
+            int w = ClientSize.Width;
+            int h = ClientSize.Height;
+
+            int hotbarW = 260;
+            int hotbarH = 75;
+            int hotbarX = (w - hotbarW) / 2;
+            int hotbarY = h - hotbarH - 65;
+
+            Rectangle hotbarRect = new Rectangle(hotbarX, hotbarY, hotbarW, hotbarH);
+
+            using (SolidBrush bgBrush = new SolidBrush(Color.FromArgb(180, 15, 20, 30)))
+            using (Pen borderPen = new Pen(Color.FromArgb(120, 255, 255, 255), 1.5f))
+            {
+                g.FillRectangle(bgBrush, hotbarRect);
+                g.DrawRectangle(borderPen, hotbarRect);
+            }
+
+            string[] keys = { "W", "E", "R" };
+            int[] currentCooldowns = { wCooldownTicks, eCooldownTicks, rCooldownTicks };
+            int[] maxCooldowns = { 900, 1200, 1500 };
+            bool[] isUnlocked = { player.ClearedStages >= 2, player.ClearedStages >= 5, player.ClearedStages >= 8 };
+            Color[] skillColors = { Color.Orange, Color.Cyan, Color.DodgerBlue };
+
+            int slotW = 66;
+            int slotH = 55;
+            int startX = hotbarX + 12;
+            int slotY = hotbarY + 10;
+            int gap = 14;
+
+            using (Font keyFont = Renderer.F(11f, FontStyle.Bold))
+            using (Font statusFont = Renderer.F(9.5f, FontStyle.Bold))
+            using (Font coolFont = Renderer.F(12f, FontStyle.Bold))
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    Rectangle slotRect = new Rectangle(startX + (i * (slotW + gap)), slotY, slotW, slotH);
+
+                    Color outlineColor = isUnlocked[i] ? Color.FromArgb(100, skillColors[i]) : Color.FromArgb(80, Color.Gray);
+                    using (Pen slotPen = new Pen(outlineColor, 1.5f))
+                        g.DrawRectangle(slotPen, slotRect);
+
+                    if (!isUnlocked[i])
+                    {
+                        using (SolidBrush lockBrush = new SolidBrush(Color.FromArgb(90, 50, 50, 50)))
+                            g.FillRectangle(lockBrush, slotRect);
+
+                        g.DrawString(keys[i], keyFont, Brushes.DimGray, slotRect.X + 5, slotRect.Y + 4);
+                        g.DrawString("LOCKED", statusFont, Brushes.Gray, slotRect, Renderer.Center());
+                    }
+                    else if (currentCooldowns[i] > 0)
+                    {
+                        float coolPercent = (float)currentCooldowns[i] / maxCooldowns[i];
+                        int coolHeight = (int)(slotH * coolPercent);
+
+                        using (SolidBrush coolBg = new SolidBrush(Color.FromArgb(140, 20, 10, 10)))
+                            g.FillRectangle(coolBg, slotRect);
+                        using (SolidBrush coolOverlay = new SolidBrush(Color.FromArgb(130, 0, 0, 0)))
+                            g.FillRectangle(coolOverlay, slotRect.X, slotRect.Bottom - coolHeight, slotW, coolHeight);
+
+                        g.DrawString(keys[i], keyFont, Brushes.LightGray, slotRect.X + 5, slotRect.Y + 4);
+
+                        float secLeft = currentCooldowns[i] / 60.0f;
+                        string coolText = $"{secLeft:0.0}s";
+                        g.DrawString(coolText, coolFont, Brushes.Tomato, slotRect, Renderer.Center());
+                    }
+                    else
+                    {
+                        using (SolidBrush readyBg = new SolidBrush(Color.FromArgb(40, skillColors[i])))
+                            g.FillRectangle(readyBg, slotRect);
+
+                        using (SolidBrush keyBrush = new SolidBrush(skillColors[i]))
+                            g.DrawString(keys[i], keyFont, keyBrush, slotRect.X + 5, slotRect.Y + 4);
+
+                        g.DrawString("READY", statusFont, Brushes.LimeGreen, slotRect, Renderer.Center());
+                    }
+                }
+            }
         }
 
     }

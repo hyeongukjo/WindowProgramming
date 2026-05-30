@@ -430,20 +430,51 @@ namespace DebugHeroFileDungeonRPG
         {
             int cost = 0;
             string label = "";
-            if (item == "hp") { cost = 30; label = "HP 포션 +1"; }
-            else if (item == "mp") { cost = 25; label = "MP 포션 +1"; }
-            else { cost = 90; label = "포션 묶음 +2/+2"; item = "bundle"; }
 
+           
+            if (item == "hp") { cost = 30; label = "HP 포션 +1"; }
+            else if (item == "mp") { cost = 30; label = "MP 포션 +1"; }
+            else { cost = 110; label = "포션 묶음 +2/+2"; item = "bundle"; }
+
+            // =============================================================================
+            // 소지 한도 제한 잠금 (HP 최대 6개, MP 최대 6개)
+            // =============================================================================
+            if (item == "hp" && player.HpPotions >= 6)
+            {
+                effects.Add(new Effect("text", ClientSize.Width / 2, 210, ClientSize.Width / 2, 210, 50, Color.Orange, "HP 포션 소지 한도 초과 (최대 6개)"));
+                TryBeep(320, 100);
+                return;
+            }
+            if (item == "mp" && player.MpPotions >= 6)
+            {
+                effects.Add(new Effect("text", ClientSize.Width / 2, 210, ClientSize.Width / 2, 210, 50, Color.Orange, "MP 포션 소지 한도 초과 (최대 6개)"));
+                TryBeep(320, 100);
+                return;
+            }
+            // 묶음 구매시 하나라도 최대 소지 한도를 넘어가면 구매를 완전히 차단합니다.
+            if (item == "bundle" && (player.HpPotions + 2 > 6 || player.MpPotions + 2 > 6))
+            {
+                effects.Add(new Effect("text", ClientSize.Width / 2, 210, ClientSize.Width / 2, 210, 50, Color.Orange, "소지 한도 초과로 묶음 구매 불가"));
+                TryBeep(320, 100);
+                return;
+            }
+
+            // =============================================================================
+            // 코인 자산 부족 검증
+            // =============================================================================
             if (player.Coins < cost)
             {
                 effects.Add(new Effect("text", ClientSize.Width / 2, 210, ClientSize.Width / 2, 210, 50, Color.OrangeRed, "코인 부족"));
                 TryBeep(280, 90);
                 return;
             }
+
+          
             player.Coins -= cost;
             if (item == "hp") player.HpPotions++;
             else if (item == "mp") player.MpPotions++;
             else { player.HpPotions += 2; player.MpPotions += 2; }
+
             effects.Add(new Effect("text", ClientSize.Width / 2, 210, ClientSize.Width / 2, 210, 50, Color.Gold, label));
             TryBeep(820, 70);
         }
@@ -476,9 +507,9 @@ namespace DebugHeroFileDungeonRPG
             if (player.ClearedStages < 2) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.Red, "W 스킬 미해금 (Stage 02 클리어 필요)")); TryBeep(320, 70); return; }
 
             if (wCooldownTicks > 0) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 30, Color.Red, $"W 쿨타임 대기 중 ({(wCooldownTicks / 60.0f):0.0}초)")); TryBeep(320, 50); return; }
-            if (player.Mp < 15) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.DeepSkyBlue, "MP 부족")); return; }
+            if (player.Mp < 20) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.DeepSkyBlue, "MP 부족 (요구 마나: 20)")); return; }
 
-            player.Mp -= 15;
+            player.Mp -= 20;
             wBuffTicks = 300;      // 5초 지속
             wCooldownTicks = 900;  // 15초 쿨타임 인젝션 (15 * 60 = 900틱)
 
@@ -496,14 +527,12 @@ namespace DebugHeroFileDungeonRPG
             if (player.ClearedStages < 5) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.Red, "E 스킬 미해금 (Stage 05 클리어 필요)")); TryBeep(320, 70); return; }
 
             if (eCooldownTicks > 0) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 30, Color.Red, $"E 쿨타임 대기 중 ({(eCooldownTicks / 60.0f):0.0}초)")); TryBeep(320, 50); return; }
-            if (player.Mp < 25) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.DeepSkyBlue, "MP 부족")); return; }
+            if (player.Mp < 35) { Red: effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.DeepSkyBlue, "MP 부족 (요구 마나: 35)")); return; }
 
-            player.Mp -= 25;
-
-            // 밸런스 조정: 최대 체력의 정확히 20% 가산
-            playerShield = (int)(player.MaxHp * 0.20f);
-            eShieldDurationTicks = 300; //  5초 지속시간 타이머 주입 (60fps * 5 = 300틱)
-            eCooldownTicks = 1200;      // 총 쿨타임 20초 주입 (20 * 60 = 1200틱)
+            player.Mp -= 35;
+            playerShield = (int)(player.MaxHp * 0.20f); // 20 HP 보호막 생성
+            eShieldDurationTicks = 300;
+            eCooldownTicks = 1200;      // 20초 쿨타임
 
             effects.Add(new Effect("spark", player.X, player.Y - 40, player.X, player.Y - 40, 45, Color.Cyan, ""));
             effects.Add(new Effect("text", player.X, player.Y - 100, player.X, player.Y - 100, 50, Color.Cyan, $"FIREWALL SHIELD (+{playerShield})"));
@@ -519,10 +548,10 @@ namespace DebugHeroFileDungeonRPG
             if (player.ClearedStages < 8) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.Red, "R 스킬 미해금 (Stage 08 클리어 필요)")); TryBeep(320, 70); return; }
 
             if (rCooldownTicks > 0) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 30, Color.Red, $"R 궁극기 쿨타임 대기 중 ({(rCooldownTicks / 60.0f):0.0}초)")); TryBeep(320, 50); return; }
-            if (player.Mp < 45) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.DeepSkyBlue, "MP 부족")); return; }
+            if (player.Mp < 60) { effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 35, Color.DeepSkyBlue, "MP 부족 (요구 마나: 60)")); return; }
 
-            player.Mp -= 45;
-            rCooldownTicks = 1500; // 25초 쿨타임 인젝션 (25 * 60 = 1500틱)
+            player.Mp -= 60;
+            rCooldownTicks = 1500; // 25초 쿨타임
 
             PlayerMovementSystem.StartSkillAnimation(player, 3);
 
@@ -532,7 +561,7 @@ namespace DebugHeroFileDungeonRPG
             {
                 X = targetX,
                 Y = player.Y,
-                Timer = 23,        // ⚡ [속도 가속] 기존 35틱에서 23틱으로 단축 (1.5배 고속 하강 연산)
+                Timer = 15,       
                 MaxTimer = 23,
                 SwordType = "cold"
             });
