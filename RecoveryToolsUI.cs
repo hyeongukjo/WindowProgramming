@@ -670,7 +670,7 @@ namespace DebugHeroFileDungeonRPG
                 memoryKitImage,
                 memoryKitSource,
                 "Memory Kit",
-                "25 coin",
+                "30 coin",
                 "selectmp",
                 selectedItem == ItemMp,
                 buttons
@@ -683,7 +683,7 @@ namespace DebugHeroFileDungeonRPG
                 bundleImage,
                 bundleSource,
                 "Supply Bundle",
-                "90 coin",
+                "110 coin",
                 "selectbundle",
                 selectedItem == ItemBundle,
                 buttons
@@ -841,7 +841,7 @@ namespace DebugHeroFileDungeonRPG
             {
                 return new ShopItemInfo(
                     "Supply Bundle",
-                    "Recovery Kit 2개와 Memory Kit 2개를 함께 보충합니다.\n묶음 가격은 90 coin입니다.",
+                    "Recovery Kit 2개와 Memory Kit 2개를 함께 보충합니다.\n묶음 가격은 110 coin입니다.",
                     bundleImage,
                     bundleSource
                 );
