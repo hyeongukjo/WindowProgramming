@@ -56,7 +56,12 @@ namespace DebugHeroFileDungeonRPG
         public const string ProfileSetupCloseWarning = "복구 프로필이 없으면 진행 상황을 저장할 수 없습니다.\n프로필 이름을 입력해주세요.";
         public const string ProfileNameRequired = "프로필 이름 필요";
         public const string DesktopNoticeBody = "Recovery Program이 생성되었습니다.\n바탕화면에 보이는 파일 바로가기를 실행해 복구 절차를 \n진행하세요.\n아직 보이지 않는 파일은 이전 스테이지를 완료해야 \n생성됩니다.";
-        public const string FinalInputInstruction = "Stage 10 문서 지시사항:\nIllegal_Binny 처치 이후 진짜 갈등은 Windows Recovery Assistant와 최종 입력창으로 넘어갑니다.\n\n삭제할 프로세스 이름을 직접 입력하세요.\n- 복구 프로필 이름 입력: 진엔딩\n- 보스 이름 입력: 일반 엔딩\n- Windows Recovery Assistant 입력: Assistant 루프 엔딩\n- 빈칸/없는 이름: 회피 루프 엔딩";
+        public const string FinalInputInstruction =
+    "삭제할 프로세스 이름을 입력하십시오.\n\n" +
+    "정리되지 않은 항목이 아직 남아 있습니다.\n" +
+    "주변의 파일명과 기록을 확인한 뒤,\n" +
+    "종료할 대상을 직접 입력해야 합니다.\n\n" +
+    "정확한 이름을 입력해야 절차가 완료됩니다.";
 
         private sealed class RuntimeNpcDialog
         {

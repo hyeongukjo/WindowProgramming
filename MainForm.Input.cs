@@ -166,8 +166,16 @@ namespace DebugHeroFileDungeonRPG
             }
             if (screen == ScreenMode.FinalInput)
             {
-                if (e.KeyCode == Keys.Back && finalInput.Length > 0) finalInput = finalInput.Substring(0, finalInput.Length - 1);
-                if (e.KeyCode == Keys.Enter) ResolveEnding();
+                if (e.KeyCode == Keys.Back && finalInput.Length > 0)
+                {
+                    finalInput = finalInput.Substring(0, finalInput.Length - 1);
+                    Invalidate();
+                }
+                else if (e.KeyCode == Keys.Enter)
+                {
+                    ResolveEnding();
+                }
+
                 return;
             }
             if (screen == ScreenMode.Help)
@@ -203,6 +211,7 @@ namespace DebugHeroFileDungeonRPG
                 {
                     finalInput += e.KeyChar;
                     e.Handled = true;
+                    Invalidate();
                 }
             }
         }
@@ -646,6 +655,7 @@ namespace DebugHeroFileDungeonRPG
         {
             if (clearStage >= stages.Count)
             {
+                finalInput = "";
                 screen = ScreenMode.FinalInput;
                 return;
             }
