@@ -137,7 +137,7 @@ namespace DebugHeroFileDungeonRPG
                     g.FillRectangle(brush, titleBar);
 
                 using (Font tFont = Renderer.F(11f, FontStyle.Bold))
-                    g.DrawString("💻 내 컴퓨터 - 시스템 실시간 통합 리더보드 [중앙 클라우드 채널 동기화 완료]", tFont, Brushes.White, winX + 10, winY + 7);
+                    g.DrawString("내 컴퓨터 - 시스템 실시간 통합 리더보드 [중앙 클라우드 채널 동기화 완료]", tFont, Brushes.White, winX + 10, winY + 7);
 
                 // B. 우측 상단 [X] 닫기 버튼 UI 생성 및 바인딩
                 Rectangle closeBtn = new Rectangle(winX + winW - 38, winY + 6, 30, 20);
@@ -168,7 +168,7 @@ namespace DebugHeroFileDungeonRPG
                         // 보스별 내부 전광판 사각형 구역화
                         Rectangle colBox = new Rectangle(colX, contentY, colW, colH);
 
-                        // 💡 [오타 보정 패치]: Brushes 억까를 분쇄하고 안전한 다크 네이비 테마 단색 브러시 주입
+                      
                         using (SolidBrush boxBrush = new SolidBrush(Color.FromArgb(40, 50, 65)))
                         {
                             g.FillRectangle(boxBrush, colBox);
@@ -179,7 +179,7 @@ namespace DebugHeroFileDungeonRPG
                         Rectangle colHeader = new Rectangle(colX, contentY, colW, 30);
                         g.FillRectangle(Brushes.MidnightBlue, colHeader);
                         g.DrawRectangle(Pens.Gold, colHeader);
-                        g.DrawString($"STAGE {targetStage:02} TOP 5", headerFont, Brushes.Gold, colHeader, Renderer.Center());
+                        g.DrawString($"STAGE {targetStage:00} TOP 5", headerFont, Brushes.Gold, colHeader, Renderer.Center());
 
                         // JSON 파싱 알고리즘 수행
                         var objMatches = System.Text.RegularExpressions.Regex.Matches(stageRankJsonCache[i], @"\{([^}]+)\}");
