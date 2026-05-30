@@ -36,6 +36,13 @@ namespace DebugHeroFileDungeonRPG
                 {
                     UpdateAllBossRankings(); // 즉시 서버 최신 랭킹판 강제 동기화 트리거
                 }
+                if (isChanged && _screen != ScreenMode.Desktop)
+                {
+                    showOldGoogleWindow = false;
+                    oldGoogleSearchFocused = false;
+
+                }
+
             }
         }
         private int tick;
@@ -123,7 +130,7 @@ namespace DebugHeroFileDungeonRPG
 
             BackgroundRenderer.InitializeBackgrounds();
             taskbarUI = new TaskbarUI();
-
+            InitializeOldGoogleWindow();
             KeyDown += MainForm_KeyDown;
             KeyPress += MainForm_KeyPress;
             MouseDown += MainForm_MouseDown;

@@ -137,7 +137,7 @@ namespace DebugHeroFileDungeonRPG
                     g.FillRectangle(brush, titleBar);
 
                 using (Font tFont = Renderer.F(11f, FontStyle.Bold))
-                    g.DrawString("내 컴퓨터 - 시스템 실시간 통합 리더보드 [중앙 클라우드 채널 동기화 완료]", tFont, Brushes.White, winX + 10, winY + 7);
+                    g.DrawString("💻 내 컴퓨터 - 시스템 실시간 통합 리더보드 [중앙 클라우드 채널 동기화 완료]", tFont, Brushes.White, winX + 10, winY + 7);
 
                 // B. 우측 상단 [X] 닫기 버튼 UI 생성 및 바인딩
                 Rectangle closeBtn = new Rectangle(winX + winW - 38, winY + 6, 30, 20);
@@ -244,6 +244,12 @@ namespace DebugHeroFileDungeonRPG
 
             // 3. 하단 작업 표시줄
             TaskbarUI.Shared.Draw(g, ClientRectangle);
+
+            // Internet Explorer - Old Google 창
+            if (showOldGoogleWindow)
+            {
+                DrawOldGoogleWindow(g);
+            }
 
             // 4. 최초 진입 안내창
             if (firstDesktopNotice)
