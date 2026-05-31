@@ -6,26 +6,30 @@ using System.Runtime.CompilerServices;
 namespace DebugHeroFileDungeonRPG
 {
     /// <summary>
-    /// 보스 맵 배경만 고급 탑다운 이미지로 적용하는 추가 전용 패치입니다.
+    /// 보스 맵 배경만 Windows XP + 파일 아이콘 감성의 탑다운 배경으로 적용하는 추가 전용 패치입니다.
     ///
-    /// 절대 건드리지 않는 대상:
+    /// 이 파일이 건드리는 대상:
+    /// - 빌드 출력 폴더의 Assets\StageBg_02_Boss.png
+    /// - 빌드 출력 폴더의 Assets\StageBg_04_Boss.png
+    /// - 빌드 출력 폴더의 Assets\StageBg_06_Boss.png
+    /// - 빌드 출력 폴더의 Assets\StageBg_08_Boss.png
+    /// - 빌드 출력 폴더의 Assets\StageBg_10_Boss.png
+    ///
+    /// 이 파일이 절대 건드리지 않는 대상:
     /// - 캐릭터 이미지 / 캐릭터 코드
+    /// - 보스 이미지 / 몬스터 이미지
     /// - 일반 맵 배경 Assets\StageBg_XX.png
-    /// - 잡몹 던전 구간
-    /// - MainForm.cs, Renderer.cs, PlayerMovementSystem.cs, csproj
-    ///
-    /// 적용 대상:
-    /// - 보스 스테이지 02, 04, 06, 08, 10의 보스방 배경만
-    /// - 빌드 출력 폴더의 Assets\StageBg_XX_Boss.png 파일만 런타임 시작 시 교체
+    /// - 잡몹 던전 배경
+    /// - Renderer.cs, MainForm.cs, PlayerMovementSystem.cs, DebugHeroFileDungeonRPG.csproj
     ///
     /// 자연스러운 탑다운 이동 적용 방식:
-    /// - 기존 Renderer는 stageBossPhase == true일 때만 StageBg_XX_Boss.png를 읽습니다.
+    /// - 기존 게임은 보스 페이즈(stageBossPhase == true)에서만 StageBg_XX_Boss.png를 읽습니다.
     /// - 기존 Renderer.DrawStageBackground는 cameraX와 mapWidth 기준으로 배경을 스크롤합니다.
-    /// - 이 패치의 BossTopDown_XX.png 이미지는 보스 맵 가로 폭에 맞춘 탑다운 배경이라
-    ///   캐릭터 이동/카메라 이동 로직을 건드리지 않아도 자연스럽게 따라 움직입니다.
+    /// - 새 BossTopDown_XX.png는 보스 맵 가로 폭 공식(1760 + stageIndex * 55)에 맞춰 제작되어
+    ///   캐릭터 이동/카메라 이동 로직을 수정하지 않아도 배경이 자연스럽게 따라갑니다.
     ///
     /// 새 배경 복사를 잠시 막으려면 환경 변수 DEBUGHERO_DISABLE_TOPDOWN_BOSS_BG=1 을 설정하세요.
-    /// 이미 출력 폴더에 복사된 배경을 원본으로 되돌리려면 Clean/Rebuild를 함께 실행하면 됩니다.
+    /// 출력 폴더를 원본으로 되돌리려면 Visual Studio에서 Clean/Rebuild를 실행하면 됩니다.
     /// </summary>
     internal static class BossDungeonTopDownBackgroundPatch
     {
