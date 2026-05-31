@@ -79,13 +79,81 @@ namespace DebugHeroFileDungeonRPG
         {
             return new RuntimeNpcDialog(mood, text);
         }
+        private static readonly RuntimeNpcDialog[] ProfileTutorialDialogs = new RuntimeNpcDialog[]
+{
+    D(NpcMood.Happy,
+        "프로필 생성이 완료되었습니다!\n" +
+        "이제부터 이 프로필로 복구 기록을 저장합니다.\n\n" +
+        "걱정하지 마세요.\n" +
+        "처음에는 아주 간단한 정리 작업부터 시작하게될겁니다."),
 
+     D(NpcMood.Basic,
+        "조작 방법을 안내해드릴게요.\n\n" +
+        "스테이지 안에서는 마우스 오른쪽 클릭으로\n" +
+        "Recovery Program을 이동시킬 수 있습니다.\n\n" ),
+
+    D(NpcMood.Progress,
+        "전투 중에는 키보드로 복구 기능을 사용할 수 있습니다.\n\n" +
+        "Q: 기본 정리 공격\n" +
+        "W/E/R: 복구가 진행되면 순서대로 활성화되는 고급 기능\n\n" +
+        "새 기능이 열리면 클리어 리포트에서 안내해드릴게요.\n" +
+        "처음에는 Q 공격만 기억해도 충분합니다.\n"+
+        "복구가 진행될수록 더 강한 기능이 열립니다."),
+
+    D(NpcMood.Thinking,
+        "HP와 MP도 확인해주세요.\n\n" +
+        "HP는 Recovery Program의 체력입니다.\n" +
+        "HP가 0이 되면 현재 복구 작업이 중단됩니다.\n\n" +
+        "MP는 스킬을 사용할 때 필요한 자원입니다.\n" +
+        "오버클럭, 방화벽 보호막, 시스템 콜을 사용할 때 소모됩니다.\n\n" ),
+
+    D(NpcMood.Thinking,
+        "스테이지 안에서는 D 키로 HP 포션,\n" +
+        "F 키로 MP 포션을 사용할 수 있습니다.\n\n" +
+        "포션은 바탕화면의 Recovery Tools에서 구매할 수 있습니다."+
+        "전투가 길어지기 전에 한 번 확인해두는 걸 추천드려요."),
+
+    D(NpcMood.Question,
+        "바탕화면에 있는 아이콘들도 잘 확인해주세요.\n\n" +
+        "일부 아이콘은 기록을 보여주거나,\n" +
+        "다음 복구 작업에 도움이 되는 정보를 제공합니다.\n\n" +
+        "막히는 부분이 있다면 바탕화면의 아이콘을 다시 살펴보세요.\n" +
+        "생각보다 중요한 힌트가 남아 있을 수 있습니다."),
+
+    D(NpcMood.Happy,
+        "준비가 끝났습니다!\n" +
+        "바탕화면에 생성된 .exe 아이콘을 실행하면\n" +
+        "복구 구역으로 이동합니다.\n\n" +
+        "먼저 File Explorer 숲부터 확인해볼까요?\n")
+};
+
+        public static int GetProfileTutorialCount()
+        {
+            return ProfileTutorialDialogs.Length;
+        }
+
+        public static string GetProfileTutorialText(int index)
+        {
+            if (index < 0) index = 0;
+            if (index >= ProfileTutorialDialogs.Length) index = ProfileTutorialDialogs.Length - 1;
+
+            return ProfileTutorialDialogs[index].Text;
+        }
+
+        public static NpcMood GetProfileTutorialMood(int index)
+        {
+            if (index < 0) index = 0;
+            if (index >= ProfileTutorialDialogs.Length) index = ProfileTutorialDialogs.Length - 1;
+
+            return ProfileTutorialDialogs[index].Mood;
+        }
         public static readonly string[] IntroMessages = new string[]
         {
             "안녕하세요.\n저는 Windows Recovery Assistant입니다.\n시스템의 손상된 항목을 확인하고,\n복구 과정을 안내하는 보조 프로그램이죠!\n",
             "왜 제가 나타났는지 궁금하셨나요?\n방금 시스템에서 예기치 못한 오류가 감지되어\n제가 자동으로 실행되었습니다.\n",
+            "당신은 이 절차를 함께 진행하기 위해 실행된 복구 프로그램입니다.\n이제부터 제가 옆에서 당신을 도와드리겠습니다!\n",
             "걱정하지 마세요.\n아직 시스템은 완전히 정지하지 않았습니다.\n지금부터 손상된 기록과 불필요한 오류를 확인하겠습니다.\n",
-            "당신은 이 절차를 함께 진행하기 위해 실행된 복구 프로그램입니다.\n이제부터 제가 옆에서 당신을 도와드리겠습니다!\n복구 작업을 시작하기 전에 프로필 이름 설정이 필요합니다."
+            "복구 작업을 시작하기 전에 프로필 이름 설정이 필요합니다."
         };
 
         // 실제 게임 스테이지 힌트창에 표시되는 문구입니다. 이 부분을 수정하면 게임 화면에 바로 반영됩니다.
@@ -110,7 +178,7 @@ namespace DebugHeroFileDungeonRPG
     { 3, new RuntimeNpcDialog[]
         {
             D(NpcMood.Progress, "Windows Update 연구소에 도착했습니다!\n업데이트 상태를 확인하고, 멈춘 구성 요소를 정리하면 됩니다."),
-            D(NpcMood.Thinking, "진행률이 약간 불안정해 보이네요.\n괜찮아요.\nWindows Update에서는 가끔 있는 일이에요.\n창을 닫지 말고 잠시 기다려주세요."),
+            //D(NpcMood.Thinking, "진행률이 약간 불안정해 보이네요.\n괜찮아요.\nWindows Update에서는 가끔 있는 일이에요.\n창을 닫지 말고 잠시 기다려주세요."),
             D(NpcMood.Progress, "업데이트 구성 요소가 활성화되었습니다.\n멈춘 패키지부터 차례대로 정리해주세요.")
         }
     },

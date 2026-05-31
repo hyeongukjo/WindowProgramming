@@ -66,7 +66,9 @@ namespace DebugHeroFileDungeonRPG
         private readonly int[] trackingBossStages = { 2, 4, 6, 8, 10 };
         private string endingTitle = "";
         private string endingBody = "";
-        private bool firstDesktopNotice = true;
+        private bool firstDesktopNotice = false;
+        private bool profileTutorialOpen = false;
+        private int profileTutorialIndex = 0;
         private bool stageNpcHintClosed = false;
         private int stageNpcHintIndex = 0;
         private bool ignoreEnterUntilKeyUp = false;

@@ -113,6 +113,9 @@ namespace DebugHeroFileDungeonRPG
             endingTitle = "";
             endingBody = "";
             firstDesktopNotice = true;
+            profileTutorialOpen = false;
+            profileTutorialIndex = 0;
+            ignoreEnterUntilKeyUp = false;
             stageNpcHintClosed = false;
             stageBossPhase = false;
             stage1BossPhase = false;

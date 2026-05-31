@@ -42,9 +42,25 @@ namespace DebugHeroFileDungeonRPG
             }
             if (screen == ScreenMode.ProfileSetup)
             {
+                if (profileTutorialOpen)
+                {
+                    if (ignoreEnterUntilKeyUp && e.KeyCode == Keys.Enter)
+                    {
+                        return;
+                    }
+
+                    if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Space || e.KeyCode == Keys.E)
+                    {
+                        AdvanceProfileTutorial();
+                    }
+
+                    return;
+                }
+
                 if (e.KeyCode == Keys.Back && profileInput.Length > 0)
                 {
                     profileInput = profileInput.Substring(0, profileInput.Length - 1);
+                    Invalidate();
                     return;
                 }
 
@@ -57,6 +73,8 @@ namespace DebugHeroFileDungeonRPG
 
                 return;
             }
+
+            
             if (ignoreEnterUntilKeyUp && e.KeyCode == Keys.Enter)
             {
                 return;
@@ -217,11 +235,20 @@ namespace DebugHeroFileDungeonRPG
             }
             if (screen == ScreenMode.ProfileSetup)
             {
+                if (profileTutorialOpen)
+                {
+                    e.Handled = true;
+                    return;
+                }
+
                 if (!char.IsControl(e.KeyChar) && profileInput.Length < 16)
                 {
                     profileInput += e.KeyChar;
                     e.Handled = true;
+                    Invalidate();
                 }
+
+                return;
             }
             else if (screen == ScreenMode.FinalInput)
             {
@@ -557,7 +584,7 @@ namespace DebugHeroFileDungeonRPG
             }
 
             else if (action == "npcHintClose") AdvanceStageNpcHint();
-            else if (action == "npcHintClose") AdvanceStageNpcHint();
+            else if (action == "profileTutorialNext") AdvanceProfileTutorial();
             else if (action == "profileOk") ConfirmProfile();
             else if (action == "openShop") screen = ScreenMode.Shop;
             else if (action == "shopBack") screen = ScreenMode.Desktop;
@@ -591,6 +618,22 @@ namespace DebugHeroFileDungeonRPG
             else if (action == "endingStay") Invalidate();
             else if (action == "helpBack") screen = ScreenMode.Desktop;
         }
+        private void AdvanceProfileTutorial()
+        {
+            profileTutorialIndex++;
+
+            if (profileTutorialIndex >= NpcDialogueData.GetProfileTutorialCount())
+            {
+                profileTutorialIndex = 0;
+                profileTutorialOpen = false;
+
+                screen = ScreenMode.Desktop;
+                UpdateAllBossRankings();
+            }
+
+            TryBeep(880, 45);
+            Invalidate();
+        }
         private void AdvanceStageNpcHint()
         {
             if (currentStage <= 0)
@@ -621,13 +664,16 @@ namespace DebugHeroFileDungeonRPG
                 TryBeep(320, 80);
                 return;
             }
+
             player.ProfileName = profileInput.Trim();
-            screen = ScreenMode.Desktop;
-            UpdateAllBossRankings();
+
+            profileTutorialIndex = 0;
+            profileTutorialOpen = true;
+            firstDesktopNotice = false;
+
             TryBeep(920, 60);
+            Invalidate();
         }
-
-
         private void BuyShopItem(string item)
         {
             int cost = 0;

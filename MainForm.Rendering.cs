@@ -82,7 +82,29 @@ namespace DebugHeroFileDungeonRPG
             Renderer.DrawXPWallpaper(g, ClientRectangle);
             DesktopIconUI.Shared.DrawFixedDesktopIcons(g, ClientRectangle);
             Renderer.DrawXPTaskbar(g, ClientRectangle, "Recovery Profile Setup");
+
             Rectangle win = SystemWindowUI.Shared.GetStandardNoticeRect(ClientSize);
+
+            if (profileTutorialOpen)
+            {
+                using (SolidBrush dim = new SolidBrush(Color.FromArgb(68, 0, 0, 0)))
+                    g.FillRectangle(dim, ClientRectangle);
+
+                SystemWindowUI.Shared.DrawAssistantNotice(
+                    g,
+                    win,
+                    "Windows Recovery Assistant",
+                    NpcDialogueData.GetProfileTutorialText(profileTutorialIndex),
+                    NpcDialogueData.GetProfileTutorialMood(profileTutorialIndex),
+                    Environment.TickCount / 30,
+                    buttons,
+                    "profileTutorialNext",
+                    "profileTutorialNext"
+                );
+
+                return;
+            }
+
             SystemWindowUI.Shared.DrawProfileSetupWindow(
                 g,
                 win,
