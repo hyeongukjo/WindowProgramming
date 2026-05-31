@@ -178,6 +178,24 @@ namespace DebugHeroFileDungeonRPG
 
                 return;
             }
+
+            if (screen == ScreenMode.Ending)
+            {
+                if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Escape || e.KeyCode == Keys.Space)
+                {
+                    endingTitle = "";
+                    endingBody = "";
+                    finalInput = "";
+
+                    currentStage = 0;
+                    screen = ScreenMode.StartMenu;
+
+                    Invalidate();
+                }
+
+                return;
+            }
+
             if (screen == ScreenMode.Help)
             {
                 if (e.KeyCode == Keys.Escape || e.KeyCode == Keys.Enter) screen = ScreenMode.Desktop;
@@ -559,6 +577,18 @@ namespace DebugHeroFileDungeonRPG
             }
             else if (action == "clearNext") ContinueAfterClear();
             else if (action == "finalOk") ResolveEnding();
+            else if (action == "endingBackToTitle")
+            {
+                endingTitle = "";
+                endingBody = "";
+                finalInput = "";
+
+                currentStage = 0;
+                screen = ScreenMode.StartMenu;
+
+                Invalidate();
+            }
+            else if (action == "endingStay") Invalidate();
             else if (action == "helpBack") screen = ScreenMode.Desktop;
         }
         private void AdvanceStageNpcHint()

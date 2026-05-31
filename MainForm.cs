@@ -23,6 +23,8 @@ namespace DebugHeroFileDungeonRPG
         //private ScreenMode screen = ScreenMode.Boot;
         private readonly PlayerState player = new PlayerState();
         private ScreenMode _screen = ScreenMode.StartMenu;
+        
+
         private ScreenMode screen
         {
             get => _screen;

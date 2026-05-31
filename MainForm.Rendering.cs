@@ -814,6 +814,136 @@ namespace DebugHeroFileDungeonRPG
             return NpcMood.Damaged;
         }
 
+        private void DrawEnding(Graphics g)
+        {
+            Renderer.DrawXPWallpaper(g, ClientRectangle);
+            TaskbarUI.Shared.Draw(g, ClientRectangle);
+
+            using (SolidBrush dim = new SolidBrush(Color.FromArgb(95, 0, 0, 0)))
+                g.FillRectangle(dim, ClientRectangle);
+
+            bool isTrueEnding = endingTitle.Contains("진엔딩");
+
+            bool isAssistantLoopEnding =
+                endingTitle.Contains("Assistant") ||
+                endingTitle.Contains("루프");
+
+            bool isInvalidEnding =
+                endingTitle.Contains("잘못") ||
+                endingTitle.Contains("회피") ||
+                endingTitle.Contains("실패");
+
+            bool isNormalEnding =
+                !isTrueEnding &&
+                !isAssistantLoopEnding &&
+                !isInvalidEnding;
+
+            SystemWindowStyle style;
+            NpcMood mood;
+
+            if (isTrueEnding)
+            {
+                style = SystemWindowStyle.Blue;
+                mood = NpcMood.Happy;
+            }
+            else if (isNormalEnding)
+            {
+                style = SystemWindowStyle.Blue;
+                mood = NpcMood.Thinking;
+            }
+            else if (isAssistantLoopEnding)
+            {
+                style = SystemWindowStyle.Red;
+                mood = NpcMood.Warning;
+            }
+            else
+            {
+                style = SystemWindowStyle.Red;
+                mood = NpcMood.Damaged;
+            }
+
+            Rectangle win = new Rectangle(
+                ClientSize.Width / 2 - 390,
+                ClientSize.Height / 2 - 190,
+                780,
+                380
+            );
+
+            SystemWindowUI.Shared.DrawSystemPanelFrame(
+                g,
+                win,
+                endingTitle,
+                style,
+                false,
+                buttons,
+                null
+            );
+
+            Rectangle npcRect = new Rectangle(
+                win.X + 28,
+                win.Y + 66,
+                150,
+                205
+            );
+
+            Renderer.DrawNpcImage(g, npcRect, mood);
+
+            Rectangle bodyRect = new Rectangle(
+                win.X + 205,
+                win.Y + 72,
+                win.Width - 245,
+                190
+            );
+
+            using (Font bodyFont = Renderer.F(11.5f, FontStyle.Bold))
+            using (SolidBrush bodyBrush = new SolidBrush(Color.FromArgb(28, 32, 44)))
+            {
+                g.DrawString(
+                    endingBody,
+                    bodyFont,
+                    bodyBrush,
+                    bodyRect,
+                    Renderer.Left()
+                );
+            }
+
+            Rectangle hintRect = new Rectangle(
+                win.X + 205,
+                win.Bottom - 82,
+                win.Width - 245,
+                28
+            );
+
+            using (Font hintFont = Renderer.F(9.5f, FontStyle.Regular))
+            using (SolidBrush hintBrush = new SolidBrush(
+                isAssistantLoopEnding || isInvalidEnding
+                    ? Color.FromArgb(120, 40, 40)
+                    : Color.FromArgb(40, 70, 120)))
+            {
+                g.DrawString(
+                    "Enter 또는 Esc를 누르면 타이틀 화면으로 돌아갑니다.",
+                    hintFont,
+                    hintBrush,
+                    hintRect,
+                    Renderer.LeftMiddle()
+                );
+            }
+
+            Rectangle okButton = new Rectangle(
+                win.Right - 158,
+                win.Bottom - 58,
+                110,
+                28
+            );
+
+            SystemWindowUI.Shared.DrawDialogImageButton(
+                g,
+                okButton,
+                SystemWindowButtonKind.Ok,
+                "endingBackToTitle",
+                buttons
+            );
+        }
         private void DrawFinalInput(Graphics g)
         {
             Renderer.DrawStageBackground(g, ClientRectangle, stages[9], 0);
@@ -947,21 +1077,6 @@ namespace DebugHeroFileDungeonRPG
                 buttons
             );
         }
-
-        private void DrawEnding(Graphics g)
-        {
-            Renderer.DrawXPWallpaper(g, ClientRectangle);
-            Renderer.DrawXPTaskbar(g, ClientRectangle, endingTitle);
-            Rectangle win = new Rectangle(ClientSize.Width / 2 - 430, ClientSize.Height / 2 - 190, 860, 360);
-            Renderer.DrawXPWindow(g, win, endingTitle, endingTitle.Contains("잘못") || endingTitle.Contains("루프"));
-            Renderer.DrawNpcImage(g, new Rectangle(win.X + 24, win.Y + 62, 160, 230), endingTitle.Contains("진엔딩") ? NpcMood.Happy : NpcMood.Warning);
-            using (Font f = Renderer.F(12f, FontStyle.Bold))
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(32, 42, 64)))
-                g.DrawString(endingBody, f, b, new Rectangle(win.X + 210, win.Y + 80, win.Width - 250, 170), Renderer.Left());
-            using (Font f = Renderer.F(9f, FontStyle.Regular))
-                g.DrawString("Enter를 누르면 종료 화면을 유지합니다.", f, Brushes.DarkBlue, new Rectangle(win.X + 210, win.Bottom - 70, win.Width - 250, 24), Renderer.LeftMiddle());
-        }
-
         private void DrawHelp(Graphics g)
         {
             Renderer.DrawXPWallpaper(g, ClientRectangle);
