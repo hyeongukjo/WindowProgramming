@@ -172,7 +172,7 @@ namespace DebugHeroFileDungeonRPG
             string diskPath = Path.Combine(bossPath, "disk_sprites.png");
             if (File.Exists(diskPath))
             {
-                // 외부 사진을 GDI+ 이미지 객체로 변환하여 렌더러에 적재합니다.
+               
                 Renderer.Img_DiskSprite = Image.FromFile(diskPath);
             }
             // High-Kernel 기믹 이미지 로드

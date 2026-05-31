@@ -9,7 +9,7 @@ namespace DebugHeroFileDungeonRPG
     public sealed partial class MainForm
     {
         // -----------------------------------------------------------------------------
-        // 💻 [몬스터 도감 모달 제어 격실]
+        // [몬스터 도감 모달 제어 격실]
         // -----------------------------------------------------------------------------
         private bool showMonsterBookWindow = false;
         private readonly string monsterBookCloseKey = "monsterBookWinClose";
@@ -48,7 +48,7 @@ namespace DebugHeroFileDungeonRPG
             return new Rectangle(winX, winY, winW, winH);
         }
 
-        // ② 파일 클릭 시 활성화될 대형 팝업 도감 윈도우 그리기 (공식 UI 프레임 적용 사양)
+        // 파일 클릭 시 활성화될 대형 팝업 도감 윈도우 그리기 (공식 UI 프레임 적용 사양)
         public void DrawMonsterBookWindow(Graphics g)
         {
             if (!showMonsterBookWindow) return;
@@ -60,7 +60,7 @@ namespace DebugHeroFileDungeonRPG
 
             Rectangle winBounds = GetMonsterBookWindowBounds();
 
-            // 🛠️ [수정사항 2] 도감 팝업창도 내 컴퓨터와 동일하게 정품 UI 프레임워크 엔진 프레임으로 대개조!
+            // [수정사항 2] 도감 팝업창도 내 컴퓨터와 동일하게 정품 UI 프레임워크 엔진 프레임으로 대개조!
             SystemWindowUI.Shared.DrawSystemPanelFrame(
                 g,
                 winBounds,
@@ -152,7 +152,7 @@ namespace DebugHeroFileDungeonRPG
                         Rectangle nameBox = new Rectangle(bx, bossRect.Bottom - 26, bossSize, 26);
                         using (SolidBrush nBg = new SolidBrush(Color.FromArgb(200, 0, 0, 0)))
                             g.FillRectangle(nBg, nameBox);
-                        g.DrawString("🔒 정화 후 확인 가능", bFont, Brushes.DarkGray, nameBox, Renderer.Center());
+                        g.DrawString("정화 후 확인 가능", bFont, Brushes.DarkGray, nameBox, Renderer.Center());
                     }
                 }
             }

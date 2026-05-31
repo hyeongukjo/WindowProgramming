@@ -19,7 +19,7 @@ namespace DebugHeroFileDungeonRPG
             EnemyUpdateResult result = new EnemyUpdateResult();
             float playerCurrentSpeedModifier = 1.0f;
 
-            // 💡 플레이어의 피격 판정 확장 범위 정의 (가로 40px, 세로 115px)
+            //  플레이어의 피격 판정 확장 범위 정의 (가로 40px, 세로 115px)
             RectangleF extendedPlayerBounds = new RectangleF(
                 player.X - 20f,
                 player.Y - 110f, // 머리 꼭대기 위치
@@ -27,7 +27,7 @@ namespace DebugHeroFileDungeonRPG
                 115f            // 발바닥까지의 높이
             );
 
-            // 🌟 [지시사항 반영]: 확장된 피격 범위 상자의 '완벽한 정중앙 좌표'를 산출합니다.
+            // 확장된 피격 범위 상자의 '완벽한 정중앙 좌표'를 산출
             float playerCenterX = extendedPlayerBounds.X + (extendedPlayerBounds.Width / 2f);
             float playerCenterY = extendedPlayerBounds.Y + (extendedPlayerBounds.Height / 2f);
 
@@ -79,7 +79,7 @@ namespace DebugHeroFileDungeonRPG
                             {
                                 m.MonsterState = 1; m.StateTimer = 0;
 
-                                // 💡 [지시사항 반영]: 돌진하는 목표 좌표를 기존 player.X/Y에서 '피격범위 정중앙'으로 교체
+                                // 돌진하는 목표 좌표를 기존 player.X/Y에서 '피격범위 정중앙'으로 교체
                                 float dx = playerCenterX - m.X;
                                 float dy = playerCenterY - m.Y;
 
@@ -131,7 +131,7 @@ namespace DebugHeroFileDungeonRPG
 
                         if (tick % 140 == 0) // 주기는 지시사항에 맞춰 140틱 유지
                         {
-                            // 💡 [지시사항 반영]: 발사되는 투사체의 궤적 벡터 타겟을 '피격범위 정중앙'으로 교체
+                            //  발사되는 투사체의 궤적 벡터 타겟을 '피격범위 정중앙'으로 교체
                             float tDx = playerCenterX - m.X;
                             float tDy = playerCenterY - m.Y;
                             float tDist = (float)Math.Sqrt(tDx * tDx + tDy * tDy); if (tDist < 1) tDist = 1;
@@ -162,7 +162,7 @@ namespace DebugHeroFileDungeonRPG
                             m.Y = (float)(rand.NextDouble() * (maxY - minY) + minY);
                             effects.Add(new Effect("spark", m.X, m.Y, m.X, m.Y, 20, Color.Cyan, "LINK_JUMP"));
 
-                            // 💡 [지시사항 반영]: 발사 각도 산출의 베이스 타겟을 '피격범위 정중앙'으로 교체
+                            // 발사 각도 산출의 베이스 타겟을 '피격범위 정중앙'으로 교체
                             float baseAngle = (float)Math.Atan2(playerCenterY - m.Y, playerCenterX - m.X);
 
                             for (int k = 0; k < 3; k++) // 투사체 수 3개 유지

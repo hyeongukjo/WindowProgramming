@@ -13,15 +13,15 @@ namespace DebugHeroFileDungeonRPG
         private bool showTrashCanWindow = false;
         private readonly string trashCanCloseKey = "trashCanWinClose";
 
-        // 🛠️ [수정사항 1]: 중요 폴더(+10)와 함정 폴더(-10)의 순서를 악마적으로 무작위로 뒤섞었습니다!
+        // 중요 폴더(+10)와 함정 폴더(-10)의 순서를 악마적으로 무작위로 뒤섞었습니다!
         private readonly string[] trashFolderNames = {
             "System32_Essential_Core_Backup_Secure", // +10 (중요해 보임)
-            "임시파일_삭제보관함_Junk_Files",            // -10 (쓰레기 같음 🔒함정)
+            "임시파일_삭제보관함_Junk_Files",            // -10 (쓰레기 같음 함정)
             "Kernel_Security_DonotDelete_Fatal",     // +10 (중요해 보임)
-            "최종 발표자료 진짜 최종의 최종의 최종의 최종",          // -10 (쓰레기 같음 🔒함정)
+            "최종 발표자료 진짜 최종의 최종의 최종의 최종",          // -10 (쓰레기 같음 함정)
             "Registry_Root_Hardware_Config.sys",     // +10 (중요해 보임)
             "직박구리",           // -10 (쓰레기 같음 🔒함정)
-            "윈도우 프로그래밍 개쩌는 시험 족보"          // -10 (쓰레기 같음 🔒함정)
+            "윈도우 프로그래밍 개쩌는 시험 족보"          // -10 (쓰레기 같음 함정)
         };
 
         // 뒤섞인 이름 순서와 정확하게 1:1 매칭되도록 가감산 리스트 정렬 조율
@@ -37,7 +37,7 @@ namespace DebugHeroFileDungeonRPG
             return new Rectangle(winX, winY, winW, winH);
         }
 
-        // ① 휴지통 메인 팝업 윈도우 렌더러
+        //  휴지통 메인 팝업 윈도우 렌더러
         public void DrawTrashCanWindow(Graphics g)
         {
             if (!showTrashCanWindow) return;
@@ -119,7 +119,7 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
-        // ② 개별 삭제 커맨드 연산 파이프라인
+        // 개별 삭제 커맨드 연산 파이프라인
         private void ExecuteTrashDelete(int index)
         {
             if (index < 0 || index >= 7 || trashFoldersDeleted[index]) return;

@@ -292,7 +292,7 @@ namespace DebugHeroFileDungeonRPG
             Rectangle icon = new Rectangle(row.X + 4, row.Y + (row.Height - iconSize) / 2, iconSize, iconSize);
             DrawItemIcon(g, iconImage, iconSource, icon);
 
-            // 💡 [글자 크기 수정 구역] 아이템 리스트 글자 크기 제어
+            // 아이템 리스트 글자 크기 제어
             using (Font f = Renderer.F(10f, FontStyle.Bold))
             using (SolidBrush textBrush = new SolidBrush(Color.FromArgb(20, 24, 32)))
             using (SolidBrush blueBrush = new SolidBrush(Color.FromArgb(0, 62, 160)))
@@ -338,7 +338,7 @@ namespace DebugHeroFileDungeonRPG
             DrawCommandLine(g, r.X + 12, startY + lineHeight * 2, r.Width - 24, "E", "DataSheild", "데이터실드 (stage 5 클리어 시 해제)", lineHeight);
             DrawCommandLine(g, r.X + 12, startY + lineHeight * 3, r.Width - 24, "R", "SysCall", "시스템콜 (stage 8 클리어 시 해제)", lineHeight);
 
-            // 💡 [글자 크기 수정 구역] 마우스 조작 가이드 안내 글씨 크기 제어
+            // 마우스 조작 가이드 안내 글씨 크기 제어
             using (Font f = Renderer.F(13f, FontStyle.Bold))
             using (SolidBrush b = new SolidBrush(Color.FromArgb(70, 70, 70)))
             using (StringFormat sf = LeftMiddle())
@@ -363,7 +363,7 @@ namespace DebugHeroFileDungeonRPG
              string description,
              int h)
         {
-            // 💡 [글자 크기 수정 구역] 단축키 명세 폰트 사이즈 제어
+            // 단축키 명세 폰트 사이즈 제어
             using (Font keyFont = Renderer.F(13f, FontStyle.Bold))
             using (Font textFont = Renderer.F(12f, FontStyle.Bold))
             using (SolidBrush keyBrush = new SolidBrush(Color.FromArgb(0, 62, 160)))
@@ -401,15 +401,15 @@ namespace DebugHeroFileDungeonRPG
 
                 // 2. 파일 설명 구역
                 g.DrawString("• 파      일 :", boldFont, titleBrush, new Rectangle(r.X + 14, startY + lineHeight * 1, titleWidth, lineHeight), sf);
-                g.DrawString("윈도우 세상 몬스터 도감", regularFont, Brushes.Gray, new Rectangle(descStartX, startY + lineHeight * 1, descWidth, lineHeight), sf);
+                g.DrawString("윈도우 세상 몬스터 도감", regularFont, Brushes.Black, new Rectangle(descStartX, startY + lineHeight * 1, descWidth, lineHeight), sf);
 
                 // 3. 인터넷 설명 구역
                 g.DrawString("• 인 터 넷 :", boldFont, titleBrush, new Rectangle(r.X + 14, startY + lineHeight * 2, titleWidth, lineHeight), sf);
-                g.DrawString("???: 무언가 엄청난 것이 들어있는 기분이다..", regularFont, Brushes.Gray, new Rectangle(descStartX, startY + lineHeight * 2, descWidth, lineHeight), sf);
+                g.DrawString("???: 무언가 엄청난 것이 있는 기분이다..", regularFont, Brushes.Black, new Rectangle(descStartX, startY + lineHeight * 2, descWidth, lineHeight), sf);
 
                 // 4. 휴지통 설명 구역 
                 g.DrawString("• 휴 지 통 :", boldFont, titleBrush, new Rectangle(r.X + 14, startY + lineHeight * 3, titleWidth, lineHeight), sf);
-                g.DrawString("쓸모 없는 파일은 이곳으로..", regularFont, Brushes.Gray, new Rectangle(descStartX, startY + lineHeight * 3, descWidth, lineHeight), sf);
+                g.DrawString("쓸모 없는 파일은 이곳으로.. 쓸모가 있을 수도??", regularFont, Brushes.Black, new Rectangle(descStartX, startY + lineHeight * 3, descWidth, lineHeight), sf);
             }
         }
 
@@ -752,7 +752,7 @@ namespace DebugHeroFileDungeonRPG
                 buttons.Add(new UiButton(row, actionId));
         }
 
-        // * [RecoveryToolsUI.cs 내부: 2줄 설명글 위아래 겹침 및 잘림 현상 전면 처단 최종 완결판]
+        // [RecoveryToolsUI.cs 내부: 2줄 설명글 위아래 겹침 및 잘림 현상 전면 처단 최종 완결판]
         private void DrawDescriptionBox(Graphics g, Rectangle r, string selectedItem)
         {
             DrawGroupBox(g, r, "선택 항목 설명");
@@ -791,9 +791,9 @@ namespace DebugHeroFileDungeonRPG
             }
 
             // =============================================================================
-            // 🌟 [교정 격실]: 22px, 24px로 쪼개져 텍스트를 파쇄하던 낡은 이중 박스를 영구 폐기합니다!
+            //  22px, 24px로 쪼개져 텍스트를 파쇄하던 낡은 이중 박스를 영구 폐기합니다!
             // =============================================================================
-            // 💡 위아래 문장이 겹치지 않고 자연스러운 행간 여유를 가지며 자동으로 줄바꿈 되도록,
+            // 위아래 문장이 겹치지 않고 자연스러운 행간 여유를 가지며 자동으로 줄바꿈 되도록,
             // 가로세로를 통째로 아우르는 높이 65px짜리 거대 통합 설명 상자를 신설합니다.
             Rectangle unifiedDescRect = new Rectangle(
                 inner.X + 20,
@@ -816,7 +816,7 @@ namespace DebugHeroFileDungeonRPG
                     descLayoutFormat.FormatFlags = StringFormatFlags.NoClip;
                     descLayoutFormat.Trimming = StringTrimming.None;
 
-                    // 🌟 쪼개진 파편 드로우를 중단하고, 2줄 전체 문장을 통합 상자 안에서 깨끗하게 한 번에 렌더링!
+                    // 쪼개진 파편 드로우를 중단하고, 2줄 전체 문장을 통합 상자 안에서 깨끗하게 한 번에 렌더링!
                     g.DrawString(info.Description, descFont, bodyBrush, unifiedDescRect, descLayoutFormat);
                 }
             }

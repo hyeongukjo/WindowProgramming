@@ -8,14 +8,14 @@ namespace DebugHeroFileDungeonRPG
         public static List<GameEntity> CreateWaveEnemies(StageInfo st, int waveIndex, int clientHeight)
         {
             List<GameEntity> list = new List<GameEntity>();
-            // 💡 [지시사항 1 반영]: 웨이브를 딱 2개로 축소합니다. (0웨이브, 1웨이브만 허용)
+            //  웨이브를 딱 2개로 축소합니다. (0웨이브, 1웨이브만 허용)
             if (st == null || waveIndex < 0 || waveIndex > 1) return list;
 
             int stageNum = st.Index;
             string monsterName = "UNKNOWN";
             string targetAssetFileName = "Dash_1.png";
 
-            // 💡 [지시사항 2 반영]: 스테이지별 / 웨이브별 등장 개체 및 규칙 완벽 하드코딩 고정
+            //  스테이지별 / 웨이브별 등장 개체 및 규칙 완벽 하드코딩 고정
             if (waveIndex == 0)
             {
                 // 1웨이브 일반 몬스터 배치 명세
@@ -60,11 +60,8 @@ namespace DebugHeroFileDungeonRPG
                 }
             }
 
-            // * 형진님 스펙 명세: 기본 수치 150 및 스테이지별 가중치 100 밸런스 완전 유지
-            // =================================================================
-            // 🌟 [지시사항 반영]: 1스테이지 첫 일반 몬스터(waveIndex=0, i=0) 체력을 정확히 100으로 셋팅
-            // =================================================================
-            // stageNum이 1일 때 baseHp는 100이 됩니다. 스테이지당 체력은 40씩 증가하도록 밸런싱을 조율했습니다.
+          
+           
             int baseHp = 60 + stageNum * 40;
             int baseAtk = 4 + stageNum;
 
@@ -72,7 +69,7 @@ namespace DebugHeroFileDungeonRPG
             int finalHp = baseHp + (waveIndex * 20);
             int finalAtk = baseAtk + waveIndex;
 
-            // 💡 [지시사항 1 후반부 반영]: 1웨이브는 4마리 스폰, 2웨이브는 기존 4웨이브 정예 기믹 수치 주입
+            // [지시사항 1 후반부 반영]: 1웨이브는 4마리 스폰, 2웨이브는 기존 4웨이브 정예 기믹 수치 주입
             int spawnCount = (waveIndex == 1) ? 2 : 4;
 
             if (waveIndex == 1)
@@ -96,7 +93,7 @@ namespace DebugHeroFileDungeonRPG
                     VX = (i % 2 == 0 ? 1.1f : -1.1f) * (1.0f + waveIndex * 0.06f),
                     VY = (i % 2 == 0 ? 0.5f : -0.5f) * (1.0f + waveIndex * 0.03f),
 
-                    // 💡 재조정된 체력 변수 매핑 연동
+                    //재조정된 체력 변수 매핑 연동
                     Hp = calculatedHp,
                     MaxHp = calculatedHp,
 

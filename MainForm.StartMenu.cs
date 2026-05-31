@@ -9,7 +9,7 @@ namespace DebugHeroFileDungeonRPG
     public sealed partial class MainForm
     {
         // -----------------------------------------------------------------------------
-        // 💾 [순정 에셋 위치 최적화 - 시작 메뉴 팝업 격실]
+        // [순정 에셋 위치 최적화 - 시작 메뉴 팝업 격실]
         // -----------------------------------------------------------------------------
         private bool showStartMenuPopup = false;
         private Image imgStartMenuPopup = null;
@@ -19,7 +19,7 @@ namespace DebugHeroFileDungeonRPG
         private readonly string startMenuHelpKey = "startMenuHelpAction";
         private readonly string startMenuExitKey = "startMenuExitAction";
 
-        // Assets/UI/startmenu_popup.png 이미지 자산 로드[cite: 7]
+       
         private void LoadStartMenuImage()
         {
             if (startMenuLoaded) return;
@@ -33,7 +33,7 @@ namespace DebugHeroFileDungeonRPG
             startMenuLoaded = true;
         }
 
-        // 📊 [위치 수정]: 시작 메뉴 팝업창을 왼쪽 최하단 작업 표시줄 바로 위에 딱 붙도록 튜닝
+        //시작 메뉴 팝업창을 왼쪽 최하단 작업 표시줄 바로 위에 딱 붙도록 튜닝
         private Rectangle GetStartMenuPopupBounds()
         {
             int menuW = 320; // 팝업창 가로 폭[cite: 7]
@@ -44,7 +44,7 @@ namespace DebugHeroFileDungeonRPG
             return new Rectangle(menuX, menuY, menuW, menuH);
         }
 
-        // ① 시작 메뉴 순정 에셋 + 기능 레이어 위치 교정 렌더러
+        // 시작 메뉴 순정 에셋 + 기능 레이어 위치 교정 렌더러
         public void DrawStartMenuPopup(Graphics g)
         {
             if (!showStartMenuPopup) return; 
@@ -52,7 +52,7 @@ namespace DebugHeroFileDungeonRPG
 
             Rectangle bounds = GetStartMenuPopupBounds();
 
-            // 배경 에셋 프레임 출력[cite: 7]
+            // 배경 에셋 프레임 출력
             if (imgStartMenuPopup != null)
             {
                 g.DrawImage(imgStartMenuPopup, bounds); 
@@ -77,7 +77,7 @@ namespace DebugHeroFileDungeonRPG
                 buttons.Add(new UiButton(helpRect, startMenuHelpKey));
                 g.DrawString("❓  도움말 (F1)", itemFont, Brushes.Black, helpRect, Renderer.LeftMiddle());
 
-                // C. 🔴 [시스템 종료] - 🛠️ 위치 수정: 외부 풀밭에서 팝업창 왼쪽 하단의 작은 사각형 버튼 안으로 매립 완료!!
+                // C. [시스템 종료] -  위치 수정: 외부 풀밭에서 팝업창 왼쪽 하단의 작은 사각형 버튼 안으로 매립 완료!!
                 // 에셋 이미지 내부 최하단 파란색 바의 왼쪽 작은 버튼 박스 좌표와 투명 히트박스를 정밀하게 겹치게 지정합니다.
                 Rectangle exitRect = new Rectangle(bounds.X + 8, bounds.Bottom - 35, 86, 24);
                 buttons.Add(new UiButton(exitRect, startMenuExitKey));

@@ -75,7 +75,7 @@ namespace DebugHeroFileDungeonRPG
                 }
 
                 // ----------------------------------------------------------
-                // ⚔️ [Q 스킬] 1열 스트립 이미지 프리로딩 및 자동 5분할 슬라이싱
+                // [Q 스킬] 1열 스트립 이미지 프리로딩 및 자동 5분할 슬라이싱
                 // ----------------------------------------------------------
                 string qPath = Path.Combine(baseDir, "Assets", "UI", "player_attack_q.png");
                 if (File.Exists(qPath))
@@ -97,7 +97,7 @@ namespace DebugHeroFileDungeonRPG
                 }
 
                 // ----------------------------------------------------------
-                // ⚔️ [R 스킬] 1열 스트립 이미지 프리로딩 및 자동 5분할 슬라이싱
+                // [R 스킬] 1열 스트립 이미지 프리로딩 및 자동 5분할 슬라이싱
                 // ----------------------------------------------------------
                 string rPath = Path.Combine(baseDir, "Assets", "UI", "player_attack_r.png");
                 if (File.Exists(rPath))
@@ -159,17 +159,16 @@ namespace DebugHeroFileDungeonRPG
             return new Font("Malgun Gothic", size, style);
         }
 
-        // * [Renderer.cs 내부: 상점 및 UI 글자 아랫부분 잘림 버그 완벽 수정 버전]
+       
 
         public static StringFormat Center()
         {
             StringFormat sf = new StringFormat();
             sf.Alignment = StringAlignment.Center;
             sf.LineAlignment = StringAlignment.Center;
-            // 💡 [핵심 교정]: 글자가 짤려 나가는 것을 방지하기 위해 
-            // 사각형 경계선에서 글자가 임의로 생략되거나 잘리는 억까 필터(Trimming)를 완전히 해제합니다.
+            
             sf.Trimming = StringTrimming.None;
-            // 행바꿈 시 글자 윗부분이나 아랫부분이 레이아웃 박스에 걸쳐 잘리지 않도록 가드 주입
+          
             sf.FormatFlags |= StringFormatFlags.NoClip;
             return sf;
         }
@@ -179,7 +178,7 @@ namespace DebugHeroFileDungeonRPG
             StringFormat sf = new StringFormat();
             sf.Alignment = StringAlignment.Near;
             sf.LineAlignment = StringAlignment.Near;
-            sf.Trimming = StringTrimming.None; // 💡 글자 생략 및 하단부 크롭 강제 비활성화
+            sf.Trimming = StringTrimming.None; // 글자 생략 및 하단부 크롭 강제 비활성화
             sf.FormatFlags |= StringFormatFlags.NoClip; // 박스 경계선 탈출 허용 (잘림 방지)
             return sf;
         }
@@ -189,7 +188,7 @@ namespace DebugHeroFileDungeonRPG
             StringFormat sf = new StringFormat();
             sf.Alignment = StringAlignment.Near;
             sf.LineAlignment = StringAlignment.Center;
-            sf.Trimming = StringTrimming.None; // 💡 글자 생략 및 하단부 크롭 강제 비활성화
+            sf.Trimming = StringTrimming.None; // 글자 생략 및 하단부 크롭 강제 비활성화
             sf.FormatFlags |= StringFormatFlags.NoClip; // 박스 경계선 탈출 허용 (잘림 방지)
             return sf;
         }
@@ -271,7 +270,7 @@ namespace DebugHeroFileDungeonRPG
             }
 
             // ---------------------------------------------------------------------------------
-            // 💡 145x120 크기로 그려지는 실제 몬스터의 '진짜 가로 정중앙' 축 계산 (e.X 기반)
+            // 145x120 크기로 그려지는 실제 몬스터의 '진짜 가로 정중앙' 축 계산 (e.X 기반)
             // ---------------------------------------------------------------------------------
             int monsterCenterX = screenX; // 몬스터의 완벽한 도트 중심축 (e.X 보정값)
             int uiTopY = (int)e.Y - 70;   // 몬스터 머리 위 안전 포지셔닝 Y축
@@ -296,7 +295,7 @@ namespace DebugHeroFileDungeonRPG
                 int boxWidth = (int)Math.Ceiling(textSize.Width) + paddingX;
                 int boxHeight = 16;
 
-                // 💡 [교정 완료]: monsterCenterX를 사용하여 이름 박스가 중앙을 기준으로 늘어나도록 배치
+                // monsterCenterX를 사용하여 이름 박스가 중앙을 기준으로 늘어나도록 배치
                 Rectangle nameRect = new Rectangle(
                     monsterCenterX - (boxWidth / 2),
                     uiTopY - 20,
@@ -312,7 +311,7 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
-        // * [교정형 자산 로더]: 낡은 이름 비교 명세를 청소하고 오직 e.Kind 파일 이름으로만 스캔 경로를 뚫습니다.
+        // 낡은 이름 비교 명세를 청소하고 오직 e.Kind 파일 이름으로만 스캔 경로를 뚫습니다.
         private static Image LoadStrictMonsterAssetDirect(GameEntity e)
         {
             if (e == null || string.IsNullOrEmpty(e.Kind)) return null;
@@ -347,7 +346,7 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
-        // * [Renderer.cs 내부: 3x3 전체 시트 번짐 현상 전면 처단 최종 종결 버전]
+        // [Renderer.cs 내부: 3x3 전체 시트 번짐 현상 전면 처단 최종 종결 버전]
         private static void DrawFileMonster(Graphics g, Rectangle r, GameEntity e)
         {
             Image sheet = LoadStrictMonsterAssetDirect(e);
@@ -358,7 +357,7 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
 
-            // 💡 [최종 종결 가드 격실]: 팩토리가 주는 에셋 이름이 "Teleport_2.png"일 때 하단의 낡은 연산틀을 차단합니다.
+            // [최종 종결 가드 격실]: 팩토리가 주는 에셋 이름이 "Teleport_2.png"일 때 하단의 낡은 연산틀을 차단합니다.
             if (e.Kind != null && e.Kind.Contains("Teleport_2"))
             {
                 // 형진님이 명세하신 1024x1024 해상도 기반 오차 없는 완벽한 정수 3분할 세팅
@@ -368,7 +367,7 @@ namespace DebugHeroFileDungeonRPG
 
                 int targetFrameIndex = 0;
 
-                // * [StateTimer 기반 애니메이션 동기화]
+                // [StateTimer 기반 애니메이션 동기화]
                 if (e.StateTimer >= 115) // 증발 단계: 2행 3열 (인덱스 5)
                 {
                     targetFrameIndex = 5;
@@ -385,14 +384,14 @@ namespace DebugHeroFileDungeonRPG
                 int col = targetFrameIndex % cols;
                 int row = targetFrameIndex / cols;
 
-                // 💡 [진짜 9등분 크롭]: 옆 칸 레이아웃이 절대 침범하지 못하도록 341 단위로 정확히 쪼개냅니다.
+            
                 int srcX = col * fixedCellW;
                 int srcY = row * fixedCellH;
 
                 // 외곽 테두리선의 압축 노이즈 제거를 위해 사방 3픽셀 안전 가드 마진 수축
                 Rectangle srcRect = new Rectangle(srcX + 3, srcY + 3, fixedCellW - 6, fixedCellH - 6);
 
-                // 💡 [찌그러짐 원천 차단 그릇]: 145x120의 비대칭 규격을 깨부수고, 완벽한 1:1 정방형 130px 크기 그릇 강제 부여!
+               
                 int displaySize = 130;
                 Rectangle perfectGridDst = new Rectangle(
                     r.X + (r.Width / 2) - (displaySize / 2),
@@ -407,10 +406,10 @@ namespace DebugHeroFileDungeonRPG
                 g.InterpolationMode = InterpolationMode.NearestNeighbor;
                 g.PixelOffsetMode = PixelOffsetMode.Half;
 
-                // 🌟 전체 시트 출력을 완전 중단하고, 정밀 분할된 딱 1칸만 드로우!
+                // 전체 시트 출력을 완전 중단하고, 정밀 분할된 딱 1칸만 드로우!
                 g.DrawImage(sheet, perfectGridDst, srcRect, GraphicsUnit.Pixel);
 
-                // * 엔진 상태 복원 후 즉시 종료하여 하단의 전체 드로우 else 구역을 원천 차단(Bypass)합니다.
+                // 엔진 상태 복원 후 즉시 종료하여 하단의 전체 드로우 else 구역을 원천 차단(Bypass)합니다.
                 g.InterpolationMode = oldInterpolation;
                 g.PixelOffsetMode = oldPixelOffset;
                 return;
@@ -467,14 +466,14 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
-        // * [해석 방식 1]: 4x4 구조 (방패형 - Security_Firewall 전용)
+      
         private static void Draw_Image_Interpretation_1(Graphics g, Image sheet, Rectangle dst, GameEntity e)
         {
             int cols = 4; int rows = 4;
             int cellW = sheet.Width / cols; int cellH = sheet.Height / rows;
             int targetFrameIndex = 15; // 기본 대기 프레임
 
-            // * [돌진 상태(1)일 때 0~14번 프레임 루프 재생]
+            // [돌진 상태(1)일 때 0~14번 프레임 루프 재생]
             if (e.MonsterState == 1)
             {
                 targetFrameIndex = (Environment.TickCount / 90) % 15;
@@ -513,8 +512,8 @@ namespace DebugHeroFileDungeonRPG
 
             int col = targetFrameIndex % cols; int row = targetFrameIndex / cols;
 
-            // 💡 [버그 해결 1: 하얀 선 제거] 
-            // * [자르는 영역의 외곽 경계 찌꺼기가 번져서 아래에 하얀 선이 남지 않도록 내부로 1.5픽셀 마진 수축 연산]
+            // [버그 해결 1: 하얀 선 제거] 
+            // [자르는 영역의 외곽 경계 찌꺼기가 번져서 아래에 하얀 선이 남지 않도록 내부로 1.5픽셀 마진 수축 연산]
             int padX = 2;
             int padY = 2;
             Rectangle src = new Rectangle(
@@ -525,13 +524,13 @@ namespace DebugHeroFileDungeonRPG
             );
             g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
         }
-        // * [해석 방식 3 최종 종결판 - 원본 이미지 완벽 호환 버전]
-        // * [형진님이 주신 원본의 '0808' 디자인을 100% 그대로 쓰면서 아래칸 찌꺼기만 코드로 칼같이 잘라냅니다]
+        // [해석 방식 3 최종 종결판 - 원본 이미지 완벽 호환 버전]
+        // [형진님이 주신 원본의 '0808' 디자인을 100% 그대로 쓰면서 아래칸 찌꺼기만 코드로 칼같이 잘라냅니다]
         private static void Draw_Image_Interpretation_3(Graphics g, Image sheet, Rectangle dst, GameEntity e)
         {
             int cols = 4; int rows = 4;
 
-            // 💡 이미지 전체 해상도를 기반으로 분할하되, 아랫칸 침범을 막기 위해 수동 마진 적용
+            // 이미지 전체 해상도를 기반으로 분할하되, 아랫칸 침범을 막기 위해 수동 마진 적용
             int cellW = sheet.Width / cols;
             int cellH = sheet.Height / rows;
 
@@ -562,24 +561,24 @@ namespace DebugHeroFileDungeonRPG
             int col = targetFrameIndex % cols;
             int row = targetFrameIndex / rows;
 
-            // 💡 [핵심 보정]: 원본의 불균일한 경계를 잡기 위해, 자르는 사각형의 상단은 내리고, 하단은 대폭 깎아냅니다.
+            // [핵심 보정]: 원본의 불균일한 경계를 잡기 위해, 자르는 사각형의 상단은 내리고, 하단은 대폭 깎아냅니다.
             int startX = col * cellW + 4;               // 좌측 마진 증가
             int startY = row * cellH + 4;               // 상단 마진을 내려서 윗칸 잔상 제거
             int cropW = cellW - 8;                      // 가로폭 압축
-            int cropH = cellH - 12;                     // 🌟 높이를 12픽셀이나 바짝 줄여서 아래칸 안테나 절대 침범 불가하도록 가드
+            int cropH = cellH - 12;                     // 높이를 12픽셀이나 바짝 줄여서 아래칸 안테나 절대 침범 불가하도록 가드
 
             Rectangle src = new Rectangle(startX, startY, Math.Max(1, cropW), Math.Max(1, cropH));
             g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
         }
-        // * [해석 방식 4 최종 종결 보정판]: 4x4 구조 (유령형 - Teleport_1.png 전용)
-        // 💡 [지시사항 반영]: EnemyLogicSystem의 늘어난 180틱 텔레포트 시간에 맞춰 애니메이션 완벽 동기화!
+        // [해석 방식 4 최종 종결 보정판]: 4x4 구조 (유령형 - Teleport_1.png 전용)
+        // [지시사항 반영]: EnemyLogicSystem의 늘어난 180틱 텔레포트 시간에 맞춰 애니메이션 완벽 동기화!
         private static void Draw_Image_Interpretation_4(Graphics g, Image sheet, Rectangle dst, GameEntity e)
         {
             int cols = 4; int rows = 4;
             int cellW = sheet.Width / cols; int cellH = sheet.Height / rows;
             int targetFrameIndex = 0;
 
-            // * [EnemyLogicSystem.cs의 180틱 주기 순간이동 타이머와 칼동기화]
+            // [EnemyLogicSystem.cs의 180틱 주기 순간이동 타이머와 칼동기화]
             if (e.StateTimer >= 175) // A. 텔레포트 직전 (180틱 마감 5틱 전 증발 흔적 프레임)
             {
                 targetFrameIndex = 14;
@@ -610,17 +609,17 @@ namespace DebugHeroFileDungeonRPG
 
             g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
         }
-        // * [Renderer.cs 내부: 1024x1024 자산 비율 왜곡 전면 수정 버전]
+        // [Renderer.cs 내부: 1024x1024 자산 비율 왜곡 전면 수정 버전]
         private static void Draw_Image_Interpretation_5(Graphics g, Image sheet, Rectangle dst, GameEntity e)
         {
-            // 💡 [수학적 9등분 공식]: 1024 / 3 = 정확히 341px 픽셀 격리
+            // [수학적 9등분 공식]: 1024 / 3 = 정확히 341px 픽셀 격리
             const int cellW = 341;
             const int cellH = 341;
             const int cols = 3;
 
             int targetFrameIndex = 0;
 
-            // * [타이머 기반 프레임 추적 애니메이션]
+            // [타이머 기반 프레임 추적 애니메이션]
             if (e.StateTimer >= 115) // 증발 단계: 2행 3열 (인덱스 5)
             {
                 targetFrameIndex = 5;
@@ -637,19 +636,19 @@ namespace DebugHeroFileDungeonRPG
             int col = targetFrameIndex % cols;
             int row = targetFrameIndex / cols;
 
-            // 💡 [원본 소스 크롭]: 옆 칸 데이터가 절대 스며들지 못하게 정밀 341px 컷오프
+            //[원본 소스 크롭]: 옆 칸 데이터가 절대 스며들지 못하게 정밀 341px 컷오프
             int srcX = col * cellW;
             int srcY = row * cellH;
 
             // 외곽 경계선 노이즈 방지를 위해 사방 2픽셀씩만 안쪽으로 격리 수축
             Rectangle srcRect = new Rectangle(srcX + 2, srcY + 2, cellW - 4, cellH - 4);
 
-            // 💡 [진짜 해결책 - 왜곡 그릇 전면 폐기]:
-            // * 위쪽 함수에서 강제로 구겨 넣은 dst.Width(145), dst.Height(120)의 비대칭 규격을 무시합니다!
-            // * 원본 1:1 도트 비율이 완벽하게 유지되도록 가로세로를 동일한 160px 정방형 그릇으로 재조정합니다.
+            //[진짜 해결책 - 왜곡 그릇 전면 폐기]:
+            // 위쪽 함수에서 강제로 구겨 넣은 dst.Width(145), dst.Height(120)의 비대칭 규격을 무시합니다!
+            // 원본 1:1 도트 비율이 완벽하게 유지되도록 가로세로를 동일한 160px 정방형 그릇으로 재조정합니다.
             int finalDisplaySize = 160;
 
-            // * 체력바 밑 지면에 발바닥이 완벽하게 밀착되도록 중심축 좌표 재계산
+            // 체력바 밑 지면에 발바닥이 완벽하게 밀착되도록 중심축 좌표 재계산
             Rectangle perfectGridDst = new Rectangle(
                 dst.X + (dst.Width / 2) - (finalDisplaySize / 2),
                 dst.Y + dst.Height - finalDisplaySize + 10, // Y축 발바닥 고정 보정값
@@ -657,17 +656,17 @@ namespace DebugHeroFileDungeonRPG
                 finalDisplaySize
             );
 
-            // * [도트 깨짐 및 압축 오차 방지 필터 세팅]
+            // [도트 깨짐 및 압축 오차 방지 필터 세팅]
             var oldInterpolation = g.InterpolationMode;
             var oldPixelOffset = g.PixelOffsetMode;
 
             g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
             g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
 
-            // 🌟 교정된 정방형 그릇에 정밀 분할된 1칸 이미지 드로우
+            // 교정된 정방형 그릇에 정밀 분할된 1칸 이미지 드로우
             g.DrawImage(sheet, perfectGridDst, srcRect, GraphicsUnit.Pixel);
 
-            // * 엔진 상태 복원
+            // 엔진 상태 복원
             g.InterpolationMode = oldInterpolation;
             g.PixelOffsetMode = oldPixelOffset;
         }
@@ -1311,7 +1310,7 @@ namespace DebugHeroFileDungeonRPG
 
         private static Image LoadPlayerAgentFrame(int index)
         {
-            // index < 0 : idle frame. index 0~7 : video-style Player.exe walk frames with fixed baseline, bent knees, and alternating arms/legs.
+           
             if (index < 0)
             {
                 if (playerAgentIdleFrame == null)
@@ -1358,8 +1357,7 @@ namespace DebugHeroFileDungeonRPG
                 worldY = 0;
             }
 
-            // PlayerAgentIdle/Walk frames are right-facing by default and share one transparent canvas with the character centered at the bottom.
-            // This avoids the previous left-right "clone/jitter" feeling caused by uneven sprite-sheet crops.
+          
             int destW = 138;
             int destH = 174;
             Rectangle dest = new Rectangle((int)(worldX - destW / 2), (int)(worldY - destH + 4), destW, destH);
@@ -1380,8 +1378,7 @@ namespace DebugHeroFileDungeonRPG
 
         private static Rectangle GetPlayerAgentSource(string pose, int frame)
         {
-            // Source image is a transparent sprite sheet generated from the provided Player.exe reference.
-            // Coordinates are hand-picked to avoid labels and keep the character/action clean.
+          
             if (pose == "clean" || pose == "scan") return new Rectangle(80, 370, 460, 240);
             if (pose == "delete") return new Rectangle(760, 370, 650, 240);
             if (pose == "clean2") return new Rectangle(420, 670, 320, 240);
@@ -1429,7 +1426,7 @@ namespace DebugHeroFileDungeonRPG
             bool walking = pose == "walk";
             if (pose == "idle" || pose == "walk")
             {
-                // Idle stays in a fixed attention pose; walking uses the right-facing 8-frame real walk cycle. Left movement is rendered by horizontal flip to prevent moonwalk.
+              
                 int frameIndex = walking ? Math.Abs(frame) % 8 : -1;
                 DrawPlayerAgentFrameImage(g, worldX, worldY, facing, frameIndex, walking);
                 return;
@@ -1940,11 +1937,7 @@ namespace DebugHeroFileDungeonRPG
                 using (SolidBrush aura = new SolidBrush(Color.FromArgb(walking ? 24 : 18, 70, 180, 255)))
                     g.FillEllipse(aura, (int)drawX - 54, (int)baseY - 112, 108, 120);
             }
-            /*if (p.DefenseTicks > 0)
-            {
-                using (Pen shield = new Pen(Color.FromArgb(150, 120, 210, 255), 3f))
-                    g.DrawEllipse(shield, drawX - 58, baseY - 120, 116, 130);
-            }*/
+           
             if (p.ActionState == PlayerActionState.Die)
             {
                 DrawPlayerMotionFrame(g, p, drawX, baseY, facing, "player_gameover.png");
@@ -1996,7 +1989,7 @@ namespace DebugHeroFileDungeonRPG
             if (targetFrame != null)
             {
                 // ==========================================================
-                // 💡 [스케일 분리 주입] R은 기존 크기(0.35f)를 유지하고,
+                // [스케일 분리 주입] R은 기존 크기(0.35f)를 유지하고,
                 // 작아 보였던 Q스킬만 정확히 30% 키운 0.455f 배율을 동적 적용합니다.
                 // ==========================================================
                 float scale = (p.SkillIndex == 0) ? 0.455f : 0.35f;
@@ -2231,7 +2224,7 @@ namespace DebugHeroFileDungeonRPG
             using (SolidBrush shadow = new SolidBrush(Color.FromArgb(105, 0, 0, 0)))
                 g.FillEllipse(shadow, x - 38, groundY + 3, 76, 16);
 
-            // Backpack behind body.
+           
             RectangleF pack = new RectangleF(x - dir * 43 - 10, y - 92, 22, 58);
             using (LinearGradientBrush pb = new LinearGradientBrush(pack, Color.FromArgb(70, 110, 145), Color.FromArgb(24, 42, 64), 90f))
                 g.FillRoundedRectangle(pb, pack, 5);
@@ -2239,7 +2232,7 @@ namespace DebugHeroFileDungeonRPG
             using (SolidBrush led = new SolidBrush(Color.FromArgb(105, 255, 90)))
                 g.FillRectangle(led, pack.X + pack.Width / 2 - 3, pack.Y + 7, 6, 12);
 
-            // Legs first: two-segment walk with alternating feet.
+        
             float hipY = y - 43;
             float kneeY = y - 22;
             float footY = groundY + 2;
@@ -2271,7 +2264,7 @@ namespace DebugHeroFileDungeonRPG
                 g.DrawRoundedRectangle(shoeLine, sh2, 4);
             }
 
-            // Body.
+           
             RectangleF body = new RectangleF(x - 19, y - 86, 38, 48);
             using (LinearGradientBrush jb = new LinearGradientBrush(body, jacketLight, jacket, 90f))
                 g.FillRoundedRectangle(jb, body, 7);
@@ -2284,7 +2277,7 @@ namespace DebugHeroFileDungeonRPG
             using (SolidBrush badge = new SolidBrush(Color.White)) g.FillRoundedRectangle(badge, new RectangleF(x - 7, y - 64, 14, 18), 2);
             using (SolidBrush badgeCore = new SolidBrush(Color.FromArgb(75, 190, 100))) g.FillRectangle(badgeCore, x - 3, y - 58, 6, 5);
 
-            // Arms. During walk arms swing opposite to legs. During attack, front arm is extended.
+            
             float armSwing = walking ? -s * 12f : 0f;
             float rearSwing = walking ? s * 10f : 0f;
             using (Pen armBlue = new Pen(Color.FromArgb(22, 68, 145), 7f))
@@ -2294,7 +2287,7 @@ namespace DebugHeroFileDungeonRPG
                 RoundCaps(armBlue); RoundCaps(glove); RoundCaps(scanner);
                 if (aiming)
                 {
-                    // Rear arm lowered, front arm extended like firing the scanner.
+                   
                     g.DrawLine(armBlue, x - dir * 15, y - 76, x - dir * 22, y - 55);
                     g.DrawLine(glove, x - dir * 22, y - 55, x - dir * 25, y - 47);
                     g.DrawLine(armBlue, x + dir * 15, y - 76, x + dir * 41, y - 69);
@@ -2311,7 +2304,7 @@ namespace DebugHeroFileDungeonRPG
                 }
             }
 
-            // Head and hair on top.
+          
             using (SolidBrush skin = new SolidBrush(Color.FromArgb(246, 198, 142)))
                 g.FillEllipse(skin, x - 14, y - 117, 28, 30);
             using (Pen p = new Pen(outline, 2f)) g.DrawEllipse(p, x - 14, y - 117, 28, 30);
@@ -2332,7 +2325,7 @@ namespace DebugHeroFileDungeonRPG
                 if (!aiming) g.FillRectangle(eye, x - eyeOffset - 4, y - 103, 3, 5);
             }
 
-            // Shoulder security emblem.
+         
             using (SolidBrush shield = new SolidBrush(Color.FromArgb(225, 245, 255)))
             using (Pen sp = new Pen(Color.FromArgb(55, 130, 220), 1.5f))
             {
@@ -2373,7 +2366,7 @@ namespace DebugHeroFileDungeonRPG
             Color green = Color.FromArgb(95, 255, 80);
             Color mint = Color.FromArgb(150, 255, 150);
 
-            // 부드럽게 분사되는 부채꼴 안개. 시작부터 전체가 터지지 않고 길이가 점점 늘어납니다.
+         
             PointF[] cone = new PointF[]
             {
                 new PointF(x1, y1 - 5),
@@ -2402,7 +2395,7 @@ namespace DebugHeroFileDungeonRPG
                 }
             }
 
-            // 녹색 십자가가 “뾰롱뾰롱” 순서대로 생기도록 birth time을 나누어 줍니다.
+          
             int count = 28;
             for (int i = 0; i < count; i++)
             {
@@ -2418,7 +2411,7 @@ namespace DebugHeroFileDungeonRPG
                 int size = 4 + (i % 4);
                 DrawTinyCross(g, px, py, size, i % 2 == 0 ? green : mint, a);
 
-                // 작은 반짝이 점을 함께 흘려서 분사감 보강.
+             
                 if (i % 2 == 0)
                 {
                     using (SolidBrush dot = new SolidBrush(Color.FromArgb(ClampAlpha(a / 2), Color.White)))
@@ -2479,7 +2472,7 @@ namespace DebugHeroFileDungeonRPG
             }
 
             // ---------------------------------------------------------------------------------
-            // 💡 [이름 & 체력바 위치 보정]: 145x120으로 커진 형진님의 몬스터 규격에 맞춰 
+            // [이름 & 체력바 위치 보정]: 145x120으로 커진 형진님의 몬스터 규격에 맞춰 
             // 레이아웃 좌표(UI가 머리 위에 이쁘게 안착하도록 Y축 - 56 보정)를 정교하게 재계산합니다!
             // ---------------------------------------------------------------------------------
             int uiX = r.X + r.Width / 2;
@@ -2610,7 +2603,7 @@ namespace DebugHeroFileDungeonRPG
                     }
                     else
                     {
-                        // 💡 대기 상태: 플레이어 위치에 따라 1번 / 4번 사진 교체
+                        // 대기 상태: 플레이어 위치에 따라 1번 / 4번 사진 교체
                         if (e.Facing == -1)
                         {
                             fY = 0;
@@ -2686,10 +2679,10 @@ namespace DebugHeroFileDungeonRPG
             {
                 if (Renderer.ImgBoss_BSOD != null)
                 {
-                    // 💡 [핵심 수정] 올려주신 이미지 파일은 물리적으로 가로로 4칸(cols), 세로로 2칸(rows) 배치되어 있습니다.
+                    // [핵심 수정] 올려주신 이미지 파일은 물리적으로 가로로 4칸(cols), 세로로 2칸(rows) 배치되어 있습니다.
                     // 위아래가 동시에 나왔던 이유는 기존 rows가 1이어서 frame height가 두 배로 크게 계산되었기 때문입니다.
                     int cols = 4; // 가로 4칸
-                    int rows = 2; // 💡 [핵심 수정] 물리적인 세로줄 개수를 2로 명시합니다. (위쪽 줄, 아래쪽 줄)
+                    int rows = 2; // [핵심 수정] 물리적인 세로줄 개수를 2로 명시합니다. (위쪽 줄, 아래쪽 줄)
                     int fW = Renderer.ImgBoss_BSOD.Width / cols;
                     int fH = Renderer.ImgBoss_BSOD.Height / rows;
 
@@ -2714,7 +2707,7 @@ namespace DebugHeroFileDungeonRPG
                         }
                     }
 
-                    // 💡 [자동화 공식 해설]
+                    // [자동화 공식 해설]
                     // targetIndex가 0, 1, 3 중 하나라면 
                     // fX = 0, 1, 3 (순서대로)
                     // fY = targetIndex / cols = (0/4), (1/4), (3/4) = 모두 정수 결과값은 0이 됩니다.
@@ -2748,13 +2741,13 @@ namespace DebugHeroFileDungeonRPG
 
                     if (e.Facing == -1)
                     {
-                        // 👈 [플레이어가 왼쪽에 있을 때] -> 왼쪽 대기 칸 출력
+                        // [플레이어가 왼쪽에 있을 때] -> 왼쪽 대기 칸 출력
                         srcX = 800 + 10;
                         srcW = 790;
                     }
                     else
                     {
-                        // 👈 [플레이어가 오른쪽에 있을 때] -> 오른쪽 대기 칸 출력
+                        //[플레이어가 오른쪽에 있을 때] -> 오른쪽 대기 칸 출력
                         srcX = 0;
                         srcW = 800;
                     }
@@ -2762,11 +2755,11 @@ namespace DebugHeroFileDungeonRPG
                     Rectangle srcRect = new Rectangle(srcX, srcY, srcW, srcH);
                     int centerX = r.X + r.Width / 2;
 
-                    // 💡 [핵심: 1.5배 축소 연산] 기존 580px 크기를 1.5로 나누어 386px 규격으로 조정합니다.
+                    // [핵심: 1.5배 축소 연산] 기존 580px 크기를 1.5로 나누어 386px 규격으로 조정합니다.
                     int destW = 386;
                     int destH = 356;
 
-                    // 💡 크기가 작아진 만큼 발바닥 위치가 공중에 뜨지 않도록 (r.Bottom - destH - 40) 공식으로 지면에 밀착시킵니다.
+                    // 크기가 작아진 만큼 발바닥 위치가 공중에 뜨지 않도록 (r.Bottom - destH - 40) 공식으로 지면에 밀착시킵니다.
                     Rectangle destRect = new Rectangle(centerX - (destW / 2), r.Bottom - destH - 40, destW, destH);
 
                     g.DrawImage(Renderer.ImgBoss_ExceptionQueen, destRect, srcRect, GraphicsUnit.Pixel);
@@ -2818,7 +2811,7 @@ namespace DebugHeroFileDungeonRPG
                     int centerX = r.X + r.Width / 2;
 
                     // ==========================================================
-                    // 💡 [수정 포인트 1] 보스 크기 30% 축소 연산
+                    // [수정 포인트 1] 보스 크기 30% 축소 연산
                     // 기존: W 347, H 360 -> 수정: 기존값 * 0.7
                     // ==========================================================
                     int destW = 243; // (int)(347 * 0.7f)
@@ -2831,7 +2824,7 @@ namespace DebugHeroFileDungeonRPG
                     g.DrawImage(Renderer.ImgBoss_IllegalBinny, destRect, srcRect, GraphicsUnit.Pixel);
 
                     // ==========================================================
-                    // 💡 [수정 포인트 2] 검 크기 변경 (보스 키의 절반) 및 재배치
+                    // [수정 포인트 2] 검 크기 변경 (보스 키의 절반) 및 재배치
                     // ==========================================================
                     if (Renderer.Img_IceSword != null && Renderer.Img_FireSword != null && Renderer.Img_LightningSword != null)
                     {
@@ -3207,7 +3200,7 @@ namespace DebugHeroFileDungeonRPG
             {
                 if (Renderer.Img_Safezone != null)
                 {
-                    // 💡 2.5D 측면 시선(입체감)을 주기 위해 가로와 세로 비율을 2:1에 가깝게 조절합니다.
+                    // 2.5D 측면 시선(입체감)을 주기 위해 가로와 세로 비율을 2:1에 가깝게 조절합니다.
                     int drawW = 260;                   // 가로 폭을 살짝 넓혀서 플레이어 안착 영역 확보
                     int drawH = (int)(drawW * 0.52f); 
 
@@ -3226,35 +3219,13 @@ namespace DebugHeroFileDungeonRPG
           
             if (e.Kind == "playerSlash")
             {
-                //// 플레이어 고유의 슬래시 검기 연출 가동
-                //DrawSwordSlash(g, x1, e.Y, x2, e.Y2, e.Color, alpha, progress, e.Text);
+               
                 return;
             }
 
             if (e.Kind == "playerClean" || e.Kind == "playerScan" || e.Kind == "playerDelete")
             {
-                //int dir = e.X2 >= e.X ? 1 : -1;
-                //bool deleteBeam = e.Kind == "playerDelete";
-
-                //// 스킬 종류별 순수 백신 안개 및 지우기 레이저 빔 컬러 추출
-                //Color beamColor = deleteBeam ? Color.FromArgb(255, 70, 60) : e.Kind == "playerClean" ? Color.FromArgb(110, 255, 95) : Color.FromArgb(85, 230, 255);
-                //float handX = x1 + dir * 42;
-                //float handY = e.Y - 64;
-
-                //// 캐릭터의 손끝 포지션에서 오리지널 안개/광선 발사 연산 수행
-                //DrawShimmerBeam(g, handX, handY, x2, e.Y2 - 42, beamColor, alpha, progress, deleteBeam);
-
-                //if (!string.IsNullOrEmpty(e.Text))
-                //{
-                //    using (Font f = F(10f, FontStyle.Bold))
-                //    using (SolidBrush shadow = new SolidBrush(Color.FromArgb(ClampAlpha(alpha - 40), 0, 0, 0)))
-                //    using (SolidBrush b = new SolidBrush(Color.FromArgb(alpha, beamColor)))
-                //    {
-                //        RectangleF rr = new RectangleF(handX + dir * 30 - 42, handY - 44, 84, 26);
-                //        g.DrawString(e.Text, f, shadow, new RectangleF(rr.X + 1, rr.Y + 1, rr.Width, rr.Height), Center());
-                //        g.DrawString(e.Text, f, b, rr, Center());
-                //    }
-                //}
+                
                 return;
             }
             if (e.Kind == "projectile")
@@ -3263,10 +3234,7 @@ namespace DebugHeroFileDungeonRPG
                 float cy = e.Y + (e.Y2 - e.Y) * progress;
                 bool deleteBeam = e.Color.R > 180 && e.Color.G < 160;
 
-                // 🌟 [지시사항 반영]: 투사체 뒤에 그려지는 선(빔) 이펙트를 그리지 않도록 제외(주석 처리)합니다.
-                // DrawShimmerBeam(g, x1, e.Y, cx, cy, e.Color, alpha, progress, deleteBeam);
-
-                // 이제 선 없이 30x30 사이즈의 energy.png 구체 이미지만 정밀하게 렌더링됩니다.
+                
                 if (Renderer.Img_Energy != null)
                 {
                     Rectangle destRect = new Rectangle((int)cx - 15, (int)cy - 15, 30, 30);
@@ -3349,7 +3317,7 @@ namespace DebugHeroFileDungeonRPG
             if (boss == null || boss.Hp <= 0) return;
 
             
-            int barX = 180;   // 💡 보스 체력바의 시작 가로 좌표 (더 왼쪽/오른쪽으로 옮기려면 이 숫자를 수정하세요)
+            int barX = 180;   //보스 체력바의 시작 가로 좌표 (더 왼쪽/오른쪽으로 옮기려면 이 숫자를 수정하세요)
             int barY = 45;   // 보스 체력바의 세로 위치
             int barW = 700;  // 보스 체력바의 가로 길이
             int barH = 24;   // 보스 체력바의 세로 높이

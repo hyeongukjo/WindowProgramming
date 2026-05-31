@@ -19,7 +19,7 @@ namespace DebugHeroFileDungeonRPG
             float dy = player.TargetY - player.Y;
             float distance = (float)Math.Sqrt(dx * dx + dy * dy);
 
-            // 💡 [레트로 RPG 고정 속도 주입] 가속/감속 관성을 완전히 지우고, 일정한 속도로 빠릿하게 기동합니다.
+            // 가속/감속 관성을 완전히 지우고, 일정한 속도로 빠릿하게 기동합니다.
             // 아래에서 프레임을 60 FPS로 끌어올리기 때문에, 초당 9픽셀 이동이 가장 크리스프(Crisp)한 손맛을 냅니다.
             float retroMoveSpeed = 9.5f;
 
@@ -36,7 +36,7 @@ namespace DebugHeroFileDungeonRPG
                     player.Direction = dy >= 0 ? 0 : 2;
                 }
 
-                // 💡 [얼음판 미끄러짐 원천 차단] 남은 거리가 이동 속도보다 작으면 미끄러지지 않고 그 자리에 즉각 스냅 안착!
+                //  남은 거리가 이동 속도보다 작으면 미끄러지지 않고 그 자리에 즉각 스냅 안착!
                 if (distance <= retroMoveSpeed)
                 {
                     player.X = player.TargetX;

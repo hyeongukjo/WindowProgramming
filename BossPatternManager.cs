@@ -523,7 +523,7 @@ namespace DebugHeroFileDungeonRPG
             }
 
             // ==========================================================
-            // 💡 [추가] 실시간 패치파일 범위 체크 및 게이지 로딩 연산
+            //  실시간 패치파일 범위 체크 및 게이지 로딩 연산
             // ==========================================================
             float pdx = player.X - CurrentPatchPos.X;
             float pdy = player.Y - CurrentPatchPos.Y;
@@ -648,7 +648,7 @@ namespace DebugHeroFileDungeonRPG
                 }
             }
 
-            // 4. [핵심] 한쪽 유실 시 3초 듀얼 타임어택 상호 카운트다운 연산
+            // 4. 한쪽 유실 시 3초 듀얼 타임어택 상호 카운트다운 연산
             if (IsMainDead || IsCloneDead)
             {
                 SyncTimer--;
@@ -872,7 +872,7 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
-        // 누락되었던 문자열 생성기 추가!
+        
         private string GenerateTypingString(int length)
         {
             char[] arr = new char[length];

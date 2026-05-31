@@ -454,8 +454,7 @@ namespace DebugHeroFileDungeonRPG
             RegisterCloseButton(rect, buttons, closeButtonId);
         }
 
-        // 기존 코드 호환용.
-        // 다른 파일에서 DrawBlueHudFrame을 이미 호출하고 있으면 컴파일이 깨지지 않게 남긴다.
+      
         public void DrawBlueHudFrame(
             Graphics g,
             Rectangle rect,
@@ -472,8 +471,7 @@ namespace DebugHeroFileDungeonRPG
             );
         }
 
-        // 기존 코드 호환용.
-        // 내부적으로는 이제 BlueCancel 전용 함수가 아니라 공통 프레임 렌더러를 사용한다.
+     
         public void DrawBlueCancelFrameNineSlice(Graphics g, Rectangle destRect)
         {
             DrawFrameImage(
@@ -527,9 +525,7 @@ namespace DebugHeroFileDungeonRPG
             if (sourceRect.IsEmpty)
                 sourceRect = new Rectangle(0, 0, frame.Width, frame.Height);
 
-            // 원본 PNG 기준값.
-            // 네 SystemAlarm 이미지의 상단바 원본 높이가 크게 잡혀 있어서,
-            // sourceTop은 원본에서 가져올 영역, titleBarHeight는 실제 화면에 보일 높이로 분리한다.
+         
             int sourceLeft = SourceSliceLeft;
             int sourceTop = SourceSliceTop;
             int sourceRight = hasClose ? SourceSliceRightWithClose : SourceSliceRightNoClose;

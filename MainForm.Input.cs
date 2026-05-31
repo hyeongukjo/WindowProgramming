@@ -409,7 +409,7 @@ namespace DebugHeroFileDungeonRPG
 
 
 
-            // ⚡ [일반 공용 버튼 클릭 엔진] 중첩 루프 해제하여 단일 플랫 연산으로 격상
+            //  중첩 루프 해제하여 단일 플랫 연산으로 격상
             for (int buttonIndex = 0; buttonIndex < buttons.Count; buttonIndex++)
             {
                 if (buttons[buttonIndex].Bounds.Contains(mousePos))
@@ -419,7 +419,7 @@ namespace DebugHeroFileDungeonRPG
                 }
             }
 
-            // 🖥️ [바탕화면 순정 아이콘 투명 레이더 감지기]
+            // [바탕화면 순정 아이콘 투명 레이더 감지기]
             if (screen == ScreenMode.Desktop)
             {
                 if (firstDesktopNotice) return;
@@ -472,7 +472,7 @@ namespace DebugHeroFileDungeonRPG
             }
 
 
-            // ⚔️ [인게임 필드 스테이지 조작 감지부]
+            // [인게임 필드 스테이지 조작 감지부]
             if (screen == ScreenMode.Stage)
             {
                 if (e.Button == MouseButtons.Left)

@@ -73,7 +73,7 @@ namespace DebugHeroFileDungeonRPG
 
 
             // ==========================================================
-            // 💡 [E 보호막 데미지 상쇄 엔진] 내 체력이 깎였을 때 실드가신 가로채기 연산
+            //  [E 보호막 데미지 상쇄 엔진] 내 체력이 깎였을 때 실드가신 가로채기 연산
             // ==========================================================
             if (player.Hp < preUpdateHp && playerShield > 0)
             {
@@ -134,9 +134,7 @@ namespace DebugHeroFileDungeonRPG
                 effects.Add(new Effect("text", player.X, player.Y - 90, player.X, player.Y - 90, 70, Color.Red, "복구 지점으로 반환"));
             }
 
-            // 💡 [버그 해결 핵심 가드 벨트 주입]: 
-            // * [죽은 몬스터(Hp <= 0)를 리스트에서 실시간으로 완벽히 역순 소거하여 Count를 0으로 만들어 줍니다]
-            // * [이 연산이 빠져 있어서 enemies.Count가 4로 묶여 웨이브 정지 버그가 발생했습니다]
+           
             if (!stageBossPhase)
             {
                 for (int i = enemies.Count - 1; i >= 0; i--)
@@ -158,33 +156,7 @@ namespace DebugHeroFileDungeonRPG
                 bossRuntime.patternManager.Update(mainBoss, player, effects, mapWidth);
             }
 
-            // ==========================================================
-            // 본체(IsMainDead)와 분신(IsCloneDead)이 모두 죽고 패턴이 종료되었을 때만
-            // 정확히 단 한 번 정식 최종 보상을 드랍하고 스테이지를 클리어시킵니다.
-            // ==========================================================
-            //if (stageBossPhase && currentStage == 10 && bossRuntime.patternManager.IsMainDead && bossRuntime.patternManager.IsCloneDead && !bossRuntime.patternManager.IsIllusionActive)
-            //{
-            //    if (weaponDrops.Count == 0)
-            //    {
-            //        GameEntity rewardDummy = new GameEntity { X = player.X + 150, Y = player.Y - 50, IsBoss = true };
-            //        RewardSystem.AwardDefeatReward(rewardDummy, player, currentStage, effects, random);
-
-            //        WeaponUpgradeFile drop = new WeaponUpgradeFile
-            //        {
-            //            X = rewardDummy.X,
-            //            Y = Math.Max(115, Math.Min(ClientSize.Height - 95, rewardDummy.Y - 25)),
-            //            StageIndex = currentStage,
-            //            UpgradeLevel = player.WeaponLevel + 1
-            //        };
-            //        weaponDrops.Add(drop);
-            //        effects.Add(new Effect("text", drop.X, drop.Y - 72, drop.X, drop.Y - 72, 120, Color.LightSkyBlue, "FINAL UPGRADE FILE DROP"));
-            //        TryBeep(980, 150);
-            //    }
-
-            //    if (weaponDrops.Count > 0) return;
-            //    ClearCurrentStage();
-            //    return;
-            //}
+            
             if (stageBossPhase && currentStage == 10)
             {
                 // 현재 에너미 리스트에서 최종 보스 본체 객체를 탐색합니다.
@@ -231,35 +203,7 @@ namespace DebugHeroFileDungeonRPG
                     return;
                 }
             }
-            /*
-            if (currentStage != 10)
-            {
-                bool anyEnemyAlive = false;
-                for (int i = 0; i < enemies.Count; i++)
-                {
-                    if (enemies[i].Hp > 0)
-                    {
-                        anyEnemyAlive = true;
-                        break;
-                    }
-                }
-
-                if (enemies.Count > 0 && !anyEnemyAlive)
-                {
-                    if (!showStageClearPopup)
-                    {
-                        showStageClearPopup = true;
-                        popupBonusCoins = currentStage * 450;
-                        player.Coins += popupBonusCoins;
-                        TryBeep(1050, 200);
-                        return;
-                    }
-                    if (showStageClearPopup) return;
-                }
-            }*/
-
-            // 10스테이지 최종보스전이 아닐 때 작동하는 기존 일반 몹 클리어 조건 분기
-            // * [위에서 죽은 몹들을 필터링하여 소거하므로 이제 안전하게 참(True) 분기로 진입합니다]
+           
             if ((enemies.Count == 0 || enemyResult.AllEnemiesDefeated) && currentStage != 10)
             {
                 if (st.Index == 10 && bossRuntime.patternManager.IsIllusionActive) return;
@@ -273,19 +217,17 @@ namespace DebugHeroFileDungeonRPG
                         // ---------------------------------------------------------------------------------
                         if (currentStage % 2 == 0) return;
 
-                        // ---------------------------------------------------------------------------------
-                        // [지시사항 반영]: 2웨이브(인덱스 1) 클리어 즉시 5초 딜레이 없이 3웨이브 보상 직행 처리
-                        // ---------------------------------------------------------------------------------
+                      
                         if (enemies.Count == 0 && !isWaveWaiting && weaponDrops.Count == 0)
                         {
-                            // 💡 현재 2웨이브(인덱스 1) 무리를 모두 정화했다면, 더 이상 기다리지 않고 즉시 보상 스폰 단계로 스위칭!
+                            //  현재 2웨이브(인덱스 1) 무리를 모두 정화했다면, 더 이상 기다리지 않고 즉시 보상 스폰 단계로 스위칭!
                             if (currentWaveIndex == 1)
                             {
                                 currentWaveIndex = 3;  // 기존의 최종 보상 획득 조건(>=3)을 강제로 트리거
                                 waveDelayTicks = 0;    // 5초 지연(150틱)을 즉시 0으로 소거하여 딜레이 파쇄
                                 isWaveWaiting = false; // 대기 없이 아래 보상 스폰 로직을 즉시 실행하도록 설정
 
-                                // 🌟 3웨이브에는 아무것도 추가하지 않고 즉시 보상 파일 스폰
+                                //  3웨이브에는 아무것도 추가하지 않고 즉시 보상 파일 스폰
                                 WeaponUpgradeFile drop = new WeaponUpgradeFile
                                 {
                                     X = player.X + 250,
@@ -296,7 +238,7 @@ namespace DebugHeroFileDungeonRPG
                                 weaponDrops.Add(drop);
                                 TryBeep(880, 150); // 보상 출현 기분 좋은 Beep 음 연출
                             }
-                            // 💡 1웨이브(인덱스 0) 클리어 시에는 정상적으로 5초 뒤 2웨이브가 소환되도록 유지
+                            // 1웨이브(인덱스 0) 클리어 시에는 정상적으로 5초 뒤 2웨이브가 소환되도록 유지
                             else if (currentWaveIndex < 1)
                             {
                                 isWaveWaiting = true;
@@ -654,7 +596,7 @@ namespace DebugHeroFileDungeonRPG
 
             float originX = GetMovingAttackOriginX(dir);
             // =============================================================================
-            // ⚔️ [실전 패치] 무기 강화 효율이 칼같이 작동하는 소울류 정석 하드코어 밸런스 폼
+            //무기 강화 효율이 칼같이 작동하는 소울류 정석 하드코어 밸런스 폼
             // =============================================================================
             int damage = 0;
             if (slot == 0) damage = 10 + (player.WeaponLevel * 3); // Q 평타 대미지 공식
@@ -668,8 +610,7 @@ namespace DebugHeroFileDungeonRPG
                 damage = (int)(damage * 1.5f);
             }
 
-            // 💡 버그의 주범이었던 테스트용 'damage *= 30;' 코드를 영구 삭제 처리했습니다.
-            // =============================================================================
+            
             Color color = slot == 0 ? Color.FromArgb(80, 190, 255) : slot == 1 ? Color.FromArgb(80, 255, 130) : Color.FromArgb(255, 210, 60);
             float startX = originX + dir * 34;
             float endX = originX + dir * range;
@@ -764,7 +705,7 @@ namespace DebugHeroFileDungeonRPG
             // 파일이 폴더에 실제로 존재할 때 진입
             if (File.Exists(videoPath))
             {
-                // 💡 [핵심] mciSendString 명령은 장치를 여는 데 성공하면 정확히 '0'을 반환합니다.
+                //  mciSendString 명령은 장치를 여는 데 성공하면 정확히 '0'을 반환합니다.
                 int openResult = mciSendString($"open \"{videoPath}\" type mpegvideo alias Stage10Video style child parent {this.Handle}", null, 0, IntPtr.Zero);
 
                 // 코덱이 정상적으로 존재하여 영상을 여는 데 완벽히 성공했을 때만 컷씬 모드를 가동합니다.

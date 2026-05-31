@@ -1,0 +1,7 @@
+<Project>
+  <ItemGroup>
+    <None Update="Assets\SoundPatch\*.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

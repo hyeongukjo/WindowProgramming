@@ -119,7 +119,7 @@ namespace DebugHeroFileDungeonRPG
 
         public int MotionIndex = 0;
 
-        // 💡 [STAGE 01 몬스터 기믹용 확장 변수 추가]
+        // [STAGE 01 몬스터 기믹용 확장 변수 추가]
         public int StateTimer = 0;       // 상태 유지 및 쿨타임용 타이머 (틱 단위)
         public int MonsterState = 0;      // 0: 기본/대기, 1: 작동/돌진 중
         public float TargetPosX = 0f;    // 순간이동이나 돌진 목적지 X

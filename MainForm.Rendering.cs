@@ -20,14 +20,9 @@ namespace DebugHeroFileDungeonRPG
             g.InterpolationMode = InterpolationMode.Low;
             g.PixelOffsetMode = PixelOffsetMode.HighSpeed;
 
-            // -----------------------------------------------------------------------------
-            // 🌟 [최종 글로벌 구원 격실]: 상점 아이템 설명 글씨의 아랫다리가 잘리는 억까를 전면 분쇄합니다!
-            // 💡 ClearTypeGridFit 세팅 하에서 소수점 픽셀이 강제로 버림 처리되어 잘리는 현상을 막기 위해
-            // 텍스트 정밀도 힌트를 안티앨리어싱 가드가 포함된 'AntiAliasGridFit'으로 전격 조정합니다.
-            // -----------------------------------------------------------------------------
+            
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-            // -----------------------------------------------------------------------------
-
+          
             buttons.Clear();
 
             if (screen == ScreenMode.StartMenu) DrawAdminStartMenu(g);
@@ -171,7 +166,7 @@ namespace DebugHeroFileDungeonRPG
                 int winY = 60;
                 Rectangle winBounds = new Rectangle(winX, winY, winW, winH);
 
-                // 🛠️ [구조 변경]: 투박한 회색 사각형 대신 공식 블루 시스템 에셋 프레임으로 뼈대 빌드!
+              
                 SystemWindowUI.Shared.DrawSystemPanelFrame(
                     g,
                     winBounds,
@@ -225,7 +220,7 @@ namespace DebugHeroFileDungeonRPG
                         {
                             string jsonObjectString = objMatches[m].Value;
 
-                            // 💡 [정규식 구문 오류 전면 해결]: 깨진 잔상 문자열을 걷어내고 순수한 리터럴 식으로 복구
+                          
                             var nameMatch = System.Text.RegularExpressions.Regex.Match(jsonObjectString, @"""user_name"":""([^""]+)""");
                             var timeMatch = System.Text.RegularExpressions.Regex.Match(jsonObjectString, @"""clear_time_ticks"":(\d+)");
                             var deathMatch = System.Text.RegularExpressions.Regex.Match(jsonObjectString, @"""death_count"":(\d+)");
@@ -311,11 +306,11 @@ namespace DebugHeroFileDungeonRPG
         }
 
         // =============================================================================
-        // 🌟 [상점 UI 두 줄 문장 위아래 뭉개짐 전면 처단 버전]
+        // [상점 UI 두 줄 문장 위아래 뭉개짐 전면 처단 버전]
         // =============================================================================
         private void DrawShop(Graphics g)
         {
-            // 💡 [핵심 보정 가드]: ClearTypeGridFit 하에서 폰트 오프셋 계산 오차로 
+           
             // 두 줄 이상 문장의 위아래 행간이 뭉개지는 현상을 방지하기 위해 정밀도를 강제 스위칭합니다.
             var oldHint = g.TextRenderingHint;
             g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
@@ -374,7 +369,7 @@ namespace DebugHeroFileDungeonRPG
                     }
 
                     // 3. 4번 보스 (Exception Queen): 75%/25%(NullRef), 10%(StackOverflow) 패턴일 때 
-                    // (※ 지시사항에 따라 50% 패턴인 IsTryCatchActive일 때는 흔들리지 않도록 원천 제외)
+                   
                     if ((currentBoss.Name.Contains("Exception Queen") || currentBoss.Name.Contains("Exception_Queen")) &&
                        (bossManager.IsNullRefActive || bossManager.IsStackOverflowActive))
                     {
@@ -487,9 +482,7 @@ namespace DebugHeroFileDungeonRPG
                     // 1. 배경 이미지 드로우 (기존 코드 유지)
                     if (Renderer.Img_AlarmBg != null) g.DrawImage(Renderer.Img_AlarmBg, winX, winY, winW, winH);
 
-                    // ----------------------------------------------------------
-                    // [보정 모듈 주입] 글자가 번지고 흐려지는 현상 원천 차단!
-                    // GDI+의 텍스트 렌더링 힌트를 'ClearTypeGridFit'으로 격상시킵니다.
+                   
                     // ----------------------------------------------------------
                     g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
                     // ----------------------------------------------------------
@@ -517,7 +510,7 @@ namespace DebugHeroFileDungeonRPG
                             sf.Alignment = StringAlignment.Near;      // 좌측 정렬
                             sf.LineAlignment = StringAlignment.Near;  // 상단 정렬
 
-                            // 🌟 핵심 가드: GDI+가 경계선에 글자가 닿았을 때 멋대로 위아래 다리를 크롭하는 연산을 원천 봉쇄합니다.
+                            
                             sf.FormatFlags = StringFormatFlags.NoClip;
                             sf.Trimming = StringTrimming.None;
 
@@ -526,7 +519,7 @@ namespace DebugHeroFileDungeonRPG
                         }
                     }
 
-                    // 3. 확인 버튼 드로우 및 문자열 배치 (기존 코드 유지)
+                   
                     int btnW = 120; int btnH = 36;
                     popupConfirmBtnBounds = new Rectangle((winX + winW / 2) - btnW / 2, winY + winH - 60, btnW, btnH);
                     if (Renderer.Img_PopupBtn != null) g.DrawImage(Renderer.Img_PopupBtn, popupConfirmBtnBounds);
@@ -562,7 +555,7 @@ namespace DebugHeroFileDungeonRPG
             }
 
             // ----------------------------------------------------------
-            // 🛡️ [신설] E 보호막 아우라 그리기 (캐릭터 주변 네온 서클 및 수치 출력)
+            // E 보호막 아우라 그리기 (캐릭터 주변 네온 서클 및 수치 출력)
             // ----------------------------------------------------------
             if (playerShield > 0)
             {
@@ -570,15 +563,15 @@ namespace DebugHeroFileDungeonRPG
 
                 if (Renderer.Img_SkillBarrier != null)
                 {
-                    // 📐 플레이어 스프라이트 중심점(Y-40)을 기준으로 방어막이 이쁘게 감싸도록 좌표 계산
+                    //플레이어 스프라이트 중심점(Y-40)을 기준으로 방어막이 이쁘게 감싸도록 좌표 계산
                     int shieldSize = 120; // 배리어 해상도 크기 세팅
                     float shieldX = (player.X - cameraX) - (shieldSize / 2);
                     float shieldY = (player.Y - 40) - (shieldSize / 2);
 
-                    // 🎨 [투명도 제어 인젝션] 이미지의 알파 채널 계수를 실시간 제어합니다.
+                    // [투명도 제어 인젝션] 이미지의 알파 채널 계수를 실시간 제어합니다.
                     using (var imageAttributes = new System.Drawing.Imaging.ImageAttributes())
                     {
-                        // 💡 불투명도(Opacity) 설정: 0.0f(완전 투명) ~ 1.0f(완전 불투명)
+                        // 불투명도(Opacity) 설정: 0.0f(완전 투명) ~ 1.0f(완전 불투명)
                         // 기존 에셋이 너무 진하다면 이 값을 0.3f ~ 0.4f 정도로 세팅하면 은은하고 이쁘게 투명해집니다.
                         float opacity = 0.35f;
 
@@ -623,7 +616,7 @@ namespace DebugHeroFileDungeonRPG
             }
 
             // ----------------------------------------------------------
-            // ❄️ [신설] R 궁극기 낙하 비주얼 렌더러 (Cold 장검 수직 하강 파이프라인)
+            // R 궁극기 낙하 비주얼 렌더러 (Cold 장검 수직 하강 파이프라인)
             // ----------------------------------------------------------
             foreach (var sword in playerSkySwords)
             {
@@ -727,7 +720,7 @@ namespace DebugHeroFileDungeonRPG
                 g.DrawString(mpText, valueFont, valueBrush, new Rectangle(barX, mpY, barW, barH), Renderer.Center());
 
 
-                // 🧪 3. 소모품 포션 정보 배치 영역
+                // 3. 소모품 포션 정보 배치 영역
                 // 주석으로 인해 널널해진 하단 전체 공간을 활용해 정중앙에 크고 명확하게 배치합니다.
                 int itemY = h.Y + 175;
                 Rectangle itemRect = new Rectangle(h.X + 20, itemY, h.Width - 40, 45);
@@ -1160,7 +1153,7 @@ namespace DebugHeroFileDungeonRPG
                 using (Pen p = new Pen(Color.FromArgb(200, Color.Red), 2f)) g.DrawEllipse(p, sPosX - 50, sm.Y - 25, 100, 50);
                 float missileY = sm.Y - 500 + (1f - (sm.Timer / 60f)) * 500;
 
-                // 💡 [디자인 완전 교체] 투박한 OrangeRed 직사각형 막대 대신 Meteor 이미지 전체 투사
+                //  투박한 OrangeRed 직사각형 막대 대신 Meteor 이미지 전체 투사
                 if (Renderer.Img_Meteor != null)
                 {
                     g.DrawImage(Renderer.Img_Meteor, sPosX - 32, missileY - 32, 64, 64);
@@ -1175,9 +1168,9 @@ namespace DebugHeroFileDungeonRPG
                 float sPosX = p.X - cameraX;
                 if (p.IsEnrageMissile)
                 {
-                    // ❌ 기존의 투박한 주황색 사각형 채우기 및 흰색 테두리선 삭제 구역
+                   
 
-                    // 💡 [디자인 요청 반영] 10% 기믹용 이미지를 Meteor2에서 일반 Meteor(Img_Meteor) 이미지 전체 투사로 변경합니다.
+                    
                     if (Renderer.Img_Meteor != null)
                     {
                         g.DrawImage(Renderer.Img_Meteor, sPosX - 32, p.Y - 32, 64, 64);

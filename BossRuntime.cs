@@ -35,7 +35,7 @@ namespace DebugHeroFileDungeonRPG
             DrawShardPattern(g, cameraX);
             DrawResourcePattern(g, clientSize);
 
-            // 💡 [핵심 추가] 눈에 보이지 않던 BSOD 드래곤의 기믹 요소들을 화면에 직접 드로우합니다.
+            // 눈에 보이지 않던 BSOD 드래곤의 기믹 요소들을 화면에 직접 드로우합니다.
             DrawBSODGimmicks(g, cameraX, clientSize);
             DrawHighKernelGimmicks(g, cameraX, clientSize);
             DrawExceptionQueenGimmicks(g, cameraX, clientSize);
@@ -172,7 +172,7 @@ namespace DebugHeroFileDungeonRPG
                 using (Pen laserWall = new Pen(Color.FromArgb(220, Color.OrangeRed), 5f))
                 using (Pen laserCore = new Pen(Color.White, 1.5f))
                 {
-                    // 💡 [줄넘기 구멍 구현] 안전 구역(SafeHoleY)의 틈새 위아래까지만 레이저를 끊어서 그립니다!
+                    // 안전 구역(SafeHoleY)의 틈새 위아래까지만 레이저를 끊어서 그립니다
                     g.DrawLine(laserWall, sx, 0, sx, safeY - 45);
                     g.DrawLine(laserCore, sx, 0, sx, safeY - 45);
 
@@ -211,7 +211,7 @@ namespace DebugHeroFileDungeonRPG
                 using (SolidBrush bg = new SolidBrush(Color.FromArgb(140, Color.Black))) g.FillRectangle(bg, bar);
 
                 // ==========================================================
-                // 💡 [수정] 타이머 비례 감소 오류 완벽 수정: 보호막 실제 잔량(BinnyShield / 1500) 게이지 연동!
+                // 타이머 비례 감소 오류 완벽 수정: 보호막 실제 잔량(BinnyShield / 1500) 게이지 연동
                 // ==========================================================
                 float shieldRatio = Math.Max(0f, Math.Min(1f, patternManager.BinnyShield / 1500f));
                 int fillW = (int)(bar.Width * shieldRatio);
@@ -255,7 +255,7 @@ namespace DebugHeroFileDungeonRPG
         // ==========================================
         private void DrawExceptionQueenGimmicks(Graphics g, float cameraX, Size clientSize)
         {
-            // 1. NullReference 궤도 유도 장판 드로우
+           
             // 1. NullReference 궤도 유도 장판 및 실시간 디버그선 드로우
             if (patternManager.IsNullRefActive)
             {
@@ -271,7 +271,7 @@ namespace DebugHeroFileDungeonRPG
                 float dy = patternManager.PlayerPos.Y - patternManager.NullRefNode.Y;
                 float dist = (float)Math.Sqrt(dx * dx + dy * dy);
 
-                // 💡 [유도선 실시간 색상반전 시스템] 120~280 사이면 초록실선, 이탈 시 빨간점선
+                // 120~280 사이면 초록실선, 이탈 시 빨간점선
                 using (Pen linkPen = new Pen(Color.White, 3f))
                 {
                     if (dist >= 120 && dist <= 280)
@@ -345,7 +345,7 @@ namespace DebugHeroFileDungeonRPG
                     }
                 }
 
-                // 💡 [핵심] 타이핑 페이즈 활성화 시 캐릭터 머리 위에 해킹 코드 실시간 출력
+                // 타이핑 페이즈 활성화 시 캐릭터 머리 위에 해킹 코드 실시간 출력
                 if (patternManager.IsTypingPhaseActive)
                 {
                     // 화면 정중앙이나 텍스트 전용 위치에 출력 (여기선 캐릭터 위치 위쪽 스크린에 바인딩 추천)
@@ -450,7 +450,7 @@ namespace DebugHeroFileDungeonRPG
                     g.DrawEllipse(zonePen, px - r, py - r, r * 2, r * 2);
                 }
 
-                // 💡 [로딩바 드로우] 장판 머리 위에 실시간 충전바 배치
+                //  장판 머리 위에 실시간 충전바 배치
                 Rectangle barBounds = new Rectangle((int)px - 60, (int)py - (int)r - 25, 120, 12);
                 using (SolidBrush barBg = new SolidBrush(Color.FromArgb(140, Color.Black)))
                 {
@@ -513,9 +513,9 @@ namespace DebugHeroFileDungeonRPG
                 int sx = (int)(p.X - cameraX);
                 int sy = (int)p.Y;
 
-                // ❌ [삭제 완료] 기존의 보라색 원형 오라와 흰색 코어 GDI+ 도형 코드를 제거했습니다.
+                // 기존의 보라색 원형 오라와 흰색 코어 GDI+ 도형 코드를 제거했습니다.
 
-                // 💡 [대체 완료] 일반 탄막들도 전부 보스 컨셉에 맞게 미니 회전 하드디스크 형태로 변환합니다.
+                // 일반 탄막들도 전부 보스 컨셉에 맞게 미니 회전 하드디스크 형태로 변환합니다.
                 if (Renderer.Img_DiskSprite != null)
                 {
                     // 탄막마다 약간씩 회전 타이밍이 다르게 보이도록 픽셀 위치값을 틱에 연동하는 센스 추가
@@ -562,7 +562,7 @@ namespace DebugHeroFileDungeonRPG
                 g.DrawImage(Renderer.Img_DiskSprite, destRect, srcRect, GraphicsUnit.Pixel);
             }
 
-            // 💡 [유지] 패턴 진행 상황과 남은 시간을 알려주는 상단 UI 레이블은 그대로 살려둡니다.
+            // 패턴 진행 상황과 남은 시간을 알려주는 상단 UI 레이블은 그대로 살려둡니다.
             using (Font f = Renderer.F(10f, FontStyle.Bold))
             using (SolidBrush b = new SolidBrush(Color.White))
             using (SolidBrush bg = new SolidBrush(Color.FromArgb(160, 0, 0, 0)))
