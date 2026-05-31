@@ -166,10 +166,36 @@ namespace DebugHeroFileDungeonRPG
             }
             if (screen == ScreenMode.FinalInput)
             {
-                if (e.KeyCode == Keys.Back && finalInput.Length > 0) finalInput = finalInput.Substring(0, finalInput.Length - 1);
-                if (e.KeyCode == Keys.Enter) ResolveEnding();
+                if (e.KeyCode == Keys.Back && finalInput.Length > 0)
+                {
+                    finalInput = finalInput.Substring(0, finalInput.Length - 1);
+                    Invalidate();
+                }
+                else if (e.KeyCode == Keys.Enter)
+                {
+                    ResolveEnding();
+                }
+
                 return;
             }
+
+            if (screen == ScreenMode.Ending)
+            {
+                if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Escape || e.KeyCode == Keys.Space)
+                {
+                    endingTitle = "";
+                    endingBody = "";
+                    finalInput = "";
+
+                    currentStage = 0;
+                    screen = ScreenMode.StartMenu;
+
+                    Invalidate();
+                }
+
+                return;
+            }
+
             if (screen == ScreenMode.Help)
             {
                 if (e.KeyCode == Keys.Escape || e.KeyCode == Keys.Enter) screen = ScreenMode.Desktop;
@@ -203,6 +229,7 @@ namespace DebugHeroFileDungeonRPG
                 {
                     finalInput += e.KeyChar;
                     e.Handled = true;
+                    Invalidate();
                 }
             }
         }
@@ -564,6 +591,18 @@ namespace DebugHeroFileDungeonRPG
             }
             else if (action == "clearNext") ContinueAfterClear();
             else if (action == "finalOk") ResolveEnding();
+            else if (action == "endingBackToTitle")
+            {
+                endingTitle = "";
+                endingBody = "";
+                finalInput = "";
+
+                currentStage = 0;
+                screen = ScreenMode.StartMenu;
+
+                Invalidate();
+            }
+            else if (action == "endingStay") Invalidate();
             else if (action == "helpBack") screen = ScreenMode.Desktop;
         }
         private void AdvanceStageNpcHint()
@@ -660,6 +699,7 @@ namespace DebugHeroFileDungeonRPG
         {
             if (clearStage >= stages.Count)
             {
+                finalInput = "";
                 screen = ScreenMode.FinalInput;
                 return;
             }

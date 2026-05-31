@@ -828,40 +828,269 @@ namespace DebugHeroFileDungeonRPG
             return NpcMood.Damaged;
         }
 
-        private void DrawFinalInput(Graphics g)
-        {
-            Renderer.DrawStageBackground(g, ClientRectangle, stages[9], 0);
-            Rectangle win = new Rectangle(ClientSize.Width / 2 - 460, ClientSize.Height / 2 - 235, 920, 450);
-            Renderer.DrawXPWindow(g, win, "최종 입력창 - 삭제할 프로세스 이름", true);
-            Renderer.DrawNpcImage(g, new Rectangle(win.X + 24, win.Y + 64, 170, 250), NpcMood.Warning);
-            using (Font f = Renderer.F(10f, FontStyle.Regular))
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(32, 38, 50)))
-            {
-                string text = NpcDialogueData.FinalInputInstruction;
-            }
-            Rectangle input = new Rectangle(win.X + 215, win.Y + 250, 520, 36);
-            using (SolidBrush b = new SolidBrush(Color.White)) g.FillRectangle(b, input);
-            using (Pen p = new Pen(Color.DarkRed, 2f)) g.DrawRectangle(p, input);
-            using (Font f = Renderer.F(13f, FontStyle.Bold)) g.DrawString(finalInput + "_", f, Brushes.Black, new Rectangle(input.X + 8, input.Y, input.Width - 16, input.Height), Renderer.LeftMiddle());
-            Rectangle btn = new Rectangle(win.Right - 170, win.Bottom - 58, 130, 34);
-            Renderer.DrawButton(g, btn, "입력", true);
-            buttons.Add(new UiButton(btn, "finalOk"));
-        }
-
         private void DrawEnding(Graphics g)
         {
             Renderer.DrawXPWallpaper(g, ClientRectangle);
-            Renderer.DrawXPTaskbar(g, ClientRectangle, endingTitle);
-            Rectangle win = new Rectangle(ClientSize.Width / 2 - 430, ClientSize.Height / 2 - 190, 860, 360);
-            Renderer.DrawXPWindow(g, win, endingTitle, endingTitle.Contains("잘못") || endingTitle.Contains("루프"));
-            Renderer.DrawNpcImage(g, new Rectangle(win.X + 24, win.Y + 62, 160, 230), endingTitle.Contains("진엔딩") ? NpcMood.Happy : NpcMood.Warning);
-            using (Font f = Renderer.F(12f, FontStyle.Bold))
-            using (SolidBrush b = new SolidBrush(Color.FromArgb(32, 42, 64)))
-                g.DrawString(endingBody, f, b, new Rectangle(win.X + 210, win.Y + 80, win.Width - 250, 170), Renderer.Left());
-            using (Font f = Renderer.F(9f, FontStyle.Regular))
-                g.DrawString("Enter를 누르면 종료 화면을 유지합니다.", f, Brushes.DarkBlue, new Rectangle(win.X + 210, win.Bottom - 70, win.Width - 250, 24), Renderer.LeftMiddle());
-        }
+            TaskbarUI.Shared.Draw(g, ClientRectangle);
 
+            using (SolidBrush dim = new SolidBrush(Color.FromArgb(95, 0, 0, 0)))
+                g.FillRectangle(dim, ClientRectangle);
+
+            bool isTrueEnding = endingTitle.Contains("진엔딩");
+
+            bool isAssistantLoopEnding =
+                endingTitle.Contains("Assistant") ||
+                endingTitle.Contains("루프");
+
+            bool isInvalidEnding =
+                endingTitle.Contains("잘못") ||
+                endingTitle.Contains("회피") ||
+                endingTitle.Contains("실패");
+
+            bool isNormalEnding =
+                !isTrueEnding &&
+                !isAssistantLoopEnding &&
+                !isInvalidEnding;
+
+            SystemWindowStyle style;
+            NpcMood mood;
+
+            if (isTrueEnding)
+            {
+                style = SystemWindowStyle.Blue;
+                mood = NpcMood.Happy;
+            }
+            else if (isNormalEnding)
+            {
+                style = SystemWindowStyle.Blue;
+                mood = NpcMood.Thinking;
+            }
+            else if (isAssistantLoopEnding)
+            {
+                style = SystemWindowStyle.Red;
+                mood = NpcMood.Warning;
+            }
+            else
+            {
+                style = SystemWindowStyle.Red;
+                mood = NpcMood.Damaged;
+            }
+
+            Rectangle win = new Rectangle(
+                ClientSize.Width / 2 - 390,
+                ClientSize.Height / 2 - 190,
+                780,
+                380
+            );
+
+            SystemWindowUI.Shared.DrawSystemPanelFrame(
+                g,
+                win,
+                endingTitle,
+                style,
+                false,
+                buttons,
+                null
+            );
+
+            Rectangle npcRect = new Rectangle(
+                win.X + 28,
+                win.Y + 66,
+                150,
+                205
+            );
+
+            Renderer.DrawNpcImage(g, npcRect, mood);
+
+            Rectangle bodyRect = new Rectangle(
+                win.X + 205,
+                win.Y + 72,
+                win.Width - 245,
+                190
+            );
+
+            using (Font bodyFont = Renderer.F(11.5f, FontStyle.Bold))
+            using (SolidBrush bodyBrush = new SolidBrush(Color.FromArgb(28, 32, 44)))
+            {
+                g.DrawString(
+                    endingBody,
+                    bodyFont,
+                    bodyBrush,
+                    bodyRect,
+                    Renderer.Left()
+                );
+            }
+
+            Rectangle hintRect = new Rectangle(
+                win.X + 205,
+                win.Bottom - 82,
+                win.Width - 245,
+                28
+            );
+
+            using (Font hintFont = Renderer.F(9.5f, FontStyle.Regular))
+            using (SolidBrush hintBrush = new SolidBrush(
+                isAssistantLoopEnding || isInvalidEnding
+                    ? Color.FromArgb(120, 40, 40)
+                    : Color.FromArgb(40, 70, 120)))
+            {
+                g.DrawString(
+                    "Enter 또는 Esc를 누르면 타이틀 화면으로 돌아갑니다.",
+                    hintFont,
+                    hintBrush,
+                    hintRect,
+                    Renderer.LeftMiddle()
+                );
+            }
+
+            Rectangle okButton = new Rectangle(
+                win.Right - 158,
+                win.Bottom - 58,
+                110,
+                28
+            );
+
+            SystemWindowUI.Shared.DrawDialogImageButton(
+                g,
+                okButton,
+                SystemWindowButtonKind.Ok,
+                "endingBackToTitle",
+                buttons
+            );
+        }
+        private void DrawFinalInput(Graphics g)
+        {
+            Renderer.DrawStageBackground(g, ClientRectangle, stages[9], 0);
+
+            using (SolidBrush dim = new SolidBrush(Color.FromArgb(115, 0, 0, 0)))
+                g.FillRectangle(dim, ClientRectangle);
+
+            Rectangle win = new Rectangle(
+                ClientSize.Width / 2 - 390,
+                ClientSize.Height / 2 - 210,
+                780,
+                420
+            );
+
+            SystemWindowUI.Shared.DrawSystemPanelFrame(
+                g,
+                win,
+                "System Process Termination",
+                SystemWindowStyle.Red,
+                false,
+                buttons,
+                null
+            );
+
+            Rectangle npcRect = new Rectangle(win.X + 28, win.Y + 66, 155, 210);
+            Renderer.DrawNpcImage(g, npcRect, NpcMood.Damaged);
+
+            Rectangle bodyRect = new Rectangle(
+                win.X + 205,
+                win.Y + 66,
+                win.Width - 245,
+                142
+            );
+
+            using (Font bodyFont = Renderer.F(10.5f, FontStyle.Regular))
+            using (SolidBrush bodyBrush = new SolidBrush(Color.FromArgb(28, 32, 44)))
+            {
+                g.DrawString(
+                    NpcDialogueData.FinalInputInstruction,
+                    bodyFont,
+                    bodyBrush,
+                    bodyRect,
+                    Renderer.Left()
+                );
+            }
+
+            Rectangle commandRect = new Rectangle(
+                win.X + 205,
+                win.Y + 218,
+                win.Width - 265,
+                28
+            );
+
+            using (Font cmdFont = Renderer.F(10f, FontStyle.Bold))
+            using (SolidBrush cmdBrush = new SolidBrush(Color.FromArgb(55, 55, 55)))
+            {
+                g.DrawString(
+                    @"C:\WINDOWS\system32> taskkill /im",
+                    cmdFont,
+                    cmdBrush,
+                    commandRect,
+                    Renderer.LeftMiddle()
+                );
+            }
+
+            Rectangle input = new Rectangle(
+                win.X + 205,
+                win.Y + 252,
+                win.Width - 265,
+                42
+            );
+
+            using (SolidBrush inputBrush = new SolidBrush(Color.White))
+                g.FillRectangle(inputBrush, input);
+
+            using (Pen inputPen = new Pen(Color.FromArgb(150, 30, 30), 2f))
+                g.DrawRectangle(inputPen, input);
+
+            string shownInput = string.IsNullOrEmpty(finalInput)
+                ? "삭제할 프로세스 이름"
+                : finalInput + "_";
+
+            Color inputTextColor = string.IsNullOrEmpty(finalInput)
+                ? Color.FromArgb(130, 130, 130)
+                : Color.Black;
+
+            using (Font inputFont = Renderer.F(13f, FontStyle.Bold))
+            using (SolidBrush inputTextBrush = new SolidBrush(inputTextColor))
+            {
+                g.DrawString(
+                    shownInput,
+                    inputFont,
+                    inputTextBrush,
+                    new Rectangle(input.X + 10, input.Y, input.Width - 20, input.Height),
+                    Renderer.LeftMiddle()
+                );
+            }
+
+            Rectangle hintRect = new Rectangle(
+                win.X + 205,
+                win.Y + 306,
+                win.Width - 265,
+                46
+            );
+
+            using (Font hintFont = Renderer.F(9.5f, FontStyle.Regular))
+            using (SolidBrush hintBrush = new SolidBrush(Color.FromArgb(95, 45, 45)))
+            {
+                g.DrawString(
+                    "Enter 키 또는 [실행] 버튼으로 입력을 확정합니다.",
+                    hintFont,
+                    hintBrush,
+                    hintRect,
+                    Renderer.Left()
+                );
+            }
+
+            Rectangle runButton = new Rectangle(
+                win.Right - 164,
+                win.Bottom - 68,
+                110,
+                28
+            );
+
+            SystemWindowUI.Shared.DrawCustomDialogImageButton(
+                g,
+                runButton,
+                "실행",
+                SystemWindowButtonKind.Ok,
+                "finalOk",
+                buttons
+            );
+        }
         private void DrawHelp(Graphics g)
         {
             Renderer.DrawXPWallpaper(g, ClientRectangle);

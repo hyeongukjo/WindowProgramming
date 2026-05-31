@@ -812,6 +812,21 @@ namespace DebugHeroFileDungeonRPG
             if (buttons != null && !string.IsNullOrEmpty(actionId))
                 buttons.Add(new UiButton(buttonRect, actionId));
         }
+        public void DrawCustomDialogImageButton(
+    Graphics g,
+    Rectangle buttonRect,
+    string text,
+    SystemWindowButtonKind kind,
+    string actionId,
+    List<UiButton> buttons)
+        {
+            SystemDialogButton dialogButton = new SystemDialogButton(text, actionId, kind);
+
+            DrawImageButton(g, buttonRect, dialogButton);
+
+            if (buttons != null && !string.IsNullOrEmpty(actionId))
+                buttons.Add(new UiButton(buttonRect, actionId));
+        }
 
         private void DrawImageButton(Graphics g, Rectangle buttonRect, SystemDialogButton dialogButton)
         {
