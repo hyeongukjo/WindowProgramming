@@ -64,14 +64,14 @@ namespace DebugHeroFileDungeonRPG
             SystemWindowUI.Shared.DrawSystemPanelFrame(
                 g,
                 winBounds,
-                "📂 시스템 보안 관리자 - 감염 코드 개체 도감 리포트 [보안 격리 구역]",
+                "시스템 보안 관리자 - 감염 코드 개체 도감 리포트 [보안 격리 구역]",
                 SystemWindowStyle.Blue,
                 true,
                 buttons,
                 monsterBookCloseKey
             );
 
-            // 🛠️ [수정사항 2] 임의로 그리던 가짜 X UI를 완전 삭제하고, 순정 에셋 X버튼 위치에 투명 히트박스만 결합!
+            // 임의로 그리던 가짜 X UI를 완전 삭제하고, 순정 에셋 X버튼 위치에 투명 히트박스만 결합!
             Rectangle closeBtnRect = new Rectangle(winBounds.Right - 66, winBounds.Y + 5, 60, 22);
             buttons.Add(new UiButton(closeBtnRect, monsterBookCloseKey));
 
@@ -87,7 +87,7 @@ namespace DebugHeroFileDungeonRPG
             using (Font subTitleFont = Renderer.F(12f, FontStyle.Bold))
             {
                 // 상자 윗면에서 살짝 위쪽(Y - 22픽셀 지점)에 흰색 글씨로 배치합니다.
-                g.DrawString("몬스터", subTitleFont, Brushes.Black, normalRect.X + 5, normalRect.Y - 2);
+                g.DrawString("등장 몬스터 종류", subTitleFont, Brushes.LightGray, normalRect.X + 25, normalRect.Y - 2);
             }
 
             if (imgNormalMonster != null)

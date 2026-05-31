@@ -8,7 +8,7 @@ namespace DebugHeroFileDungeonRPG
     public sealed partial class MainForm
     {
         // -----------------------------------------------------------------------------
-        // 🗑️ [휴지통 모달 연산 및 반전 밸런스 제어 격실]
+        //  [휴지통 모달 연산 및 반전 밸런스 제어 격실]
         // -----------------------------------------------------------------------------
         private bool showTrashCanWindow = false;
         private readonly string trashCanCloseKey = "trashCanWinClose";
@@ -52,7 +52,7 @@ namespace DebugHeroFileDungeonRPG
             SystemWindowUI.Shared.DrawSystemPanelFrame(
                 g,
                 winBounds,
-                "🗑️ 시스템 보호 격리실 - 휴지통 무결성 검증 센터",
+                "시스템 보호 격리실 - 휴지통 무결성 검증 센터",
                 SystemWindowStyle.Blue,
                 true,
                 buttons,
@@ -128,8 +128,8 @@ namespace DebugHeroFileDungeonRPG
             int change = trashFolderCoinChanges[index];
             player.Coins = Math.Max(0, player.Coins + change); // 코인 음수 낙하 가드
 
-            // 🛠️ [수정사항 2]: 버퍼링 렉 현상을 완전히 없애기 위해 지속 프레임 수치(Duration)를 
-            // 기존 45~50에서 전격 '18'(약 0.3초)로 대폭 압축 튜닝했습니다! 누르자마자 팝업되고 칼같이 소멸합니다.
+            // 버퍼링 렉 현상을 완전히 없애기 위해 지속 프레임 수치(Duration)를 
+            // 기존 45~50에서 전격 '18'(약 0.3초)로 대폭 압축 튜닝 누르자마자 팝업되고 소멸.
             if (change > 0)
             {
                 effects.Add(new Effect("text", ClientSize.Width / 2, winFolderMessageY(), ClientSize.Width / 2, winFolderMessageY(), 18, Color.Lime, $"[정화 성공] 포상금 지급! (+{change} 코인)"));
