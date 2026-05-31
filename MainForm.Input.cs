@@ -276,23 +276,7 @@ namespace DebugHeroFileDungeonRPG
             if (playerDeathSequenceActive) return;
             Point mousePos = e.Location;
 
-            // ==========================================================
-            //  첫 화면(Admin 시작 메뉴) 투명 버튼 좌표 클릭 판정 
-            // ==========================================================
-            if (screen == ScreenMode.StartMenu)
-            {
-                for (int i = 0; i < buttons.Count; i++)
-                {
-                    var btn = buttons[i];
-                    if (btn.Bounds.Contains(mousePos))
-                    {
-                        if (btn.Action == "adminStart") StartNewGameFromAdminMenu();
-                        else if (btn.Action == "adminContinue") ContinueFromAdminMenu();
-                        else if (btn.Action == "adminExit") Close();
-                        return;
-                    }
-                }
-            }
+            
 
             // ==========================================================
             // 스테이지 클리어 정산 팝업창 '확인' 버튼 클릭 제어 필터
@@ -315,30 +299,88 @@ namespace DebugHeroFileDungeonRPG
 
         private void MainForm_MouseDown(object sender, MouseEventArgs e)
         {
-            //if (playerDeathSequenceActive) return;
-            //for (int i = 0; i < buttons.Count; i++)
-            //{
-            //    if (buttons[i].Bounds.Contains(e.Location))
-            //    {
-            //        HandleAction(buttons[i].Action);
-            //        return;
-            //    }
-            //}
             if (playerDeathSequenceActive) return;
+            Point mousePos = e.Location;
 
-            // ==========================================================
-            // 리더보드 창이 열려 있을 때
-            // - 리더보드 X 버튼만 허용
-            // - 그 외 클릭은 전부 막음
-            // ==========================================================
-            if (screen == ScreenMode.Desktop && showLeaderboardWindow)
+            if (screen == ScreenMode.Desktop && showStartMenuPopup)
             {
-                Point mousePos = e.Location;
+                Rectangle menuBounds = GetStartMenuPopupBounds();
 
+                // 시작 메뉴 내부 버튼 컬렉션들 체크 순회
                 for (int i = 0; i < buttons.Count; i++)
                 {
-                    if (buttons[i].Action == leaderboardCloseKey &&
-                        buttons[i].Bounds.Contains(mousePos))
+                    if (buttons[i].Bounds.Contains(mousePos))
+                    {
+                        if (buttons[i].Action == startMenuSaveKey ||
+                            buttons[i].Action == startMenuHelpKey ||
+                            buttons[i].Action == startMenuExitKey)
+                        {
+                            HandleAction(buttons[i].Action);
+                            showStartMenuPopup = false; // 실행 후 메뉴판은 자동으로 스르륵 클로즈
+                            Invalidate(true);
+                            return;
+                        }
+                    }
+                }
+
+                // 만약 시작 메뉴가 열린 상태에서 메뉴 영역 외의 딴 곳을 누르면 메뉴판 닫기 처리
+                if (!menuBounds.Contains(mousePos))
+                {
+                    showStartMenuPopup = false;
+                    TryBeep(650, 40);
+                    Invalidate(true);
+                }
+            }
+
+
+
+
+            if (screen == ScreenMode.Desktop && showMonsterBookWindow)
+            {
+                // 수동 사치 계산을 버리고, OnPaint에서 정밀 캡처된 투명 X 버튼 컬렉션을 루프 검증합니다.
+                for (int i = 0; i < buttons.Count; i++)
+                {
+                    if (buttons[i].Action == monsterBookCloseKey && buttons[i].Bounds.Contains(mousePos))
+                    {
+                        showMonsterBookWindow = false; // 도감 격리 종료 (바탕화면 복귀)
+                        TryBeep(720, 60);
+                        Invalidate();
+                        return;
+                    }
+                }
+                return; // 창 내부의 엉뚱한 빈 공간이나 뒤쪽 배경 아이콘 클릭을 철통 가드 차단
+            }
+
+            if (screen == ScreenMode.Desktop && showTrashCanWindow)
+            {
+                for (int i = 0; i < buttons.Count; i++)
+                {
+                    if (buttons[i].Bounds.Contains(mousePos))
+                    {
+                        if (buttons[i].Action == trashCanCloseKey)
+                        {
+                            showTrashCanWindow = false; // 휴지통 클로즈
+                            TryBeep(720, 60);
+                            Invalidate();
+                            return;
+                        }
+                        else if (buttons[i].Action.StartsWith("delete_trash_"))
+                        {
+                            int index = int.Parse(buttons[i].Action.Substring(13));
+                            ExecuteTrashDelete(index); // 가감산 로직 수행
+                            return;
+                        }
+                    }
+                }
+                return; // 모달 활성화 시 뒷배경 클릭 철저히 분쇄
+            }
+
+            // [모달 가드 2] 리더보드 창 오픈 시 락온
+            if (screen == ScreenMode.Desktop && showLeaderboardWindow)
+            {
+                for (int i = 0; i < buttons.Count; i++)
+                {
+                    if (buttons[i].Action == leaderboardCloseKey && buttons[i].Bounds.Contains(mousePos))
                     {
                         showLeaderboardWindow = false;
                         TryBeep(750, 50);
@@ -346,95 +388,50 @@ namespace DebugHeroFileDungeonRPG
                         return;
                     }
                 }
-
                 return;
             }
 
-            // ==========================================================
-            // Old Google 창이 열려 있을 때
-            // - Google 창의 X 버튼만 허용
-            // - Google 검색창 클릭만 허용
-            // - 뒤에 있는 Stage 버튼 / 상점 버튼 / 바탕화면 아이콘 클릭은 전부 막음
-            // ==========================================================
+            // [모달 가드 3] 올드 구글 창 오픈 시 락온
             if (screen == ScreenMode.Desktop && IsOldGoogleWindowVisible())
             {
                 for (int i = 0; i < buttons.Count; i++)
                 {
-                    if (!buttons[i].Bounds.Contains(e.Location))
-                        continue;
+                    if (!buttons[i].Bounds.Contains(mousePos)) continue;
 
-                    if (buttons[i].Action == OldGoogleCloseKey ||
-                        buttons[i].Action == OldGoogleSearchFocusKey)
+                    if (buttons[i].Action == OldGoogleCloseKey || buttons[i].Action == OldGoogleSearchFocusKey)
                     {
                         HandleAction(buttons[i].Action);
                         return;
                     }
                 }
-
                 return;
             }
 
-            // ==========================================================
-            // 일반 버튼 클릭 처리
-            // - Old Google 창이 닫혀 있을 때만 실행됨
-            // ==========================================================
-            for (int i = 0; i < buttons.Count; i++)
+
+
+            // ⚡ [일반 공용 버튼 클릭 엔진] 중첩 루프 해제하여 단일 플랫 연산으로 격상
+            for (int buttonIndex = 0; buttonIndex < buttons.Count; buttonIndex++)
             {
-
-
-            if (screen == ScreenMode.Desktop && showLeaderboardWindow)
-            {
-                Point mousePos = e.Location;
-
-                    for (int leaderboardIndex = 0; leaderboardIndex < buttons.Count; leaderboardIndex++)
-                    {
-                        if (buttons[leaderboardIndex].Action == leaderboardCloseKey &&
-                            buttons[leaderboardIndex].Bounds.Contains(mousePos))
-                        {
-                            showLeaderboardWindow = false;
-                            TryBeep(750, 50);
-                            Invalidate();
-                            return;
-                        }
-                    }
-
-                    // 닫기 버튼이 아닌 창 내부나 창 뒤의 아이콘, 상점 등 다른 모든 클릭은 원천 차단합니다.
+                if (buttons[buttonIndex].Bounds.Contains(mousePos))
+                {
+                    HandleAction(buttons[buttonIndex].Action);
                     return;
+                }
             }
-                // =============================================================================
 
-
-                // 일반 버튼 클릭 처리 (리더보드 창이 닫혀있을 때만 이 아래 코드가 작동합니다)
-                for (int buttonIndex = 0; buttonIndex < buttons.Count; buttonIndex++)
-                {
-                    if (buttons[buttonIndex].Bounds.Contains(e.Location))
-                    {
-                        HandleAction(buttons[buttonIndex].Action);
-                        return;
-                    }
-                }
-
-                // ==========================================================
-                // 바탕화면 아이콘 클릭 처리
-                // ==========================================================
-                if (screen == ScreenMode.Desktop)
+            // 🖥️ [바탕화면 순정 아이콘 투명 레이더 감지기]
+            if (screen == ScreenMode.Desktop)
             {
-                Point mousePos = e.Location;
+                if (firstDesktopNotice) return;
 
-                // 최초 진입 안내창이 떠 있으면 바탕화면 클릭 무시
-                if (firstDesktopNotice)
-                {
-                    return;
-                }
-
-                // Internet Explorer 아이콘 클릭
+                // Internet Explorer
                 if (GetInternetExplorerIconBounds().Contains(mousePos))
                 {
                     OpenOldGoogleWindow();
                     return;
                 }
 
-                // 내 컴퓨터 아이콘 클릭
+                // 내 컴퓨터 아이콘
                 Rectangle myComputerIconBounds = new Rectangle(15, 15, 95, 95);
                 if (myComputerIconBounds.Contains(mousePos))
                 {
@@ -444,50 +441,43 @@ namespace DebugHeroFileDungeonRPG
                     Invalidate();
                     return;
                 }
-            }
 
-            // ==========================================================
-            // 스테이지 화면 클릭 처리
-            // ==========================================================
-            }
-
-            if (screen == ScreenMode.Desktop && IsOldGoogleWindowVisible())
-            {
-                return;
-            }
-            if (screen == ScreenMode.Desktop)
-            {
-                Point mousePos = e.Location;
-
-                // 최초 진입 안내창 가드
-                if (firstDesktopNotice)
+                // 몬스터 도감 파일 아이콘
+                Rectangle fileIconBounds = new Rectangle(15, 140, 95, 95);
+                if (fileIconBounds.Contains(mousePos))
                 {
-                    return;
-                }
-                // Internet Explorer 고정 아이콘 클릭 영역 감지
-                if (GetInternetExplorerIconBounds().Contains(mousePos))
-                {
-                    OpenOldGoogleWindow();
-                    return;
-                }
-                // 내 컴퓨터 고정 아이콘 클릭 영역 감지 (X: 15~115, Y: 15~115)
-                Rectangle myComputerIconBounds = new Rectangle(15, 15, 95, 95);
-                if (myComputerIconBounds.Contains(mousePos))
-                {
-                    showLeaderboardWindow = true; // 창 활성화!
-                    UpdateAllBossRankings();      // 열리는 순간 서버에서 실시간 랭킹 즉시 강제 리프레시
+                    showMonsterBookWindow = true;
                     TryBeep(880, 60);
                     Invalidate();
                     return;
                 }
 
+                Rectangle trashIconBounds = new Rectangle(15, 390, 95, 95);
+                if (trashIconBounds.Contains(mousePos))
+                {
+                    showTrashCanWindow = true; // 휴지통 전격 오픈!
+                    TryBeep(880, 60);
+                    Invalidate();
+                    return;
+                }
+
+                Rectangle startBtnBounds = new Rectangle(0, ClientSize.Height - 45, 110, 45);
+                if (startBtnBounds.Contains(mousePos))
+                {
+                    showStartMenuPopup = !showStartMenuPopup; // 시작 메뉴 토글 가동
+                    TryBeep(850, 50);
+                    Invalidate(true);
+                    return;
+                }
             }
 
+
+            // ⚔️ [인게임 필드 스테이지 조작 감지부]
             if (screen == ScreenMode.Stage)
             {
                 if (e.Button == MouseButtons.Left)
                 {
-                    WeaponUpgradeFile drop = FindWeaponDropAt(e.Location);
+                    WeaponUpgradeFile drop = FindWeaponDropAt(mousePos);
                     if (drop != null)
                     {
                         draggedWeaponDrop = drop;
@@ -496,7 +486,7 @@ namespace DebugHeroFileDungeonRPG
                     }
                 }
 
-                if (stageBossPhase && bossRuntime.HandleClick(e.Location))
+                if (stageBossPhase && bossRuntime.HandleClick(mousePos))
                 {
                     return;
                 }
@@ -555,6 +545,30 @@ namespace DebugHeroFileDungeonRPG
 
         private void HandleAction(string action)
         {
+            //  [시작 메뉴 전용 커맨드 실행 파이프라인]
+            if (action == startMenuSaveKey)
+            {
+                SaveCurrentGame(); // C# 오리지널 직렬화 세이브 시스템 호출
+                // 초고속 플래시 텍스트 알림 터트리기
+                effects.Add(new Effect("text", ClientSize.Width / 2, ClientSize.Height / 2 - 40, ClientSize.Width / 2, ClientSize.Height / 2 - 40, 18, Color.Gold, "💾 SYSTEM: GAME_SAVE_SUCCESS!!"));
+                TryBeep(1050, 80);
+                return;
+            }
+            if (action == startMenuHelpKey)
+            {
+                screen = ScreenMode.Help; // 도움말 스크린 전환
+                TryBeep(900, 50);
+                return;
+            }
+            if (action == startMenuExitKey)
+            {
+                Application.Exit(); // 백신 커널 안전 종료 및 윈도우 완전 클로즈
+                return;
+            }
+
+            if (action == "newGame" || action == "start" || action == "adminStart") { StartNewGameFromAdminMenu(); return; }
+            if (action == "continue" || action == "continueGame") { ContinueFromAdminMenu(); return; }
+
             if (action == "introNext") AdvanceIntro();
             else if (action == "desktopNoticeOk" || action == "desktopNoticeClose") { firstDesktopNotice = false; }
 

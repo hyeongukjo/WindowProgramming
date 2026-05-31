@@ -350,11 +350,11 @@ namespace DebugHeroFileDungeonRPG
                 36
             );
 
-            using (Font labelFont = Renderer.F(12.5f, FontStyle.Bold))
+            using (Font labelFont = Renderer.F(16f, FontStyle.Bold))
             using (SolidBrush labelBrush = new SolidBrush(Color.FromArgb(25, 30, 45)))
-                g.DrawString("복구 프로필 이름을 입력하세요.", labelFont, labelBrush, labelRect, Renderer.LeftMiddle());
+                g.DrawString("복구 프로필 이름을 입력하세요.(영어만 입력해주세요.)", labelFont, labelBrush, labelRect, Renderer.LeftMiddle());
 
-            using (Font descFont = Renderer.F(10.5f, FontStyle.Regular))
+            using (Font descFont = Renderer.F(13f, FontStyle.Regular))
             using (SolidBrush descBrush = new SolidBrush(Color.FromArgb(45, 50, 65)))
                 g.DrawString("이 이름은 캐릭터 이름이 아니라 복구 기록과 진행 상황을 저장하는 프로필 이름입니다.", descFont, descBrush, descRect, Renderer.Left());
 

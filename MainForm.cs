@@ -262,7 +262,7 @@ namespace DebugHeroFileDungeonRPG
 
 
             // 일반 인게임 상태에서만 도화지를 새로 고침 (컷씬 모드일 땐 위에서 return되어 실행 안 됨)
-            Invalidate();
+            Invalidate(true);
 
             if (bossRuntime.patternManager.PlayerSlowTicks > 0)
             {

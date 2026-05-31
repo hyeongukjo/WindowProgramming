@@ -61,10 +61,15 @@ namespace DebugHeroFileDungeonRPG
             }
 
             // * 형진님 스펙 명세: 기본 수치 150 및 스테이지별 가중치 100 밸런스 완전 유지
-            int baseHp = 150 + stageNum * 100;
+            // =================================================================
+            // 🌟 [지시사항 반영]: 1스테이지 첫 일반 몬스터(waveIndex=0, i=0) 체력을 정확히 100으로 셋팅
+            // =================================================================
+            // stageNum이 1일 때 baseHp는 100이 됩니다. 스테이지당 체력은 40씩 증가하도록 밸런싱을 조율했습니다.
+            int baseHp = 60 + stageNum * 40;
             int baseAtk = 4 + stageNum;
 
-            int finalHp = baseHp + (waveIndex * 14);
+            // waveIndex가 올라갈 때마다 기본 체력이 20씩 증가합니다.
+            int finalHp = baseHp + (waveIndex * 20);
             int finalAtk = baseAtk + waveIndex;
 
             // 💡 [지시사항 1 후반부 반영]: 1웨이브는 4마리 스폰, 2웨이브는 기존 4웨이브 정예 기믹 수치 주입
@@ -78,6 +83,9 @@ namespace DebugHeroFileDungeonRPG
 
             for (int i = 0; i < spawnCount; i++)
             {
+                // 최종 산출: 1스테이지 0웨이브 i=0 일 때 -> finalHp(100) + (0 * 5) = 정확히 100 시작!
+                int calculatedHp = finalHp + (i * 5);
+
                 list.Add(new GameEntity
                 {
                     Name = monsterName,
@@ -87,8 +95,11 @@ namespace DebugHeroFileDungeonRPG
                     Y = Math.Max(140, clientHeight - 270 + (i % 2) * 60),
                     VX = (i % 2 == 0 ? 1.1f : -1.1f) * (1.0f + waveIndex * 0.06f),
                     VY = (i % 2 == 0 ? 0.5f : -0.5f) * (1.0f + waveIndex * 0.03f),
-                    Hp = finalHp + (i * 3),
-                    MaxHp = finalHp + (i * 3),
+
+                    // 💡 재조정된 체력 변수 매핑 연동
+                    Hp = calculatedHp,
+                    MaxHp = calculatedHp,
+
                     Attack = finalAtk,
                     IsBoss = false, // 대형 게이지를 띄우지 않는 일반 배치형 정예 보스 룰 고수
                     RewardGiven = false

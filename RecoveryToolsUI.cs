@@ -106,9 +106,7 @@ namespace DebugHeroFileDungeonRPG
             if (buttons != null)
                 buttons.Add(new UiButton(iconRect, "openShop"));
         }
-        // =============================================================================
-        // 📐 [대개조 완료] 순수 WinForms 엔진 기반 우측 정보창 동적 확장 시스템
-        // =============================================================================
+       
         public void DrawDesktopStatusPanel(
              Graphics g,
              Rectangle client,
@@ -403,15 +401,15 @@ namespace DebugHeroFileDungeonRPG
 
                 // 2. 파일 설명 구역
                 g.DrawString("• 파      일 :", boldFont, titleBrush, new Rectangle(r.X + 14, startY + lineHeight * 1, titleWidth, lineHeight), sf);
-                g.DrawString("(공간 확보 완료 / 추후 기능 설명 추가 예정)", regularFont, Brushes.Gray, new Rectangle(descStartX, startY + lineHeight * 1, descWidth, lineHeight), sf);
+                g.DrawString("윈도우 세상 몬스터 도감", regularFont, Brushes.Gray, new Rectangle(descStartX, startY + lineHeight * 1, descWidth, lineHeight), sf);
 
                 // 3. 인터넷 설명 구역
                 g.DrawString("• 인 터 넷 :", boldFont, titleBrush, new Rectangle(r.X + 14, startY + lineHeight * 2, titleWidth, lineHeight), sf);
-                g.DrawString("(공간 확보 완료 / 추후 기능 설명 추가 예정)", regularFont, Brushes.Gray, new Rectangle(descStartX, startY + lineHeight * 2, descWidth, lineHeight), sf);
+                g.DrawString("???: 무언가 엄청난 것이 들어있는 기분이다..", regularFont, Brushes.Gray, new Rectangle(descStartX, startY + lineHeight * 2, descWidth, lineHeight), sf);
 
                 // 4. 휴지통 설명 구역 
                 g.DrawString("• 휴 지 통 :", boldFont, titleBrush, new Rectangle(r.X + 14, startY + lineHeight * 3, titleWidth, lineHeight), sf);
-                g.DrawString("(공간 확보 완료 / 추후 기능 설명 추가 예정)", regularFont, Brushes.Gray, new Rectangle(descStartX, startY + lineHeight * 3, descWidth, lineHeight), sf);
+                g.DrawString("쓸모 없는 파일은 이곳으로..", regularFont, Brushes.Gray, new Rectangle(descStartX, startY + lineHeight * 3, descWidth, lineHeight), sf);
             }
         }
 

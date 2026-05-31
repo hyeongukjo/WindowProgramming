@@ -58,12 +58,21 @@ namespace DebugHeroFileDungeonRPG
         public static Image[] PlayerSkillQFrames = new Image[5];
         public static Image[] PlayerSkillRFrames = new Image[5];
 
+        // Renderer.cs 파일 내부의 전역 변수 선언 구역에 추가
+        public static Image Img_Energy = null;
+
         static Renderer()
         {
             try
             {
                 fontCollection = new System.Drawing.Text.PrivateFontCollection();
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+
+                string energyPath = Path.Combine(baseDir, "Assets", "Characters", "Enemise", "energy.png");
+                if (File.Exists(energyPath))
+                {
+                    Img_Energy = Image.FromFile(energyPath);
+                }
 
                 // ----------------------------------------------------------
                 // ⚔️ [Q 스킬] 1열 스트립 이미지 프리로딩 및 자동 5분할 슬라이싱
@@ -562,16 +571,16 @@ namespace DebugHeroFileDungeonRPG
             Rectangle src = new Rectangle(startX, startY, Math.Max(1, cropW), Math.Max(1, cropH));
             g.DrawImage(sheet, dst, src, GraphicsUnit.Pixel);
         }
-        // * [해석 방식 4 최종 종결 보정판]: 4x4 구조 (유령형 - 사방 마진 가드로 하얀 선 완벽 소멸)
-        // * [소수점 반올림 오차로 인해 아래 행/옆 칸의 이미지 조각이 딸려 올라오는 현상을 물리적으로 완전 가드합니다]
+        // * [해석 방식 4 최종 종결 보정판]: 4x4 구조 (유령형 - Teleport_1.png 전용)
+        // 💡 [지시사항 반영]: EnemyLogicSystem의 늘어난 180틱 텔레포트 시간에 맞춰 애니메이션 완벽 동기화!
         private static void Draw_Image_Interpretation_4(Graphics g, Image sheet, Rectangle dst, GameEntity e)
         {
             int cols = 4; int rows = 4;
             int cellW = sheet.Width / cols; int cellH = sheet.Height / rows;
             int targetFrameIndex = 0;
 
-            // * [EnemyLogicSystem.cs의 120틱 주기 순간이동 타이머와 정밀 동기화]
-            if (e.StateTimer >= 115) // A. 텔레포트 직전 (증발 흔적 프레임)
+            // * [EnemyLogicSystem.cs의 180틱 주기 순간이동 타이머와 칼동기화]
+            if (e.StateTimer >= 175) // A. 텔레포트 직전 (180틱 마감 5틱 전 증발 흔적 프레임)
             {
                 targetFrameIndex = 14;
             }
@@ -579,20 +588,16 @@ namespace DebugHeroFileDungeonRPG
             {
                 targetFrameIndex = 15;
             }
-            else // C. 일반 대기 및 이동 애니메이션 (0~13번 프레임 순환)
+            else // C. 일반 대기 및 이동 애니메이션 (0~13번 프레임 순환 - 분모를 180틱 스케일에 맞게 자연스럽게 조정)
             {
                 targetFrameIndex = (Environment.TickCount / 120) % 14;
             }
 
             int col = targetFrameIndex % cols; int row = targetFrameIndex / cols;
 
-            // 💡 [버그 해결]: 상하좌우 모든 방향에 대한 가드 마진(Inset) 3픽셀로 확장 강화
-            // * [좌우 여백(padX)과 상하 여백(padY)을 사방으로 3픽셀씩 깊숙하게 깎아내어 경계선 격리]
+            // 사방 마진 가드로 하얀 선 노이즈 현상 차단
             int padX = 3;
             int padY = 3;
-
-            // * [정밀 크롭 연산]: 셀 본연의 크기에서 사방 마진 영역을 확실하게 빼주어
-            // * [아랫줄 프레임의 데이터 찌꺼기가 단 1픽셀도 위로 침범하여 하얀 선을 만들 수 없도록 차단]
             int safeCropWidth = cellW - (padX * 2);
             int safeCropHeight = cellH - (padY * 2);
 
@@ -3252,24 +3257,51 @@ namespace DebugHeroFileDungeonRPG
                 //}
                 return;
             }
-
             if (e.Kind == "projectile")
             {
                 float cx = x1 + (x2 - x1) * progress;
                 float cy = e.Y + (e.Y2 - e.Y) * progress;
                 bool deleteBeam = e.Color.R > 180 && e.Color.G < 160;
-                DrawShimmerBeam(g, x1, e.Y, cx, cy, e.Color, alpha, progress, deleteBeam);
-                using (SolidBrush core = new SolidBrush(Color.FromArgb(alpha, Color.White)))
-                    g.FillEllipse(core, cx - 5, cy - 5, 10, 10);
+
+                // 🌟 [지시사항 반영]: 투사체 뒤에 그려지는 선(빔) 이펙트를 그리지 않도록 제외(주석 처리)합니다.
+                // DrawShimmerBeam(g, x1, e.Y, cx, cy, e.Color, alpha, progress, deleteBeam);
+
+                // 이제 선 없이 30x30 사이즈의 energy.png 구체 이미지만 정밀하게 렌더링됩니다.
+                if (Renderer.Img_Energy != null)
+                {
+                    Rectangle destRect = new Rectangle((int)cx - 15, (int)cy - 15, 30, 30);
+
+                    using (System.Drawing.Imaging.ImageAttributes ia = new System.Drawing.Imaging.ImageAttributes())
+                    {
+                        System.Drawing.Imaging.ColorMatrix cm = new System.Drawing.Imaging.ColorMatrix { Matrix33 = alpha / 255f };
+                        ia.SetColorMatrix(cm);
+
+                        g.DrawImage(Renderer.Img_Energy, destRect, 0, 0, Renderer.Img_Energy.Width, Renderer.Img_Energy.Height, GraphicsUnit.Pixel, ia);
+                    }
+                }
+                else
+                {
+                    // 이미지 유실 시 백업용 화이트 코어만 최소한으로 드로우
+                    using (SolidBrush core = new SolidBrush(Color.FromArgb(alpha, Color.White)))
+                        g.FillEllipse(core, cx - 5, cy - 5, 10, 10);
+                }
                 return;
             }
             else if (e.Kind == "text")
             {
+              
+                if (alpha < 220)
+                {
+                    return;
+                }
+
                 using (Font f = F(13f, FontStyle.Bold))
                 using (SolidBrush shadow = new SolidBrush(Color.FromArgb(ClampAlpha(alpha - 80), 0, 0, 0)))
                 using (SolidBrush b = new SolidBrush(Color.FromArgb(alpha, e.Color)))
                 {
-                    RectangleF rr = new RectangleF(x1 - 70, e.Y - progress * 34, 140, 28);
+                    
+                    RectangleF rr = new RectangleF(x1 - 70, e.Y, 140, 28);
+
                     g.DrawString(e.Text, f, shadow, new RectangleF(rr.X + 1, rr.Y + 1, rr.Width, rr.Height), Center());
                     g.DrawString(e.Text, f, b, rr, Center());
                 }
