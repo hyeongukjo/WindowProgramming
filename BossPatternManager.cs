@@ -264,7 +264,7 @@ namespace DebugHeroFileDungeonRPG
             }
 
             // -----------------------------------------------------------------------------
-            // 🚨 [판정선 하향 조정] 가드 연산이 다 끝난 뒤, 게이트가 열려있고 진짜 체력이 0일 때만 사망 처리!
+            // 가드 연산이 다 끝난 뒤, 게이트가 열려있고 진짜 체력이 0일 때만 사망 처리!
             // -----------------------------------------------------------------------------
             if (boss.Hp <= 0)
             {
@@ -332,7 +332,7 @@ namespace DebugHeroFileDungeonRPG
             if (hpPercent <= 50 && !IsBinny50Used && !IsBlackholeActive && !IsScannerActive && !IsDPSCheckActive)
             {
                 IsScannerActive = true;
-                IsBinny50Used = true; // 💡 [오류 해결 핵심] 패턴이 시작되었으므로 자신의 플래그를 즉시 true로 잠금!
+                IsBinny50Used = true; //  패턴이 시작되었으므로 자신의 플래그를 즉시 true로 잠금!
 
                 // 왼쪽 끝(100f)에서 시작하여 오른쪽(Dir = 1f)으로 최초 주행 셋업
                 ScannerX = 100f;
@@ -444,14 +444,14 @@ namespace DebugHeroFileDungeonRPG
                         // [1번 패턴 : ice_sword]
                         if (binnyBasicAttackPattern == 1)
                         {
-                            // 💡 [수정] 단순 spark와 text 외에, 진짜 얼음검 이미지 효과를 화면에 생성하도록 추가!
+                            // 단순 spark와 text 외에, 진짜 얼음검 이미지 효과를 화면에 생성하도록 추가!
                             effects.Add(new Effect("binnyIce", binnyStrikeTargetX, binnyStrikeTargetY, binnyStrikeTargetX, binnyStrikeTargetY, 25, Color.Cyan, ""));
                             effects.Add(new Effect("spark", binnyStrikeTargetX, binnyStrikeTargetY, binnyStrikeTargetX, binnyStrikeTargetY, 25, Color.Cyan, ""));
                             effects.Add(new Effect("text", binnyStrikeTargetX, binnyStrikeTargetY - 40, binnyStrikeTargetX, binnyStrikeTargetY - 40, 34, Color.Cyan, "ICE SLAM"));
 
                             if (isHit)
                             {
-                                player.Hp -= (int)(player.MaxHp * 0.35f); // 💡 5% -> 35% 상향
+                                player.Hp -= (int)(player.MaxHp * 0.35f); // 5% -> 35% 상향
                                 PlayerSlowTicks = 120;
                             }
                             fireSequenceCount = 0;
@@ -459,14 +459,14 @@ namespace DebugHeroFileDungeonRPG
                         // [2번 패턴 : fire_sword]
                         else if (binnyBasicAttackPattern == 2)
                         {
-                            // 💡 [수정] 진짜 화염검 이미지 효과를 화면에 생성하도록 추가!
+                            // 진짜 화염검 이미지 효과를 화면에 생성하도록 추가!
                             effects.Add(new Effect("binnyFire", binnyStrikeTargetX, binnyStrikeTargetY, binnyStrikeTargetX, binnyStrikeTargetY, 25, Color.Red, ""));
                             effects.Add(new Effect("spark", binnyStrikeTargetX, binnyStrikeTargetY, binnyStrikeTargetX, binnyStrikeTargetY, 25, Color.Red, ""));
                             effects.Add(new Effect("text", binnyStrikeTargetX, binnyStrikeTargetY - 40, binnyStrikeTargetX, binnyStrikeTargetY - 40, 34, Color.Red, $"FIRE COMBO ({fireSequenceCount + 1}/3)"));
 
                             if (isHit)
                             {
-                                player.Hp -= (int)(player.MaxHp * 0.25f); // 💡 타당 25% 도합 75% 점사
+                                player.Hp -= (int)(player.MaxHp * 0.25f); // 타당 25% 도합 75% 점사
                                 PlayerBurnTicks = 150; // 화상 지속 시간 대폭 연장
                             }
 
@@ -476,15 +476,15 @@ namespace DebugHeroFileDungeonRPG
                         }
                         else if (binnyBasicAttackPattern == 3)
                         {
-                            // 💡 진짜 번개검 이미지 효과를 화면에 생성하도록 추가!
+                            // 번개검 이미지 효과를 화면에 생성하도록 추가!
                             effects.Add(new Effect("binnyLight", binnyStrikeTargetX, binnyStrikeTargetY, binnyStrikeTargetX, binnyStrikeTargetY, 25, Color.Gold, ""));
                             effects.Add(new Effect("spark", binnyStrikeTargetX, binnyStrikeTargetY, binnyStrikeTargetX, binnyStrikeTargetY, 25, Color.Gold, ""));
                             effects.Add(new Effect("text", binnyStrikeTargetX, binnyStrikeTargetY - 40, binnyStrikeTargetX, binnyStrikeTargetY - 40, 34, Color.Gold, "LIGHTNING HEAL"));
 
                             if (isHit)
                             {
-                                player.Hp -= (int)(player.MaxHp * 0.40f); // 💡 5% -> 40% 아웃
-                                //boss.Hp = Math.Min(boss.MaxHp, boss.Hp + (int)(boss.MaxHp * 0.25f)); // 보스 힐량 25% 상향
+                                player.Hp -= (int)(player.MaxHp * 0.40f); // 5% -> 40% 아웃
+                                boss.Hp = Math.Min(boss.MaxHp, boss.Hp + (int)(boss.MaxHp * 0.10f)); // 보스 힐량 10%
                             }
                             fireSequenceCount = 0;
                         }
@@ -612,7 +612,7 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
-        public int DualDeathTimer = -1; // 💡 [추가] 3초 타임어택용 제어 퓨즈 변수
+        public int DualDeathTimer = -1; // 3초 타임어택용 제어 퓨즈 변수
 
 
         private void UpdateIllusion(GameEntity boss, PlayerState player, List<Effect> effects)
@@ -665,7 +665,7 @@ namespace DebugHeroFileDungeonRPG
                 }
             }
 
-            // 5. 💡 [승리 조건] 본체와 분신 '둘 다' 완벽히 누워 플래그가 성립되었을 때만 발악 기믹 최종 소멸!
+            // 5. 본체와 분신 '둘 다' 완벽히 누워 플래그가 성립되었을 때만 발악 기믹 최종 소멸
             if (IsMainDead && IsCloneDead)
             {
                 IsIllusionActive = false;
@@ -872,7 +872,7 @@ namespace DebugHeroFileDungeonRPG
             }
         }
 
-        // 💡 [해결 마법] 누락되었던 문자열 생성기 추가!
+        // 누락되었던 문자열 생성기 추가!
         private string GenerateTypingString(int length)
         {
             char[] arr = new char[length];
@@ -980,7 +980,7 @@ namespace DebugHeroFileDungeonRPG
             {
                 boss.Pattern50Used = true;
 
-                // [수정] 패턴 시작 즉시 보스를 화면 중앙 고정축으로 픽싱
+                // 패턴 시작 즉시 보스를 화면 중앙 고정축으로 픽싱
                 boss.X = mapWidth / 2;
                 boss.Y = 330;
 
@@ -998,7 +998,7 @@ namespace DebugHeroFileDungeonRPG
             if (IsEnrageActive) UpdateEnrage(boss, player, effects, mapWidth);
             else if (IsSystemWipeActive)
             {
-                // [수정] 기믹 진행 시간 동안 보스가 밀려나지 않도록 실시간 좌표 강제 잠금
+                // 기믹 진행 시간 동안 보스가 밀려나지 않도록 실시간 좌표 강제 잠금
                 boss.X = mapWidth / 2;
                 boss.Y = 330;
                 UpdateSystemWipe(player, effects, mapWidth);
@@ -1043,7 +1043,7 @@ namespace DebugHeroFileDungeonRPG
             float szX = 0, szY = 0;
             int attempts = 0;
 
-            // 💡 [수정] 보스 근처 반경 280px 이내에는 안전구역 스폰을 절대 거부하는 최소 안전거리 필터 알고리즘
+            // 보스 근처 반경 280px 이내에는 안전구역 스폰을 절대 거부하는 최소 안전거리 필터 알고리즘
             do
             {
                 szX = rand.Next(200, (int)mapWidth - 200);
@@ -1052,8 +1052,7 @@ namespace DebugHeroFileDungeonRPG
             } while (Math.Sqrt(Math.Pow(szX - bossX, 2) + Math.Pow(szY - bossY, 2)) < 280f && attempts < 100);
 
             SafeZoneCenter = new PointF(szX, szY);
-            //NoticeText = $"🚨 커널 무결성 검사 ({SystemWipeCount}/3): 안전구역 외부 포맷 대기 중!";
-            //NoticeTicks = 90;
+           
         }
 
         private void UpdateSystemWipe(PlayerState player, List<Effect> effects, float mapWidth)
@@ -1085,7 +1084,7 @@ namespace DebugHeroFileDungeonRPG
                 float dx = player.X - SafeZoneCenter.X;
                 float dy = player.Y - SafeZoneCenter.Y;
 
-                // 💡 [수정] 안전구역(반경 80) 밖에 단 1픽셀이라도 벗어나 있으면 피격 무적 상관없이 무조건 즉사 및 강퇴
+                // 안전구역(반경 80) 밖에 단 1픽셀이라도 벗어나 있으면 피격 무적 상관없이 무조건 즉사 및 강퇴
                 if (Math.Sqrt(dx * dx + dy * dy) > SafeZoneRadius)
                 {
                     player.Hp = 0; // 즉각 전역 사망 필터 작동 -> 바탕화면 강제 추방
@@ -1107,7 +1106,7 @@ namespace DebugHeroFileDungeonRPG
             if (player.X < boss.X) boss.Facing = -1;
             else boss.Facing = 1;
 
-            // 💡 실시간 보스 위치 백업 (BossRuntime에서 안전구역을 그릴 때 참조함)
+            // 실시간 보스 위치 백업 (BossRuntime에서 안전구역을 그릴 때 참조함)
             BossPos = new PointF(boss.X, boss.Y);
 
             float hpPercent = (float)boss.Hp / boss.MaxHp * 100;
@@ -1164,7 +1163,7 @@ namespace DebugHeroFileDungeonRPG
         {
             LotusTimer--;
 
-            // 💡 [수정] 전체 600틱 유지 시간 중 정확히 절반인 300틱을 기준으로 회전 방향을 1회 전격 반전!
+            // 전체 600틱 유지 시간 중 정확히 절반인 300틱을 기준으로 회전 방향을 1회 전격 반전!
             // 소울류에 걸맞게 레이저 회전 기본 속도 자체도 기존 0.013f에서 0.026f로 2배 가속화합니다.
             float speed = (LotusTimer > 300) ? 0.026f : -0.026f;
             LotusAngle += speed;
@@ -1180,11 +1179,11 @@ namespace DebugHeroFileDungeonRPG
 
                 float distanceToLine = Math.Abs(dx * nx + dy * ny);
 
-                if (distanceToLine < 18f) // 💡 판정 범위를 18f로 미세 상향
+                if (distanceToLine < 18f) // 판정 범위를 18f로 미세 상향
                 {
                     if (player.InvincibleTicks <= 0)
                     {
-                        // 💡 소울류 밸런스: 스치면 체력의 30%가 유실되는 흉악한 데미지 부여
+                        //  밸런스: 스치면 체력의 30%가 유실되는 흉악한 데미지 부여
                         player.Hp -= (int)(player.MaxHp * 0.30f);
                         player.InvincibleTicks = 20; // 무적 프레임도 단축하여 연격 위험성 상향
                         effects.Add(new Effect("text", player.X, player.Y - 60, player.X, player.Y - 60, 30, Color.Cyan, "시스템 과전류 감전! -30%"));
@@ -1208,7 +1207,7 @@ namespace DebugHeroFileDungeonRPG
                 return;
             }
 
-            // 💡 15틱마다 보스 중심 사방으로 탄막 대량 살포 (다방향 탄막 기믹)
+            //  15틱마다 보스 중심 사방으로 탄막 대량 살포 (다방향 탄막 기믹)
             leakBarrageTimer++;
             if (leakBarrageTimer >= 15)
             {
@@ -1317,73 +1316,35 @@ namespace DebugHeroFileDungeonRPG
             EnrageTimer--; boss.X = mapWidth - 150;
             if (EnrageTimer <= 0) { IsEnrageActive = false; return; }
 
-            NoticeText = "☄️ 커널 임계 오버클록: 무자비한 속도의 융단 폭격이 시작됩니다! ";
-            NoticeTicks = 2;
+           
+           
+
 
             galagaTimer++;
-            if (galagaTimer >= 14) // 💡 생성 주기를 더 타이트하게 상향 (18 -> 14)
+            if (galagaTimer >= 14)
             {
                 galagaTimer = 0;
-                int spawnCount = rand.Next(4, 6); // 💡 한 웨이브당 운석 개수 증가
+                int spawnCount = rand.Next(4, 6); 
                 for (int i = 0; i < spawnCount; i++)
                 {
                     float rx = rand.Next(100, (int)mapWidth - 100);
 
-                    // 💡 [수정] 운석 낙하 속도를 광속 수준으로 대폭 증가 (기존 7f -> 최소 18f ~ 최대 26f)
+                    //  운석 낙하 속도를 광속 수준으로 대폭 증가 (기존 7f -> 최소 18f ~ 최대 26f)
                     float fallSpeed = 18f + (float)rand.NextDouble() * 8f;
 
-                    // 💡 소울류 밸런스: 운석 하나당 데미지를 무지막지하게 대폭 강화
+                    // 밸런스: 운석 하나당 데미지를 무지막지하게 대폭 강화
                     Projectiles.Add(new BossProjectile(rx, 0, rand.Next(-2, 3), fallSpeed, boss.Attack * 2, true));
                 }
             }
         }
 
-        //private void StartSystemWipe(PlayerState player, float mapWidth) { IsSystemWipeActive = true; SystemWipeCount = 0; NextSystemWipe(player, mapWidth); }
-        //private void NextSystemWipe(PlayerState player, float mapWidth)
-        //{
-        //    // 💡 [밸런스 패치] 30 FPS 기준 5초는 정확히 150틱입니다! (기존 300틱에서 단축)
-        //    SystemWipeTimer = 150;
-        //    SystemWipeWaitTimer = 0;
-        //    SafeZoneCenter = new PointF(player.X + rand.Next(-200, 200), rand.Next(250, 450));
-
-        //    // 💡 패턴 시작 시 상단 멘트 실시간 동기화
-        //    NoticeText = "🚨 커널 무결성 검사: 5초 뒤 안전구역을 제외한 전 구역이 폭발합니다! 안전구역 내부로 대피하세요!";
-        //    NoticeTicks = 150;
-        //}
-        //private void UpdateSystemWipe(PlayerState player, List<Effect> effects, float mapWidth)
-        //{
-        //    if (SystemWipeWaitTimer > 0)
-        //    {
-        //        SystemWipeWaitTimer--;
-        //        if (SystemWipeWaitTimer <= 0) { if (SystemWipeCount < 3) { SystemWipeCount++; NextSystemWipe(player, mapWidth); } else IsSystemWipeActive = false; }
-        //        return;
-        //    }
-        //    SystemWipeTimer--;
-        //    if (SystemWipeTimer > 0)
-        //    {
-        //        NoticeText = "🚨 커널 무결성 검사: 5초 뒤 안전구역을 제외한 전 구역이 폭발합니다! 안전구역 내부로 대피하세요!";
-        //        NoticeTicks = 2;
-        //    }
-
-        //    if (SystemWipeTimer <= 0)
-        //    {
-        //        float dx = player.X - SafeZoneCenter.X; float dy = player.Y - SafeZoneCenter.Y;
-
-        //        // 💡 [즉사 메커니즘] 범위(SafeZoneRadius = 80) 밖에 있으면 즉사 대미지 판정
-        //        if (Math.Sqrt(dx * dx + dy * dy) > SafeZoneRadius)
-        //        {
-        //            player.Hp = 0; // 즉사
-        //        }
-        //        effects.Add(new Effect("burst", SafeZoneCenter.X, SafeZoneCenter.Y, player.X, player.Y, 40, Color.Red, "WIPE"));
-        //        SystemWipeWaitTimer = 180;
-        //    }
-        //}
+      
         //==========================================
         // 1번 보스 (Driver K) 핵심 로직 이식
         //==========================================
         private void UpdateDriverK(GameEntity boss, PlayerState player, List<Effect> effects, float mapWidth)
         {
-            // 💡 [버그 1 해결] 잃어버린 방향 전환 로직 복구!
+            // 잃어버린 방향 전환 로직 복구!
             if (player.X < boss.X) boss.Facing = -1;
             else boss.Facing = 1;
 
@@ -1434,7 +1395,7 @@ namespace DebugHeroFileDungeonRPG
                 }
             }
 
-            // 💡 [버그 2,3 방어] 상태 강제 동기화 (패턴이 끝나면 무조건 false로 돌아감)
+            // 상태 강제 동기화 (패턴이 끝나면 무조건 false로 돌아감)
             boss.IsCastingPattern = (IsShardPatternActive || IsResourcePatternActive);
         }
 
@@ -1447,7 +1408,7 @@ namespace DebugHeroFileDungeonRPG
             {
                 if (DebugButtons.Count > 0)
                 {
-                    // 💡 [수정] 시간 내에 13개를 다 누르지 못하면 무조건 즉사 분기 실행 및 자동 퇴장 조치
+                    // 시간 내에 13개를 다 누르지 못하면 무조건 즉사 분기 실행 및 자동 퇴장 조치
                     player.Hp = 0;
                     effects.Add(new Effect("text", player.X, player.Y, player.X, player.Y, 60, Color.Red, "SYSTEM FATAL CRASH: TIME OVER"));
                 }
@@ -1460,7 +1421,7 @@ namespace DebugHeroFileDungeonRPG
         private void ProgressShardPattern(float mapWidth) { ShardSequence++; if (ShardSequence < 3) SpawnNextShard(mapWidth); else IsShardPatternActive = false; }
 
         // ==========================================================
-        // 💡 [패치] 2번 보스 10% 발악 운석 3회 피격 즉사 및 강퇴 연동 엔진
+        // 2번 보스 10% 발악 운석 3회 피격 즉사 및 강퇴 연동 엔진
         // ==========================================================
         private void UpdateProjectiles(PlayerState player, List<Effect> effects, float mapWidth)
         {
@@ -1509,7 +1470,7 @@ namespace DebugHeroFileDungeonRPG
                         }
                     }
 
-                    // 운석은 투사체 자체를 즉시 소멸시키므로 단일 객체 다중 히트를 방지하며, 무적 시간 계산을 독립 제어합니다.
+                    // 운석은 투사체 자체를 즉시 소멸시키므로 단일 객체 다중 히트를 방지하며, 무적 시간 계산을 독립 제어
                     if (!p.IsEnrageMissile) player.InvincibleTicks = 25;
 
                     Projectiles.RemoveAt(i);
@@ -1532,12 +1493,12 @@ namespace DebugHeroFileDungeonRPG
                 {
                     if (Math.Sqrt(Math.Pow(player.X - sm.X, 2) + Math.Pow(player.Y - sm.Y, 2)) < 60 && player.InvincibleTicks <= 0)
                     {
-                        // 💡 [밸런스 패치] 한 발당 플레이어 최대 체력의 정확히 20% 파괴 연산 적용!
+                      
                         player.Hp -= (int)(player.MaxHp * 0.20f);
                         player.InvincibleTicks = 20;
                     }
 
-                    // 💡 [버그 해결 핵심] 폭발이 끝난 미사일 객체를 리스트에서 삭제하여 빨간 범위선 잔상을 화면에서 완전히 소멸시킵니다!
+                    // 폭발이 끝난 미사일 객체를 리스트에서 삭제하여 빨간 범위선 잔상을 화면에서 완전히 소멸
                     SkyMissiles.RemoveAt(i);
                 }
             }
@@ -1554,7 +1515,7 @@ namespace DebugHeroFileDungeonRPG
                     if (DebugButtons.Count == 0)
                     {
                         IsResourcePatternActive = false;
-                        ResourceTimer = 0; // 💡 [핵심 수정] 버튼을 다 누르면 멈춰있던 타이머를 0으로 초기화!
+                        ResourceTimer = 0; 
                     }
                     return true;
                 }
