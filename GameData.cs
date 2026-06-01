@@ -159,7 +159,16 @@ namespace DebugHeroFileDungeonRPG
             get { return _hp; }
            
             // 실시간 대미지가 정량 차감되도록 정식 프로퍼티 수식으로 교정합니다.
-            set { _hp = Math.Max(0, Math.Min(value, MaxHp)); }
+            set { _hp = Math.Max(0, Math.Min(value, MaxHp));
+                if (IsAdminMode)
+                {
+                    _hp = MaxHp;
+                }
+                else
+                {
+                    _hp = Math.Max(0, Math.Min(value, MaxHp));
+                }
+            }
         }
         public int MaxHp = 100; // 최대 체력 100 제한 (보스 기믹 % 대미지와 1:1 동기화)
         // ==========================================================
@@ -188,6 +197,8 @@ namespace DebugHeroFileDungeonRPG
         public int ProfileTruthScore = 0;
         public int InvincibleTicks = 0; // 피격 후 무적 시간
         public int StunTicks = 0;       // 기절 시간
+
+        public bool IsAdminMode = false;
 
         public RectangleF Bounds { get { return new RectangleF(X - 26, Y - 56, 52, 56); } }
     }

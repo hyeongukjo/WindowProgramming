@@ -21,6 +21,23 @@ namespace DebugHeroFileDungeonRPG
 
         private void MainForm_KeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Control && e.Shift && e.KeyCode == Keys.A)
+            {
+                player.IsAdminMode = !player.IsAdminMode; // 껐다 켰다 토글 가능
+
+                if (player.IsAdminMode)
+                {
+                    unlockedStage = 10;       // 🔥 즉시 10층까지 올 해금
+                    player.Coins = 99999;     // 🔥 상점 무한 이용권 지급
+                    player.Hp = player.MaxHp; // 🔥 체력 풀 회복
+                    player.Mp = player.MaxMp; // 🔥 마나 풀 회복
+
+                    // 치트 발동 시 화면에 텍스트 이펙트를 살짝 띄워 개발자 확인용으로 씁니다.
+                    effects.Add(new Effect("text", ClientSize.Width / 2, 200, ClientSize.Width / 2, 200, 30, Color.Cyan, "⚠️ SYSTEM: ADMIN CHEAT COMPLETED"));
+                }
+                return; // 치트키 입력 패킷은 게임 로직으로 흘러가지 않게 차단
+            }
+
             if (playerDeathSequenceActive) return;
             if (screen == ScreenMode.StartMenu)
             {

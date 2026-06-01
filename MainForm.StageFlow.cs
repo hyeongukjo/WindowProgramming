@@ -107,6 +107,11 @@ namespace DebugHeroFileDungeonRPG
                     int finalUltDamage = 450 + player.Level * 40; // 궁극기 기본 누킹 데미지
                     if (wBuffTicks > 0) finalUltDamage = (int)(finalUltDamage * 1.5f); // W버프 시 궁극기 분쇄딜 증폭
 
+                    if (player.IsAdminMode)
+                    {
+                        finalUltDamage = 999999;
+                    }
+
                     // 맵 전체 적 탐색 후 범위 내 일괄 대미지 및 힛플래시 주입
                     for (int k = 0; k < enemies.Count; k++)
                     {
@@ -610,7 +615,12 @@ namespace DebugHeroFileDungeonRPG
                 damage = (int)(damage * 1.5f);
             }
 
-            
+            if (player.IsAdminMode)
+            {
+                damage = 999999;
+            }
+
+
             Color color = slot == 0 ? Color.FromArgb(80, 190, 255) : slot == 1 ? Color.FromArgb(80, 255, 130) : Color.FromArgb(255, 210, 60);
             float startX = originX + dir * 34;
             float endX = originX + dir * range;
