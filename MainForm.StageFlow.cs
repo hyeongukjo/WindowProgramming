@@ -71,6 +71,17 @@ namespace DebugHeroFileDungeonRPG
             // 몬스터 AI 및 물리 충돌 업데이트
             EnemyUpdateResult enemyResult = EnemyLogicSystem.Update(enemies, player, st, currentStage, stageBossPhase, tick, mapWidth, ClientRectangle, bossRuntime, effects);
 
+            if (player.IsAdminMode && stageBossPhase)
+            {
+                GameEntity mainBoss = enemies.Find(e => e.IsBoss);
+                if (mainBoss != null)
+                {
+                    mainBoss.Hp = 0; // AI가 강제로 고정한 보스 체력을 다시 0으로 밀어버림
+                    bossRuntime.patternManager.BinnyShield = 0;          // 기믹 실드 즉시 해제
+                    bossRuntime.patternManager.IsDPSCheckActive = false; // DPS 패턴 강제 봉인
+                    bossRuntime.patternManager.IsIllusionActive = false; // 분신 발악 기믹 강제 소거
+                }
+            }
 
             // ==========================================================
             //  [E 보호막 데미지 상쇄 엔진] 내 체력이 깎였을 때 실드가신 가로채기 연산
@@ -177,7 +188,7 @@ namespace DebugHeroFileDungeonRPG
                     bool isCloneDeadOrNull = (bossRuntime.patternManager.BinnyClone == null) || bossRuntime.patternManager.IsCloneDead;
 
                     // 분신 기믹 중이 아닐 때 보스가 한방에 죽었거나, 분신 기믹 중인데 분신까지 다 잡았다면 최종 승리!
-                    if (!isCloneActiveNow || isCloneDeadOrNull)
+                    if (player.IsAdminMode || !isCloneActiveNow || isCloneDeadOrNull)
                     {
                         // 잔여 상태값 깔끔하게 초기화
                         bossRuntime.patternManager.IsIllusionActive = false;
@@ -648,6 +659,26 @@ namespace DebugHeroFileDungeonRPG
 
                 if (hit.IntersectsWith(m.Bounds))
                 {
+                    // ====================================================================
+                    // 관리자 모드 치트 가드 블록
+                    // ====================================================================
+                    if (player.IsAdminMode)
+                    {
+                        m.Hp = 0; // 보스 및 잡몹 즉시 사망
+                        bossRuntime.patternManager.BinnyShield = 0;       // 보스 패턴 실드 완전 파괴
+                        bossRuntime.patternManager.IsDPSCheckActive = false; // 패턴 기믹 강제 비활성화
+                        bossRuntime.patternManager.IsIllusionActive = false; // 분신 발악 기믹 강제 소거
+                        m.HitFlash = 10;
+                        hitAny = true;
+                        effects.Add(new Effect("text", m.X, m.Y - 84, m.X, m.Y - 84, 40, Color.Red, "💥 ADMIN ONE-PUNCH K.O"));
+                        effects.Add(new Effect("spark", m.X, m.Y - 44, m.X, m.Y - 44, 22, Color.White, ""));
+
+                        continue;
+                    }
+                    // ====================================================================
+
+
+                    // 이 밑으로는 기존 순정 코드가 단 한 글자도 안 바뀌고 그대로 유지됩니다.
                     if ((m.Name.Contains("Binny") || m.Name.Contains("Illegal_Binny")) && bossRuntime.patternManager.IsDPSCheckActive && bossRuntime.patternManager.BinnyShield > 0)
                     {
                         bossRuntime.patternManager.BinnyShield -= damage;
@@ -668,8 +699,8 @@ namespace DebugHeroFileDungeonRPG
                     {
                         AwardDefeatReward(m);
                     }
-                }
-            }
+                } 
+            } 
 
             if (bossRuntime.patternManager.IsIllusionActive && bossRuntime.patternManager.BinnyClone != null && !bossRuntime.patternManager.IsCloneDead)
             {

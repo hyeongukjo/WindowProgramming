@@ -511,8 +511,8 @@ namespace DebugHeroFileDungeonRPG
             // 3.5배 강화된 강력한 중력으로 플레이어를 아이스 소드 중심으로 상시 견인
             if (dist > 5)
             {
-                player.X += (dx / dist) * 9.8f;
-                player.Y += (dy / dist) * 9.8f;
+                player.X += (dx / dist) * 4.8f;
+                player.Y += (dy / dist) * 4.8f;
             }
 
             // 중심부 코어에 완전히 닿아버리면 시스템 즉사 포맷 처리
